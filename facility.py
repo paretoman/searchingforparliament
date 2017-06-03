@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from gurobipy import *
+
 import math
 import StringIO
 
@@ -52,6 +53,10 @@ def optimize(clients, facilities, charge, output=False):
         # there are also y1,1 y1,2 etc for each pair of client and facility
         # there is also distance between each pair
     m.update()
+    
+    # minimax
+    # add bound variable to optimize
+    Z = m.addVar(lb=0,vtype=GRB.CONTINUOUS,name="Z")
 
     # Add constraints
     for i in range(numClients):
@@ -65,17 +70,28 @@ def optimize(clients, facilities, charge, output=False):
         m.addConstr(quicksum(y[(i,j)] for j in range(numFacilities)) == 1)
         # each client is served fully, ==1
         
-    for j in range(numFacilities):
-        m.addConstr(quicksum(y[(i,j)] for i in range(numClients)) == .2*numClients)
-        # make each facility equally supported by the same number of clients.
+    #for j in range(numFacilities):
+    #    m.addConstr(quicksum(y[(i,j)] for i in range(numClients)) == .2*numClients)
+    #    # make each facility equally supported by the same number of clients.
     
     # I will add my own constraint
     m.addConstr(quicksum(x[j] for j in range(numFacilities)) == 5)
     # There are 5 facilities total.
-        
-    m.setObjective( quicksum( charge[j]*x[j] + quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients))
-                             for j in range(numFacilities) ), GRB.MINIMIZE)
+    
+    # minimax
+    # constraint
+    for j in range(numFacilities):
+        m.addConstr(quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients)) <= Z)
+    
+    # minimax
+    # objective
+    m.setObjective(Z, GRB.MINIMIZE)
+    
+    #m.setObjective( quicksum( charge[j]*x[j] + quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients))
+    #                         for j in range(numFacilities) ), GRB.MINIMIZE)
     # all done, now we know how many facilities we're going to have and we're going to minimize the distance between the facilities and the customers.  And a facility can partially cover a customer.  Although, I guess you wouldn't need to.  Oh wait, does a facility have a capacity?
+    
+    
     
     output = StringIO.StringIO()
     m.__output = output
