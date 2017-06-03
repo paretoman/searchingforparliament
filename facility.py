@@ -11,7 +11,8 @@ facilities = []; charge = []
 for i in range(10):
     for j in range(10):
         facilities.append([i*70, j*50])
-        charge.append(1)
+        charge.append(0)  # here I made an edit so that charge is 0 instead of 1
+        # there is no additional cost for having a facility.  Though this doesn't really make any difference.
 
 def mycallback(model, where):
     if where == GRB.callback.MESSAGE:
@@ -41,25 +42,37 @@ def optimize(clients, facilities, charge, output=False):
 
     for j in range(numFacilities):
         x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+        # so there is a variable x1, x2, etc for each possible facility
+        # I want to make these sum to a set number, like 5
 
     for i in range(numClients):
         for j in range(numFacilities):
             y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
             d[(i,j)] = distance(clients[i], facilities[j])
-
+        # there are also y1,1 y1,2 etc for each pair of client and facility
+        # there is also distance between each pair
     m.update()
 
     # Add constraints
     for i in range(numClients):
         for j in range(numFacilities):
             m.addConstr(y[(i,j)] <= x[j])
-
+            # oh, the two facilities can supply the same client.
+            # the facility has to be on.
+            # the amount of supply is a fraction if the facility is on.
+            
     for i in range(numClients):
         m.addConstr(quicksum(y[(i,j)] for j in range(numFacilities)) == 1)
-
+        # each client is served fully, ==1
+        
+    # I will add my own constraint
+    m.addConstr(quicksum(x[j] for j in range(numFacilities)) == 5)
+    # There are 5 facilities total.
+        
     m.setObjective( quicksum( charge[j]*x[j] + quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients))
                              for j in range(numFacilities) ), GRB.MINIMIZE)
-
+    # all done, now we know how many facilities we're going to have and we're going to minimize the distance between the facilities and the customers.  And a facility can partially cover a customer.  Although, I guess you wouldn't need to.  Oh wait, does a facility have a capacity?
+    
     output = StringIO.StringIO()
     m.__output = output
 
@@ -93,3 +106,4 @@ if __name__ == '__main__':
     jsdict = handleoptimize(jsdict)
     print 'Content-Type: application/json\n\n'
     print json.dumps(jsdict)
+
