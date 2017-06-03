@@ -33,7 +33,7 @@ def optimize(clients, facilities, charge, output=False):
     if not output:
         m.params.OutputFlag = 0
 
-    m.setParam('TimeLimit', 10)
+    #m.setParam('TimeLimit', 10000)
 
     # Add variables
     x = {}
@@ -65,6 +65,10 @@ def optimize(clients, facilities, charge, output=False):
         m.addConstr(quicksum(y[(i,j)] for j in range(numFacilities)) == 1)
         # each client is served fully, ==1
         
+    for j in range(numFacilities):
+        m.addConstr(quicksum(y[(i,j)] for i in range(numClients)) == .2*numClients)
+        # make each facility equally supported by the same number of clients.
+    
     # I will add my own constraint
     m.addConstr(quicksum(x[j] for j in range(numFacilities)) == 5)
     # There are 5 facilities total.
