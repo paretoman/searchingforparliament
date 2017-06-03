@@ -40,7 +40,8 @@ def optimize(clients, facilities, charge, output=False):
     x = {}
     y = {}
     d = {} # Distance matrix (not a variable)
-
+    c = {} # closeness matrix (not a variable)
+    
     for j in range(numFacilities):
         x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
         # so there is a variable x1, x2, etc for each possible facility
@@ -48,8 +49,9 @@ def optimize(clients, facilities, charge, output=False):
 
     for i in range(numClients):
         for j in range(numFacilities):
-            y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            #y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
             d[(i,j)] = distance(clients[i], facilities[j])
+            c[(i,j)] = 1/(d[(i,j)]+10)
         # there are also y1,1 y1,2 etc for each pair of client and facility
         # there is also distance between each pair
     m.update()
@@ -59,16 +61,16 @@ def optimize(clients, facilities, charge, output=False):
     Z = m.addVar(lb=0,vtype=GRB.CONTINUOUS,name="Z")
 
     # Add constraints
-    for i in range(numClients):
-        for j in range(numFacilities):
-            m.addConstr(y[(i,j)] <= x[j])
-            # oh, the two facilities can supply the same client.
-            # the facility has to be on.
-            # the amount of supply is a fraction if the facility is on.
+    #for i in range(numClients):
+    #    for j in range(numFacilities):
+    #        #m.addConstr(y[(i,j)] <= x[j])
+    #        # oh, the two facilities can supply the same client.
+    #        # the facility has to be on.
+    #        # the amount of supply is a fraction if the facility is on.
             
-    for i in range(numClients):
-        m.addConstr(quicksum(y[(i,j)] for j in range(numFacilities)) == 1)
-        # each client is served fully, ==1
+    #for i in range(numClients):
+    #    m.addConstr(quicksum(y[(i,j)] for j in range(numFacilities)) == 1)
+    #    # each client is served fully, ==1
         
     #for j in range(numFacilities):
     #    m.addConstr(quicksum(y[(i,j)] for i in range(numClients)) == .2*numClients)
@@ -81,7 +83,7 @@ def optimize(clients, facilities, charge, output=False):
     # minimax
     # constraint
     for j in range(numFacilities):
-        m.addConstr(quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients)) <= Z)
+        m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
     
     # minimax
     # objective
@@ -126,4 +128,5 @@ if __name__ == '__main__':
     jsdict = handleoptimize(jsdict)
     print 'Content-Type: application/json\n\n'
     print json.dumps(jsdict)
+
 
