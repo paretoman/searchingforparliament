@@ -58,7 +58,7 @@ def optimize(clients, facilities, charge, output=False):
     
     # minimax
     # add bound variable to optimize
-    Z = m.addVar(lb=0,vtype=GRB.CONTINUOUS,name="Z")
+    Z = m.addVar(vtype=GRB.CONTINUOUS,name="Z")
 
     # Add constraints
     #for i in range(numClients):
@@ -83,11 +83,11 @@ def optimize(clients, facilities, charge, output=False):
     # minimax
     # constraint
     for j in range(numFacilities):
-        m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
-    
+        #m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
+        m.addConstr( quicksum( ( quicksum( x[k] * d[(i,k)] for k in range(numFacilities) ) - d[(i,j)]  ) for i in range(numClients) ) >= x[j] * Z)
     # minimax
     # objective
-    m.setObjective(Z, GRB.MINIMIZE)
+    m.setObjective(Z, GRB.MAXIMIZE)
     
     #m.setObjective( quicksum( charge[j]*x[j] + quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients))
     #                         for j in range(numFacilities) ), GRB.MINIMIZE)
