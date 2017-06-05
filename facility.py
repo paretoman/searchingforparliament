@@ -84,10 +84,10 @@ def optimize(clients, facilities, charge, output=False):
     # constraint
     for j in range(numFacilities):
         #m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
-        m.addConstr( - quicksum( ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) if k != j )  ) for i in range(numClients) ) >= x[j] * Z)
+        m.addConstr(10+ x[j] * quicksum( ( quicksum( (1-x[k]) *c[(i,k)]  for k in range(numFacilities) )  ) for i in range(numClients) ) <= Z)
     # minimax
     # objective
-    m.setObjective(Z, GRB.MAXIMIZE)
+    m.setObjective(Z, GRB.MINIMIZE)
     
     #m.setObjective( quicksum( charge[j]*x[j] + quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients))
     #                         for j in range(numFacilities) ), GRB.MINIMIZE)
@@ -111,9 +111,15 @@ def optimize(clients, facilities, charge, output=False):
             solution1.append(j)
 
     for i in range(numClients):
-        for j in range(numFacilities):
-            if (y[(i,j)].X > .5):
-                solution2.append([i,j])
+        maxj = 0
+        maxc = 0
+        for j in solution1:
+            if c[(i,j)] > maxc:
+                maxj = j
+                maxc = c[(i,j)]
+        solution2.append((i,maxj))
+        #    if (y[(i,j)].X > .5):
+        #        solution2.append([i,j])
 
     return [solution1, solution2, output.getvalue()]
 
