@@ -84,7 +84,7 @@ def optimize(clients, facilities, charge, output=False):
     # constraint
     for j in range(numFacilities):
         #m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
-        m.addConstr( x[j] * quicksum( ( quicksum( x[k] *c[(i,k)]  for k in range(numFacilities) if j != k )  ) for i in range(numClients) ) <= Z)
+        m.addConstr( x[j] * quicksum( ( quicksum( (x[k]) *c[(i,k)]  for k in range(numFacilities) if j != k ) + (1-quicksum( x[k]*c[(i,k)] for k in range(numFacilities) if j != k )) * (1-quicksum( x[k]*c[(i,k)] for k in range(numFacilities) if j != k)) ) for i in range(numClients) ) <= Z)
     # minimax
     # objective
     m.setObjective(Z, GRB.MINIMIZE)
