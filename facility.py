@@ -4,6 +4,7 @@ from gurobipy import *
 
 import math
 import StringIO
+import numpy
 
 clients = [[100,200], [150,250], [650, 200], [50, 300]]
 
@@ -23,7 +24,7 @@ def distance(a,b):
     dx = a[0] - b[0]
     dy = a[1] - b[1]
     return math.sqrt(dx*dx + dy*dy)
-
+    
 def optimize(clients, facilities, charge, output=False):
     numFacilities = len(facilities)
 
@@ -47,18 +48,36 @@ def optimize(clients, facilities, charge, output=False):
         # so there is a variable x1, x2, etc for each possible facility
         # I want to make these sum to a set number, like 5
 
+    cn = numpy.zeros((numClients,numFacilities))
     for i in range(numClients):
         for j in range(numFacilities):
             #y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
             d[(i,j)] = distance(clients[i], facilities[j])
             c[(i,j)] = 1/(d[(i,j)]+10)
+            cn[i,j] = c[(i,j)]
         # there are also y1,1 y1,2 etc for each pair of client and facility
         # there is also distance between each pair
+        
+    def cosine_similarity(a,b):
+        return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
+    
+    s = {}
+    p = numpy.zeros(numFacilities)   # could vectorize these calculations
+    for j in range(numFacilities):
+        for k in range(numFacilities):
+            if k < j:
+                s[(j,k)] = cosine_similarity(cn[:,j],cn[:,k])
+        p[j] = sum(cn[:,j]) # of course, this needs to be in the same units as the similarity, somehow... needs thought ... what is a voter's full support?  oh, the quota will help with this because I multiply the similarity by the quota.
+        
+    quota = sum(p) / (1 + 5)  # not sure about this... could be different.  
+    quota = sum(numpy.max(cn,1)) / (1+5) #I was thinking a quota would be the max score times the number of people divided by 6
+    #quota = sum(numpy.max(c,2)) # max for each person
+    
     m.update()
     
     # minimax
     # add bound variable to optimize
-    Z = m.addVar(vtype=GRB.CONTINUOUS,name="Z")
+    # Z = m.addVar(vtype=GRB.CONTINUOUS,name="Z")
 
     # Add constraints
     #for i in range(numClients):
@@ -82,12 +101,22 @@ def optimize(clients, facilities, charge, output=False):
     
     # minimax
     # constraint
-    for j in range(numFacilities):
-        #m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
-        m.addConstr( x[j] * quicksum( ( quicksum( (x[k]) *c[(i,k)]  for k in range(numFacilities) if j != k ) + (1-quicksum( x[k]*c[(i,k)] for k in range(numFacilities) if j != k )) * (1-quicksum( x[k]*c[(i,k)] for k in range(numFacilities) if j != k)) ) for i in range(numClients) ) <= Z)
+    #for j in range(numFacilities):
+    #    #m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
+    #   m.addConstr( - quicksum( ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) if k != j )  ) for i in range(numClients) ) >= x[j] * Z)
     # minimax
     # objective
-    m.setObjective(Z, GRB.MINIMIZE)
+    d_obj = LinExpr()
+    
+    for j in range(numFacilities):
+        for k in range(numFacilities):
+            if k < j:
+                d_obj += -quota*s[(j,k)]*x[j]*x[k]
+        d_obj += p[j]*x[j]
+    m.setObjective( d_obj , GRB.MAXIMIZE)
+    
+    # m.setObjective( quicksum(  [ quicksum([ -quota*s[(j,k)]*x[j]*x[k]  for k in range(numFacilities) if k < j]) for j in range(numFacilities)] ) + quicksum( [ p[j]*x[j] for j in range(numFacilities) ] ), GRB.MAXIMIZE)
+
     
     #m.setObjective( quicksum( charge[j]*x[j] + quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients))
     #                         for j in range(numFacilities) ), GRB.MINIMIZE)
@@ -118,8 +147,12 @@ def optimize(clients, facilities, charge, output=False):
                 maxj = j
                 maxc = c[(i,j)]
         solution2.append((i,maxj))
-        #    if (y[(i,j)].X > .5):
-        #        solution2.append([i,j])
+
+    
+    #for i in range(numClients):
+    #    for j in range(numFacilities):
+    #        if (y[(i,j)].X > .5):
+    #            solution2.append([i,j])
 
     return [solution1, solution2, output.getvalue()]
 
