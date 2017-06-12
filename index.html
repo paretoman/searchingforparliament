@@ -352,42 +352,38 @@ import math
 import numpy
 
 # Problem data
-clients = [[c1,c2] for c1 in range(10) for c2 in range(10)]
-facilities = [[f1*3+1.5,f2*3+1.7] for f1 in range(3) for f2 in range(3)]
-    
-    [[0,0],[0,1],[0,1],
-              [1,0],[1,1],[1,2],
-              [2,0],[2,1],[2,2]]
-numFacilities = len(facilities)
-numClients = len(clients)
+voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
+reps = [[f1*3+1.5,f2*3+1.7] for f1 in range(3) for f2 in range(3)]
+numReps = len(reps)
+numVoters = len(voters)
 
 # Add variables
 m = Model()
 x = {}
-for j in range(numFacilities):
+for j in range(numReps):
     x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
 
 # Add constants
-d = numpy.zeros((numClients,numFacilities))
-b = numpy.zeros((numClients,numFacilities))
-s = numpy.zeros((numFacilities,numFacilities))
-t = numpy.zeros(numFacilities)
+d = numpy.zeros((numVoters,numReps))
+b = numpy.zeros((numVoters,numReps))
+s = numpy.zeros((numReps,numReps))
+t = numpy.zeros(numReps)
 
 def distance(a,b):
   dx = a[0] - b[0]
   dy = a[1] - b[1]
   return math.sqrt(dx*dx + dy*dy)
 
-for i in range(numClients):
-    for j in range(numFacilities):
-        d[i,j] = distance(clients[i], facilities[j])
+for i in range(numVoters):
+    for j in range(numReps):
+        d[i,j] = distance(voters[i], reps[j])
         b[i,j] = 1 /( d[i,j]/10 + 1 )
 
 def cosine_similarity(a,b):
     return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
 
-for j in range(numFacilities):
-    for k in range(numFacilities):
+for j in range(numReps):
+    for k in range(numReps):
         s[j,k] = cosine_similarity(b[:,j],b[:,k])
     t[j] = sum(b[:,j])
 keep = sum(numpy.max(b,1)) / (1+5)
@@ -395,12 +391,12 @@ keep = sum(numpy.max(b,1)) / (1+5)
 m.update()
 
 # Add constraints
-m.addConstr(quicksum(x[j] for j in range(numFacilities)) == 5)
+m.addConstr(quicksum(x[j] for j in range(numReps)) == 5)
 
 d_obj = LinExpr()
-for j in range(numFacilities):
+for j in range(numReps):
     d_obj += t[j]*x[j]
-    for k in range(numFacilities):
+    for k in range(numReps):
         if k != j:
             d_obj += -keep*s[j,k]*x[j]*x[k]
 
