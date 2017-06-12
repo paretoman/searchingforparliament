@@ -25,6 +25,7 @@ def distance(a,b):
     dy = a[1] - b[1]
     return math.sqrt(dx*dx + dy*dy)
     
+
 def optimize(clients, facilities, charge, output=False):
     numFacilities = len(facilities)
 
@@ -69,9 +70,10 @@ def optimize(clients, facilities, charge, output=False):
                 s[(j,k)] = cosine_similarity(cn[:,j],cn[:,k])
         p[j] = sum(cn[:,j]) # of course, this needs to be in the same units as the similarity, somehow... needs thought ... what is a voter's full support?  oh, the quota will help with this because I multiply the similarity by the quota.
         
-    quota = sum(p) / (1 + 5)  # not sure about this... could be different.  
-    quota = sum(numpy.max(cn,1)) / (1+5) #I was thinking a quota would be the max score times the number of people divided by 6
+    quota = charge[0] * sum(p) / (1 + 5)  # not sure about this... could be different.  
+    quota = charge[0] * sum(numpy.max(cn,1)) / (1+5) #I was thinking a quota would be the max score times the number of people divided by 6
     #quota = sum(numpy.max(c,2)) # max for each person
+    # charge is just a fudge factor controlled by the slider in the GUI
     
     m.update()
     
@@ -111,7 +113,7 @@ def optimize(clients, facilities, charge, output=False):
     for j in range(numFacilities):
         for k in range(numFacilities):
             if k < j:
-                d_obj += -quota*s[(j,k)]*x[j]*x[k]
+                d_obj += -quota*2*s[(j,k)]*x[j]*x[k]
         d_obj += p[j]*x[j]
     m.setObjective( d_obj , GRB.MAXIMIZE)
     
@@ -138,7 +140,7 @@ def optimize(clients, facilities, charge, output=False):
     for j in range(numFacilities):
         if (x[j].X > .5):
             solution1.append(j)
-
+    
     for i in range(numClients):
         maxj = 0
         maxc = 0

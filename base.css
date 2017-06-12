@@ -1,0 +1,126 @@
+@import url(http://fonts.googleapis.com/css?family=PT+Serif|PT+Serif:b|PT+Serif:i|PT+Sans|PT+Sans:b);
+@import url(http://fonts.googleapis.com/css?family=Lato);
+
+body {
+   background: #fcfcfa;
+   color: #333;
+   /*margin: 0 1em 4em auto;*/
+}
+
+h1, h2, h3, h4 {
+    font-weight: bold;
+    font-family: "Lato", "PT Serif", serif;
+    color: #000;
+    text-rendering: optimizeLegibility;
+}
+
+h1 {
+  font-size: 64px;
+  line-height: 73px;
+  font-weight: 900;
+  margin-top: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+}
+
+h2 {
+   margin-top: 2em;
+}
+
+subtitle {
+   display:block;
+   font-family: "PT Serif", serif;
+   font-size: 32px;
+   font-style: italic;
+   font-weight: 100;
+}
+
+p {
+  line-height: 150%;
+  width: 720px;
+  margin-bottom: 10px;
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-top: 10px;
+}
+
+a {
+  color: steelblue;
+  cursor: auto;
+}
+
+a:not(:hover) {
+   text-decoration: none;
+}
+
+examplecode {
+   border-left: solid 2px #ccc;
+   padding-left: 1em;
+   display: block;
+   font-family: monospace;
+   white-space: pre;
+   font-size: 16px;
+}
+
+aside {
+   font-size: small;
+   right: 0;
+   position: absolute;
+   width: 180px;
+}
+
+#example_container {
+    position: relative;
+    left: 5em;
+    width: 960px;
+    font: 1.12em "PT Serif", serif;
+}
+
+#example_container h1 {
+    color: #000;
+}
+
+#example_container p {
+  line-height: 150%;
+  width: 720px;
+  margin: 1em 0;
+}
+
+#example_container input {
+  box-shadow: none;
+  -webkit-box-shadow: none;
+}
+
+#nav {
+        left: 3em;
+        font-family: "Lato", serif;
+        font-weight: 700;
+        list-style: none;
+        margin: 0;
+        position: fixed;
+        top: 120px;
+        box-sizing: border-box;
+}
+
+
+#nav li {
+        margin-bottom: 0px;
+}
+
+#nav a {
+        color: #333;
+        display: block;
+        font-size: 14px;
+        border-left: 3px solid #fcfcfa;
+        padding: 5px 10px;
+        text-decoration: none;
+}
+
+#nav a:hover {
+   border-left: 3px solid steelblue;
+}
+
+#nav .current a {
+   border-left: 3px solid steelblue;
+}

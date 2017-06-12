@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+<meta name="viewport" content="initial-scale=1">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 <script>
   MathJax.Hub.Config({
@@ -10,7 +11,7 @@
                                     scale: 90 }
                      });
 </script>
-<link rel="stylesheet" href="http://examples.gurobi.com/base.css">
+<link rel="stylesheet" href="base.css">
 <style>
 a:hover.screenshot {
   opacity: .7;
@@ -48,34 +49,29 @@ a:hover.screenshot {
 
 </style>
 <body>
-  <ul id="nav">
+<ul id="nav">
     <li class="current"><a href="#intro">Intro</a></li>
     <li><a href="#problem">Problem</a></li>
     <li><a href="#model">Model</a></li>
     <li><a href="#implementation">Implementation</a></li>
     <li><a href="#demo">Live Demo</a></li>
-    <li><a href="#try">Try Gurobi for Free</a></li>
+    <li><a href="#try">How to set up.</a></li>
   </ul>
   <div id="example_container">
     <div class="example_section" id="intro">
-      <h1>Facility Location</h1>
-        <subtitle>with integer programming and Gurobi</subtitle>
+      <h1>Searching for Parliament</h1>
+        <subtitle>(the computer science kind of search)</subtitle>
     </div>
     <p>
-      In this example we'll solve a simple facility location problem:
-      where to build warehouses to supply a large number of supermarkets.
+      Selecting a group of people to represent a nation is an example of what computer science calls an assignment search problem.  Which candidates are the most representative of the voters?
     </p>
 
     <p>
-      We'll construct a mathematical model of the business problem,
-      implement this model in Gurobi's Python interface, and compute and
-      visualize an optimal solution.
+      We'll construct a mathematical model of the assignment search problem, implement this model in the Python programming language with an optimization package called Gurobi, and compute and visualize an optimal solution.
     </p>
 
     <p>
-      Although your own business may not involve supermarkets, the
-      same basic techniques used in this example can be used for many
-      other applications in supply chain, logistics and transportation.
+      The implementation of the model and the structure of this explanation is forked from the work of Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>
     </p>
 
     <h3>
@@ -92,132 +88,251 @@ a:hover.screenshot {
       <h2><a href="#problem" name="problem">Problem Description</a></h2>
 
     <div style="float:right;">
-      <a href="https://en.wikipedia.org/wiki/Logistics">
-        <img src="warehouse.jpg" alt="Warehouse" style="width:200px;">
+      <a href="https://en.wikipedia.org">
+        <img src="Sir_Gerald_Kaufman.jpg" alt="Sir_Gerald_Kaufman" style="width:200px;">
       </a>
     </div>
 
-    <p>
-      A large supermarket chain in the UK needs to build warehouses
-      for a set of supermarkets it is opening in Northern England.
-      The locations of the supermarkets have been decided, but the
-      locations of the warehouses are yet to be chosen.
-    </p>
+    <p>Northern England gets rid of district boundaries because there was too much debate about where the boundaries should go.  It wants to elect 4 reps (representatives).  And it wants to space them out instead of having them all from the middle.  It wants regional interests to be represented and it doesn't want all the seats to be taken by people from the same neighborhood in the middle of Northern England.</p>
 
-    <p>
-      Several good candidate locations for the warehouses have been
-      determined, but it remains to decide how many warehouses to
-      open and at which candidate locations to build them.
-    </p>
+    <p>Several good potential reps have decided to run, but it remains to decide which of the reps should win.</p>
 
-    <aside> A typical warehouse. <span style="font-size: 10px">Source:
-      <a href="https://en.wikipedia.org/wiki/Logistics#/media/File:Modern_warehouse_with_pallet_rack_storage_system.jpg">Axisadman</a> - <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en">CC BY-SA 3.0</a></span>
+        <aside> A typical rep.<span style="font-size: 10px"></span>
     </aside>
 
-    <p>
-      Opening many warehouses would be advantageous as this would
-      reduce the average distance a truck has to drive from
-      warehouse to supermarket, and hence reduce the delivery cost.
-      However, opening a warehouse is costly.
-    </p>
+    <p>Selecting reps from the middle of Northern England would be advantageous as they would have the most votes overall.  However, voters from the middle of Northern England would be overrepresented and voters from the coast would be very far from their from their reps.</p>
 
-    <p>
-      We will use Gurobi to find the optimal tradeoff between delivery
-      cost and the cost of building new facilities.
-    </p>
+    <p>We will find the optimal tradeoff between reps being near all the voters and voters having reps nearby.</p>
 
     </div>
+
     <div class="example_section" id="model">
       <h2><a href="#model" name="model">Mathematical Model</a></h2>
 
       <p>
-        Our example is an instance of the
-        <a href="http://www.sciencedirect.com/science/article/pii/S0377221703008191">
-        Uncapacitated Facility Location Problem</a>. There are many
-        different types of facility location problems. For more details,
-        see the book <i><a href="http://www.springer.com/us/book/9783540421726">
-        Facility Location: Applications and Theory</a></i>.
+        Our problem is related to a very famous problem in computer science called the knapsack problem.  It differs in many ways.  It is similar in how it can be solved.  Both are kinds of binary search.  A search problem tries to find a combination of variables that is in some way the best combination.  One way to approach such a problem is the branch and bound method.  Here is a video on the <a href="https://www.coursera.org/learn/discrete-optimization/lecture/66OlO/knapsack-5-relaxation-branch-and-bound">branch and bound method</a> from a fantastic Coursera course in the field of <a href="https://www.coursera.org/learn/discrete-optimization/">discrete optimization</a>.  From this video, just understand that <b>there is a large number of possible choices to make and that they can all be organized in a tree structure</b>.  (The actual algorithm for searching through the tree will be taken care of by Gurobi, and we don't talk about it below.)  We still haven't said what the score is for each choice (or path) in the tree, so let's do that.  Most of the writing below is about that.  Each choice in the tree represents whether a rep wins.  The first split is for the first rep, the second split is for the second rep, etc.
       </p>
-
+        <p> 
+        <img src = "./tree.png" />
+        </p>
+      <p>
+          This tree is not for the problem at hand, but our problem is similar because it has the same binary variables $x_i$.
       <p>
         Let us now formulate a mathematical model for our problem.
-        Let $I$ be the set of supermarket (or <em>customer</em>) locations.
-        Let $J$ be the set of candidate warehouse (or <em>facility</em>)
-        locations. The goal is to choose which locations in $J$ should
-        be used to construct a facility. Therefore, for each location we
-        define a binary variable
+      </p>
+      <p>
+        We need to say when we choose a rep.  Let's list all the reps as rep #1, rep #2, rep #3, etc, and let's make variables for each one.  If we choose rep #1, then $x_1=1$ and if we don't choose rep #2, then $x_2=0$.  Basically, $x_j$ is binary.
         \[
         x_j = \left\{\begin{array}{ll}
-               1 & \text{if we locate facility at candidate site $j \in J$, }\\
+               1 & \text{if we choose rep #j, }\\
                0 & \mathrm{otherwise.}
               \end{array}\right.
         \]
       </p>
-
       <p>
-        There is a cost associated with constructing each warehouse. We
-        denote this fixed charge by $f_j$.
-      </p>
-
-      <p>We also define continuous variables $y_{ij}$ to be the
-        fraction of supply received by customer $i$ from facility $j$.
-        These quantities are positive, so we have the constraints:
+        We need to say how close a voter is to a rep.  Let's list all the voters as voter #1, voter #2, etc, and let's make measurements for each voter and rep combination.  If the distance between voter #1 and rep #3 is 100 km, then $d_{13}=100$.  Technically, this is not a variable; it's a constant.
         \[
-          y_{ij} \ge 0, \quad \forall i \in I, j \in J.
+        d_{ij} = \text{distance between voter i and rep j}
         \]
       </p>
 
       <p>
-        We denote by $c_{ij}$ the cost of shipping between candidate
-        warehouse site $j$ and supermarket location $i$. This
-        cost is usually proportional to the distance $d_{ij}$ between
-        the facility and the customer:
+        We need to say what a ballot looks like.  We're going to make a simplification of the problem so that we can move forward.  We're going to let the voters give the candidates scores.  This is actually nicer for the voters because they get to say what they think of every rep.  Also, we're going to make every voter use the same scoring scale, and they will base their score entirely on how far away the rep is.  Basically, the inverse of distance.  
         \[
-          c_{ij} = \alpha d_{ij}
-        \]
-        The constant $\alpha$ is the cost per mile of driving, adjusted
-        to incorporate the average number of a trips a delivery truck
-        would be expected to make over a 5 year period.
-      </p>
-
-      <p>
-        We wish to minimize the total cost to open and operate the
-        facilites. This is the sum of the cost of opening facilities
-        and the cost related to shipping between facilities and
-        customers:
-        \[
-        \text{total cost} = \sum_{j \in J} f_j x_j + \sum_{j \in J} \sum_{i \in I} c_{ij} y_{ij}.
-        \]
-        This total cost measures the tradeoff between the cost of building
-        a new warehouse and the total delivery cost over a 5 year period.
-      </p>
-
-      <p>
-        Finally, we need to add two constraints. First, the demand for each
-        customer must be fulfilled. That is, the sum of the fraction received
-        from each facility for each customer must be equal to 1:
-        \[
-        \sum_{j \in J} y_{ij} = 1, \quad \forall i \in I.
-        \]
-        Second, we can only ship from facility $j$ if that facility has
-        actually been built. So we have the following constraints:
-        \[
-        y_{ij} \leq x_{ij}, \quad \forall i \in I \quad \forall j \in J.
+        b_{ij} = \frac{1}{d_{ij}/10 + 1} \text{ (ballot)}
         \]
       </p>
-
       <p>
-        Thus, the uncapacitated facility location problem is defined
-        by the following model in the variables $x_j$ and $y_{ij}$:
+        (The 10 is here for normalizing distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function, and we may even want to allow voters to vote on different scales because voters would often give the candidate closest to them the highest score possible even if they aren't actually all that close.)
+      </p>
+      <p>
+        We need a way to count the ballots.  The easiest way is to add them together to get the reps' tallies.
+        \[
+        tally_j = \sum_{i \in Voters} b_{ij} 
+        \]
+      </p>
+        <p>
+        <img src="./tally.png" />
+        </p> 
+      <p>
+        If we stop here then we just end up picking the candidates in the middle because they have the highest tallies.
+      </p>
+      <p>
+        We want to avoid overrepresenting the middle voters.  Our solution is to let the winning reps keep a fraction of their voters' ballots.  Basically, these voters have the reps, so the reps get to keep the voters.  Each winning rep keeps the same amount of support.
+        \[
+        keep = \text{an amount of score. same units as ballots.  same for each winning rep.}
+        \]
+      </p>
+      <p>
+        The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  
+        \[
+        \text{STV quota} = \frac{voters}{seats + 1}
+        \]
+        The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).
+      </p>
+      <p>
+        Let's try something like the STV quota.
+        \[
+        keep = \frac{\sum_{i \in Voters} \max_{j \in Reps} b_{ij}}{seats + 1}
+        \]
+        Usually, we would use 1 as the maximum score a voter could give.  In our specific problem, we are basing the score on distance, so we need to use a different number.  We add up each voter's max score they gave on their ballot.  Then we divide by the same number of seats as STV.
+      </p>
+      <p>
+          However, there is an issue that is still unsettled.  I have a +1 in the keeps formula because STV has a +1.  However, this might not be needed because there is no iterative step in this problem.
+      </p>
+      <p>
+        There actually is a nice example I will show to say how this STV-style quota selects the correct number of reps for a group of voters.  It also will motivate the next step.
+      </p>
+      <h3> Mini Example </h3>
+      <p>
+        Ok, we'll show an example.  We can actually see the method at work.
+      </p>
+      <p>
+        There are 4 seats to fill. There are 20 voters.  For 10 of the voters, they like only 2 reps and give them a score of 1 on their ballots.  So ideally, we would expect those 2 candidates to win.  Let's make a chart to describe the situation:
         \[
         \begin{array}{ll}
-        \text{minimize}   & {\displaystyle \sum_{j \in J} f_j x_j + \sum_{j \in J} \sum_{i \in I} c_{ij} y_{ij}} \\
-        \text{subject to} & {\displaystyle \sum_{j \in J} y_{ij}} = 1, \quad \forall i \in I, \\
-                          & y_{ij} \leq x_{ij}, \quad \forall i \in I, \forall j \in J,  \\
-                          & y_{ij} \geq 0, \quad \forall i \in I, \forall j \in J, \\
-                          & x_j \in \{ 0, 1 \}, \quad \forall j \in J.
+        & \text{10: tally for each rep} \\
+        & \text{4: amount of tally kept by each rep} \\
+        & keeps = \frac{20}{4 + 1} = 4 \\
+        & \text{table of reps:}
+          \begin{bmatrix} 
+                10 & -4  \\
+                -4 & 10  \\
+            \end{bmatrix}
         \end{array}
         \]
+          
+        The table describes all the kinds of tally's, the total tallies and the kept tallies. The reps are organized in the rows and the columns.  
+          \[
+          \text{Row 1 column 1 says rep #1 has a tally of 10 votes in support.  } \\
+          \text{Row 1 column 2 says rep #1 keeps 4 from the tally of rep #2.} \\
+          \text{Row 2 column 2 says rep #2 has a tally of 10 votes in support.} \\
+          \text{Row 2 column 1 says rep #2 keeps 4 from the tally of rep #1.}
+          \]
+      </p>
+      <p>
+      Here is a part of the problem statement that took a long time for me to figure out.  In STV, you might think that the kept votes only happen in one direction.  It might seem that the keeps are happening twice because both reps keep some voters.  This actually does happen in STV because it happens once after the first rep wins and again after the second rep wins.  
+      </p>
+      <p>
+        A Venn diagram works well to show how votes are kept.
+      </p>
+      <p>  
+        <img src="venndiagram.png" />
+      </p>
+        <ul>
+            <li>Rep #1 keeps 4 ballots. </li><li> Rep #2 keeps 4 ballots.  </li><li>They share the 2 remaining ballots. </li><li> There are 10 total ballots.  </li><li>Each rep gets 6 points.  </li><li>The total is 12 points.</li></ul>
+      
+      <p>  
+        Result: The kept votes are 8 and the total count is 20 - 8 = 12.  <b>We have a measure of voter support!  Let's maximize it!</b>
+        </p>
+        <p>
+        Option: If there was only one candidate running, the score would be 10, which is lower, so it is good that this second candidate is running.
+        </p>
+        <p>
+        Now consider what would happen if a 3rd candidate tried to run.
+        </p>
+        <p>
+        Say the full table for all the reps is this:
+        \[
+            \begin{bmatrix}
+                10 & -4 &  0 &  0 \\
+                -4 & 10 &  0 &  0 \\
+                 0 &  0 & 10 & -4 \\
+                 0 &  0 & -4 & 10 \\
+            \end{bmatrix}
+        \]
+        This is actually kinda simple because there are 4 seats and 4 reps, so all the reps win.  But Let's see what happens if we add a 5th rep on one side.
+                    \[
+            \begin{bmatrix}
+                10 & -4 &  0 &  0 &  0 \\
+                -4 & 10 &  0 &  0 &  0 \\
+                 0 &  0 & 10 & -4 & -4 \\
+                 0 &  0 & -4 & 10 & -4 \\
+                 0 &  0 & -4 & -4 & 10 \\
+            \end{bmatrix}
+        \]
+
+        </p>
+        <p>
+        If a third candidate ran, then the kept votes would add up faster than the support. Just look at the lower right part of the table.  The kept votes are 6 * 4 = 24.  The score would be 30 - 24 = 6.  That's 2 points per rep, and points per rep is a good figure of merit for deciding on an individual rep.  This is less than the score when 2 reps won, so it is not optimal for 3 reps to win. 
+        </p>
+        <p>
+        So the idea of the quota is borrowed from Droop's quota in STV and it seems to work well here.  We also gained a nice representation of the tally as a table.
+      </p>
+      <h3> Finishing the Model: Similarity </h3>
+      <p>
+        What if the voters don't fall into parties? (like the short example above) 
+      </p>
+      <p>
+        How much of the ballot should the rep keep?  Let's look at one voter. If a voter likes a rep more, then that rep should keep a bigger portion of the ballot.  That vote is kept from other reps.  The more the voter likes those other reps, the more the other reps lose.  So there are two numbers to multiply.
+        \[
+        b_{ij} * b_{ik} = \text{Voter i likes rep j and rep k this much}
+        \]
+        Oh yeah, we actually want this number as a fraction of the total tally for each rep.  Now we define a new constant (not a variable).
+        \[
+        \frac{b_{ij}}{tally_j} * \frac{b_{ik}}{tally_k} = \text{Voter i gave rep j and rep k this much as a fraction of both reps' total tally} \\
+        s_{jk} = \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{tally_j * tally_k} = \text{Similarity between rep j and rep k}
+        \]
+        Ha, so we have a measure of similarity!  (actually there are many measures of similarity.  Is this the right one or should we use cosine similarity? Should the bottom be the sum of squares and square-rooted, like distance?)
+      </p>
+      <p>
+        So, how much of the ballot should the rep keep?
+        \[
+            keeps_{jk} = keep * s_{jk}
+        \]
+        <b>Now we have a new table to add up and maximize!  This is better than the table in the simple example because now the voters don't have to fall into parties.</b> (By the way, with this kind of method of elections, we don't need parties.)
+      </p>
+      <p>
+        This is the part of the model where we say what we want to maximize.  This part is called the objective function.
+        \[
+        O = \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k
+        \]
+        Remember the $x$ is binary, so it's basically just letting us add up tally and keeps for the winning reps.
+      </p>
+      <p>
+        There is a really easy way to visualize what the model is trying to do.  We reduced the problem to crossing out the rows and columns in a table.  Cross out the row and column for each rep that lost. Add the remaining tallies and keeps.
+        \[
+          \begin{bmatrix}
+        10 & -4 & -3 &  0 & -1 \\
+        -4 & 10 & -3 &  0 & -1 \\
+        -3 & -3 &  8 & -2 &  0 \\
+         0 &  0 & -2 & 11 &  0 \\
+        -1 & -1 &  0 &  0 & 17 \\
+          \end{bmatrix}
+        \]
+          Try to find the 4 winners by crossing out the losing rep's row and column.
+      </p>
+      <p>
+      <img src="./crossout.png">
+      </p>
+      <p>
+      The solution is to cross out the 3rd rep's row and column.  He had the lowest tally overall and he also overlapped in similarity with most of the other reps, so basically his territory was covered better by the other reps.
+      </p>
+      <p>
+        <b>At last, we set a constraint on the $x_j$ variables because there are only a limited number of seats in the legislature.</b>  We set the sum of all $x_j$ to this number of seats.
+        \[
+        \sum_{j \in Reps} x_j = \text{number of seats}
+        \]
+      <p>
+        <b>To sum up, the model has variables $x_j$ that work with a table of measurements.  We maximize a sum with terms that multiply the variables once by each other (quadratic binary terms) and by the table of measurements.   There is a constraint on the sum of these variables.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).</b>
+      </p>
+      <p>
+        The problem is defined by the following model in the variable $x_j$ :
+
+        \[
+        \begin{array}{ll}
+        \text{maximize}   & {\displaystyle \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k } \\
+        \text{subject to} & {\displaystyle \sum_{j \in Reps} x_j} = \text{number of seats}, \\
+                          & x_j \in \{ 0, 1 \}, \\
+        \text{constants} & keeps_{jk} = keep * s_{jk},\\
+                          & s_{jk} = \frac{\sum_{i \in Voters} b{ij}b{ik}}{tally_j tally_k}  = \text{Similarity between rep j and rep k},\\
+                          & keep = \frac{\sum_{i \in Voters} \max_{j \in Reps} b_{ij}}{seats + 1} = \text{Amount of ballots kept (if s=1, e.g. for clones)},\\
+                          & tally_j = \sum_{i \in Voters} b_{ij} = \text{(add up the ballots)},\\
+                          & b_{ij} = \frac{1}{d_{ij} + 10} = \text{ ballot},\\
+                          & d_{ij} = \text{distance between voter i and rep j on the map},
+        \end{array}
+        \]
+
       </p>
 
     </div>
@@ -227,54 +342,177 @@ a:hover.screenshot {
         Gurobi's Python interface:
       </p>
 <examplecode>
+#!/usr/bin/env python
+
 from gurobipy import *
+
 import math
+import StringIO
+import numpy
+
+clients = [[100,200], [150,250], [650, 200], [50, 300]]
+
+facilities = []; charge = []
+
+for i in range(10):
+    for j in range(10):
+        facilities.append([i*70, j*50])
+        charge.append(0)  # here I made an edit so that charge is 0 instead of 1
+        # there is no additional cost for having a facility.  Though this doesn't really make any difference.
+
+def mycallback(model, where):
+    if where == GRB.callback.MESSAGE:
+        print >>model.__output, model.cbGet(GRB.callback.MSG_STRING),
 
 def distance(a,b):
-  dx = a[0] - b[0]
-  dy = a[1] - b[1]
-  return math.sqrt(dx*dx + dy*dy)
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
+    return math.sqrt(dx*dx + dy*dy)
+    
+def optimize(clients, facilities, charge, output=False):
+    numFacilities = len(facilities)
 
-# Problem data
-clients = [[0, 1.5],[2.5, 1.2]]
-facilities = [[0,0],[0,1],[0,1],
-              [1,0],[1,1],[1,2],
-              [2,0],[2,1],[2,2]]
-charge = [3,2,3,1,3,3,4,3,2]
+    numClients = len(clients)
 
-numFacilities = len(facilities)
-numClients = len(clients)
+    m = Model()
 
-m = Model()
+    if not output:
+        m.params.OutputFlag = 0
 
-# Add variables
-x = {}
-y = {}
-d = {} # Distance matrix (not a variable)
-alpha = 1
+    #m.setParam('TimeLimit', 10000)
 
-for j in range(numFacilities):
-  x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+    # Add variables
+    x = {}
+    y = {}
+    d = {} # Distance matrix (not a variable)
+    c = {} # closeness matrix (not a variable)
+    
+    for j in range(numFacilities):
+        x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+        # so there is a variable x1, x2, etc for each possible facility
+        # I want to make these sum to a set number, like 5
 
-for i in range(numClients):
-  for j in range(numFacilities):
-    y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
-    d[(i,j)] = distance(clients[i], facilities[j])
+    cn = numpy.zeros((numClients,numFacilities))
+    for i in range(numClients):
+        for j in range(numFacilities):
+            #y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            d[(i,j)] = distance(clients[i], facilities[j])
+            c[(i,j)] = 1/(d[(i,j)]+10)
+            cn[i,j] = c[(i,j)]
+        # there are also y1,1 y1,2 etc for each pair of client and facility
+        # there is also distance between each pair
+        
+    def cosine_similarity(a,b):
+        return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
+    
+    s = {}
+    p = numpy.zeros(numFacilities)   # could vectorize these calculations
+    for j in range(numFacilities):
+        for k in range(numFacilities):
+            if k < j:
+                s[(j,k)] = cosine_similarity(cn[:,j],cn[:,k])
+        p[j] = sum(cn[:,j]) # of course, this needs to be in the same units as the similarity, somehow... needs thought ... what is a voter's full support?  oh, the quota will help with this because I multiply the similarity by the quota.
+        
+    quota = sum(p) / (1 + 5)  # not sure about this... could be different.  
+    quota = sum(numpy.max(cn,1)) / (1+5) #I was thinking a quota would be the max score times the number of people divided by 6
+    #quota = sum(numpy.max(c,2)) # max for each person
+    
+    m.update()
+    
+    # minimax
+    # add bound variable to optimize
+    # Z = m.addVar(vtype=GRB.CONTINUOUS,name="Z")
 
-m.update()
+    # Add constraints
+    #for i in range(numClients):
+    #    for j in range(numFacilities):
+    #        #m.addConstr(y[(i,j)] <= x[j])
+    #        # oh, the two facilities can supply the same client.
+    #        # the facility has to be on.
+    #        # the amount of supply is a fraction if the facility is on.
+            
+    #for i in range(numClients):
+    #    m.addConstr(quicksum(y[(i,j)] for j in range(numFacilities)) == 1)
+    #    # each client is served fully, ==1
+        
+    #for j in range(numFacilities):
+    #    m.addConstr(quicksum(y[(i,j)] for i in range(numClients)) == .2*numClients)
+    #    # make each facility equally supported by the same number of clients.
+    
+    # I will add my own constraint
+    m.addConstr(quicksum(x[j] for j in range(numFacilities)) == 5)
+    # There are 5 facilities total.
+    
+    # minimax
+    # constraint
+    #for j in range(numFacilities):
+    #    #m.addConstr( x[j] * quicksum( c[(i,j)] / ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) )  ) for i in range(numClients)  ) <= Z)
+    #    m.addConstr( - quicksum( ( quicksum( x[k] * c[(i,k)] for k in range(numFacilities) if k != j )  ) for i in range(numClients) ) >= x[j] * Z)
+    # minimax
+    # objective
+    d_obj = LinExpr()
+    
+    for j in range(numFacilities):
+        for k in range(numFacilities):
+            if k < j:
+                d_obj += -quota*s[(j,k)]*x[j]*x[k]
+        d_obj += p[j]*x[j]
+    m.setObjective( d_obj , GRB.MAXIMIZE)
+    
+    # m.setObjective( quicksum(  [ quicksum([ -quota*s[(j,k)]*x[j]*x[k]  for k in range(numFacilities) if k < j]) for j in range(numFacilities)] ) + quicksum( [ p[j]*x[j] for j in range(numFacilities) ] ), GRB.MAXIMIZE)
+    
+    #m.setObjective( quicksum( charge[j]*x[j] + quicksum(d[(i,j)]*y[(i,j)] for i in range(numClients))
+    #                         for j in range(numFacilities) ), GRB.MINIMIZE)
+    # all done, now we know how many facilities we're going to have and we're going to minimize the distance between the facilities and the customers.  And a facility can partially cover a customer.  Although, I guess you wouldn't need to.  Oh wait, does a facility have a capacity?
+    
+    
+    
+    output = StringIO.StringIO()
+    m.__output = output
 
-# Add constraints
-for i in range(numClients):
-  for j in range(numFacilities):
-    m.addConstr(y[(i,j)] &lt;= x[j])
+    m.optimize(mycallback)
 
-for i in range(numClients):
-  m.addConstr(quicksum(y[(i,j)] for j in range(numFacilities)) == 1)
+    if (m.status != 2):
+        return ["error"]
 
-m.setObjective( quicksum(charge[j]*x[j] + quicksum(alpha*d[(i,j)]*y[(i,j)]
-                for i in range(numClients)) for j in range(numFacilities)) )
+    solution1 = []
+    solution2 = []
 
-m.optimize()
+    for j in range(numFacilities):
+        if (x[j].X > .5):
+            solution1.append(j)
+
+    
+     for i in range(numClients):
+        maxj = 0
+        maxc = 0
+        for j in solution1:
+            if c[(i,j)] > maxc:
+                maxj = j
+                maxc = c[(i,j)]
+        solution2.append((i,maxj))
+
+    
+    #for i in range(numClients):
+    #    for j in range(numFacilities):
+    #        if (y[(i,j)].X > .5):
+    #            solution2.append([i,j])
+
+    return [solution1, solution2, output.getvalue()]
+
+def handleoptimize(jsdict):
+    if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
+        solution = optimize(jsdict['clients'], jsdict['facilities'], jsdict['charge'])
+        return {'solution': solution }
+
+if __name__ == '__main__':
+    import json
+    jsdict = json.load(sys.stdin)
+    jsdict = handleoptimize(jsdict)
+    print 'Content-Type: application/json\n\n'
+    print json.dumps(jsdict)
+
+
 </examplecode>
     </div>
     <div class="example_section" id="demo">
@@ -284,52 +522,47 @@ m.optimize()
         Below is a visualization of our example. We are using the
         location data from <a href="#geolytix">GeoLytix</a> for a large
         supermarket chain in the UK, and visualizing its outlets in
-        Northern England.
+        Northern England. (This is an approximation to population distribution.)
       </p>
 
       <p>
-        The supermarkets are represented by:
+        The voters are represented by:
         <svg height="20" width="20">
-	  <circle cx="10" cy="15" r="3" fill="black" opacity=".5" />
-	</svg>
+      <circle cx="10" cy="15" r="3" fill="black" opacity=".5" />
+    </svg>
       </p>
 
       <p>
-        By clicking the map you can add <em>potential</em> warehouse locations.
-        These are represented by:
+        By clicking the map you can add <em>potential</em> rep locations.
+        These are drawn as:
         <svg height="20" width="20">
-	  <circle cx="10" cy="10" r="8" stroke="black" stroke-width="1" fill="white" />
-	</svg>
+      <circle cx="10" cy="10" r="8" stroke="black" stroke-width="1" fill="white" />
+    </svg>
       </p>
       <p>
-        Click "Compute Warehouse Locations" to find the locations where warehouses
-        <em>will</em> be built using Gurobi. These will be represented by:
+        Click "Compute Winners" to find the reps who will win. These will be drawn as:
         <svg height="20" width="100">
-	  <circle cx="10" cy="10" r="8" stroke="#000099" stroke-width="3" fill="blue" />
+      <circle cx="10" cy="10" r="8" stroke="#000099" stroke-width="3" fill="blue" />
           <circle cx="30" cy="10" r="8" stroke="#006600" stroke-width="3" fill="green" />
           <circle cx="50" cy="10" r="8" stroke="#990000" stroke-width="3" fill="red" />
           <circle cx="70" cy="10" r="8" stroke="#999900" stroke-width="3" fill="yellow" />
           <circle cx="90" cy="10" r="8" stroke="#404040" stroke-width="3" fill="gray" />
-	</svg>
+    </svg>
       </p>
 
       <p>
-        A few potential warehouse locations have already been set up, but
+        A few potential rep locations have already been set up, but
         you can add more by clicking the screen.
       </p>
 
       <p>
-        The cost of transportation  is 3 pounds/mile. You can use the slider to
-        vary the cost of building a warehouse. When the cost is low, many
-        facilities will be built. When the cost is high, it will dominate the
-        transportation cost and there will be fewer facilities with greater
-        driving distances.
+        The silder isn't implemented yet but it would be nice to see what changing the amount of keeps would do.  More keeps would make reps more spread out.  Less keeps would make reps more toward the middle.
       </p>
 
-      Cost to build warehouse:
+      Keeps:
       <p>
-        <input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1500000" oninput="outputUpdate(value)" class="slider-width">
-        <output for=cost id=costDisplay>1.5</output> million pounds
+        <input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width">
+        <output for=cost id=costDisplay>1.0</output> multiplier
         <script>
         function outputUpdate(value) {
           document.querySelector('#costDisplay').value = value/1000000;
@@ -341,7 +574,7 @@ m.optimize()
       </div>
       <div id="spinnerdiv">
       </div>
-      <button class="pure-button" onclick="compute()">Compute Warehouse Locations</button>
+      <button class="pure-button" onclick="compute()">Compute Winners</button>
       <button onclick="restart()">Restart</button>
 
       <p>
@@ -373,12 +606,11 @@ m.optimize()
     </div>
 
     <div class="example_section" id="try">
-      <h2><a href="#try" name="try">Try Gurobi for Free</a></h2>
-      <p> We hope this example has taught you a bit about the
-        facility location problem and using Gurobi. We encourage you
-        to try the example out for yourself with Gurobi.  To enable
-        this, we provide easy access to a full-featured evaluation
-        version of Gurobi.
+      <h2><a href="#try" name="try">How to use Gurobi</a></h2>
+      <p> Here is a link to Gurobi.  I kept it here because I forked this project from Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>
+      </p>
+      <p>
+      I suggest using conda to install it.  And then there is a license to download, so you have to make an account on the gurobi website.  I used Python 2.
       </p>
       <div class="col_5 column">
         <a href="http://www.gurobi.com/downloads/evaluation-request">
@@ -396,11 +628,71 @@ m.optimize()
           </button>
         </a>
       </div>
+      
+      <div class="example_section" id="thoughts">
+      <h2>Here's my thoughts.</h2>
       <p>
-        We are always happy to discuss your needs and answer your questions.
-        Just <a href="http://www.gurobi.com/company/contact-us">contact us</a>
-        at your convenience.
-      </p>
+      It turns out I finally invented a good voting system.  So, how did I come up with it?  Well, I had thought of it before but couldn't work out the math.  It is the same as STV because it has a quota.  It is different than STV because it searches for the best combination of candidates that would maximize voter support for the winners.  
+        </p>
+        <p>
+        I didn't think it would work.  I thought I was over-penalizing.  However, I realized that I could set the quota so that it optimized the number of candidates coming from a voter base.  The optimization is for proportionality.  I tried to use the same quota as STV's droop quota: number of voters over number-of-seats-plus-1.  
+        </p>
+        <p>
+        Some things to change:  I'm not sure exactly what the quota should be because I'm not sure how they'll actually vote.  Right now, I have put them as all voting depending on their distance from a candidate.  Maybe I would choose a different function.  Maybe voters would want to maximize the range of their vote.  Maybe they would have just two levels of support, high and low, and they would change their threshold depending on who is running and who other people are voting for.
+        </p>
+        <p>
+        Things to do.
+        </p>
+        <p>
+          <ul><li>compare to clustering
+        </li><li>normalize votes
+        </li><li>try exponential choice function
+        </li><li>try linear choice function
+        </li><li>try threshold choice function
+        </li><li>add STV comparison
+        </li><li>add CPO-STV comparison
+        </li><li>far future: put this into ncase's better ballot.
+        </li><li>far future: yee diagram in background
+        </li><li>explanation: what is the incentive of the voters to vote honestly?  Couldn't they find a way to avoid penalties by only supporting one candidate?  Isn't that strategy also applicable to STV?
+        </li></ul>
+          </p>
+        <p>
+        So basically what I was thinking was to write out a matrix of the penalties.  Then show that the penalties lead to a correct number of representatives for this voter-base.  
+        </p>
+        <p>
+        In clustering, voters dont have influence outside their cluster.  In this penalty system, they can have negative influence if they get too many representatives... maybe.. but they would never get too many
+        </p>
+        <p>
+        I need to motivate this with the idea of search.  There is depth-first, which is greedy and assigns the single candidates with the highest vote counts first.  Standard STV does this kind of depth-first search.  In STV, if more people like a candidate than the quota, then those people can get their second choices as well.  This is like at-large voting, except after your candidate gets a seat, part of your vote stays with them and only part of it gets to go to a second candidate.  This kind of division of the vote can be accomplished by subtracting the "kept" votes from the total vote count.  This avoids overcounting.
+        </p>
+        <p>
+        The algorithm searches through all the possible combinations of seat assignments for the candidates.  It tries to maximize the number of voters who support the winning candidates.  It avoids double-counting in the same way as STV.  It keeps some of the votes for similar candidates.
+        </p>
+        <p>
+        Basically, this cosine similarity is a measure of an angle.  It is not a typical angle.  It is not in 2 dimensions.  It is actually in many more dimensions, as many dimensions as there are candidates.  Still, the same idea holds in 2 dimensions that the more aligned 2 candidates are, the bigger the cosine similarity.  It ranges from 0 for candidates that have nothing in common to 1 for identical "clone" candidates.
+        </p>
+        <p>
+        This information gets put into the problem definition matrix by simply multiplying each entry by cosine similarity.  Even the diagonals work! It's actually pretty easy.
+        </p>
+        <p>
+
+        Now we just tell the optimization software to pick the 5 best rows and columns that have the biggest sum.  Those are the best winners.
+        </p>
+        <p>
+        Here's a demo.
+        </p>
+        <p>
+        You can see that some areas have 2 candidates close together.  This one cluster of voters is big enough and supportive enough (close to the candidates), to elect 2 candidates.
+        </p>
+        <p>
+        Of course there are details I left out.
+        </p>
+        <p>
+        These are just my thoughts.
+        </p>
+
+      </div>
+
     </div>
 
 
@@ -430,6 +722,9 @@ var padding = 30;
 var miles_per_px = 0.19;
 var price_per_px = 3*miles_per_px;
 var alpha = 5*365*price_per_px; // Consider the cost over 5 years
+alpha = alpha * 1754385.964912 * 0.000548 // let's change alpha for "keep"
+alpha = 1000100
+alpha = 1000000
 var spinner;
 
 var svg = d3.select("#demoarea")
@@ -754,3 +1049,4 @@ function restart() {
 }
 
 </script>
+
