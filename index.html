@@ -49,7 +49,7 @@ a:hover.screenshot {
 
 </style>
 <body>
-<ul id="nav">
+<ul id="nav2">
     <li class="current"><a href="#intro">Intro</a></li>
     <li><a href="#problem">Problem</a></li>
     <li><a href="#model">Model</a></li>
@@ -270,10 +270,15 @@ a:hover.screenshot {
         \]
         Oh yeah, we actually want this number as a fraction of the total tally for each rep.  Now we define a new constant (not a variable).
         \[
-        \frac{b_{ij}}{tally_j} * \frac{b_{ik}}{tally_k} = \text{Voter i gave rep j and rep k this much as a fraction of both reps' total tally} \\
-        s_{jk} = \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{tally_j * tally_k} = \text{Similarity between rep j and rep k}
-        \]
-        Ha, so we have a measure of similarity!  (actually there are many measures of similarity.  Is this the right one or should we use cosine similarity? Should the bottom be the sum of squares and square-rooted, like distance?)
+          \begin{align}
+        \frac{b_{ij}}{tally_j} * \frac{b_{ik}}{tally_k} = & \text{ Rep j and rep k share the support of voter i as a fraction of their total support.} \\
+        \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{tally_j * tally_k} = & \text{ Similarity between rep j and rep k}
+        \end{align}
+          \]
+        Ha, so we have a measure of similarity!  Actually there are many measures of similarity.  Is this the right one?  I tried a measure called cosine similarity at first because a lot of people use it.  It treats the ballots in support of a rep as a vector.  It is a vector in many dimensions because there are many voters.  Instead of the tally, we use the length of the vector, the Euclidean distance.  This is called cosine similarity.
+          \[
+          s_{jk} = \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{\sqrt{\sum_{i \in Voters} b_{ij}^2} *  \sqrt{\sum_{i \in Voters} b_{ik}^2}}  = \text{Cosine similarity between rep j and rep k}
+          \]
       </p>
       <p>
         So, how much of the ballot should the rep keep?
@@ -323,13 +328,13 @@ a:hover.screenshot {
         \begin{array}{ll}
         \text{maximize}   & {\displaystyle \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k } \\
         \text{subject to} & {\displaystyle \sum_{j \in Reps} x_j} = \text{number of seats}, \\
-                          & x_j \in \{ 0, 1 \}, \\
+                          & x_j \in \{ 0, 1 \} \\
         \text{constants} & keeps_{jk} = keep * s_{jk},\\
-                          & s_{jk} = \frac{\sum_{i \in Voters} b{ij}b{ik}}{tally_j tally_k}  = \text{Similarity between rep j and rep k},\\
+                          & s_{jk} = \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{\sqrt{\sum_{i \in Voters} b_{ij}^2} *  \sqrt{\sum_{i \in Voters} b_{ik}^2}}  = \text{Cosine similarity between rep j and rep k},\\
                           & keep = \frac{\sum_{i \in Voters} \max_{j \in Reps} b_{ij}}{seats + 1} = \text{Amount of ballots kept (if s=1, e.g. for clones)},\\
                           & tally_j = \sum_{i \in Voters} b_{ij} = \text{(add up the ballots)},\\
-                          & b_{ij} = \frac{1}{d_{ij} + 10} = \text{ ballot},\\
-                          & d_{ij} = \text{distance between voter i and rep j on the map},
+                          & b_{ij} = \frac{1}{d_{ij}/10 + 1} \text{ (ballot)},\\
+                          & d_{ij} = \text{distance between voter i and rep j on the map}
         \end{array}
         \]
 

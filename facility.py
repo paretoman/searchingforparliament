@@ -62,12 +62,16 @@ def optimize(clients, facilities, charge, output=False):
     def cosine_similarity(a,b):
         return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
     
+    def similarity_l1(a,b):
+        return numpy.dot(a,b) / (numpy.sum(a) * numpy.sum(b))
+    
     s = {}
     p = numpy.zeros(numFacilities)   # could vectorize these calculations
     for j in range(numFacilities):
         for k in range(numFacilities):
             if k < j:
                 s[(j,k)] = cosine_similarity(cn[:,j],cn[:,k])
+                #s[(j,k)] = similarity_l1(cn[:,j],cn[:,k])
         p[j] = sum(cn[:,j]) # of course, this needs to be in the same units as the similarity, somehow... needs thought ... what is a voter's full support?  oh, the quota will help with this because I multiply the similarity by the quota.
         
     quota = charge[0] * sum(p) / (1 + 5)  # not sure about this... could be different.  
