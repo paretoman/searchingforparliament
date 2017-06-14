@@ -456,13 +456,89 @@ print(["%d" % x[j1].X for j1 in range(9)])
         The silder isn't implemented yet but it would be nice to see what changing the amount of keeps would do.  More keeps would make reps more spread out.  Less keeps would make reps more toward the middle.
       </p>
 
-      Keeps:
+      Options:
       <p>
         <input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width">
-        <output for=cost id=costDisplay>1.0</output> multiplier
+        <output for=cost id=costDisplay>1.0</output> keeps multiplier <br />
+        
+          <input type="range" min = 0 max = 1 step = 1 id="normalizeBallots" value="1" oninput="outputUpdateNormalizeBallots(value)" class="slider-width">
+        <output for=normalizeBallots id=normalizeBallotsDisplay>1</output> normalizeBallots <br />
+        
+          <input type="range" min = 0 max = 1 step = 1 id="oneOverDistanceBallots" value="1" oninput="oneOverDistanceBallotsUpdate(value)" class="slider-width">
+        <output for=oneOverDistanceBallots id=oneOverDistanceBallotsDisplay>1</output>  oneOverDistanceBallots <br />
+          
+        <input type="range" min = 0 max = 1 step = 1 id="exponentialBallots" value="0" oninput="exponentialBallotsUpdate(value)" class="slider-width">
+        <output for=exponentialBallots id=exponentialBallotsDisplay>0</output>  exponentialBallots <br />
+          
+        <input type="range" min = 0 max = 1 step = 1 id="thresholdBallots" value="0" oninput="thresholdBallotsUpdate(value)" class="slider-width">
+        <output for=thresholdBallots id=thresholdBallotsDisplay>0</output>  thresholdBallots <br />
+          
+        <input type="range" min = 0 max = 1 step = 1 id="seatsPlusOne" value="0" oninput="seatsPlusOneUpdate(value)" class="slider-width">
+        <output for=seatsPlusOne id=seatsPlusOneDisplay>0</output> seatsPlusOne <br />
+        
+          <input type="range" min = 0 max = 1 step = 1 id="cosineSimilarity" value="1" oninput="cosineSimilarityUpdate(value)" class="slider-width">
+        <output for=cosineSimilarity id=cosineSimilarityDisplay>1</output> cosineSimilarity <br />
+        
+          <input type="range" min = 0 max = 1 step = 1 id="l1Similarity" value="0" oninput="l1SimilarityUpdate(value)" class="slider-width">
+        <output for=l1Similarity id=l1SimilarityDisplay>0</output> l1Similarity <br />
+        
+          <input type="range" min = 0 max = 1 step = 1 id="jaccardSimilarity" value="0" oninput="jaccardSimilarityUpdate(value)" class="slider-width">
+        <output for=jaccardSimilarity id=jaccardSimilarityDisplay>0</output> jaccardSimilarity <br />
+        
+          <input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width">
+        <output for=numberOfWinners id=numberOfWinnersDisplay>5</output> numberOfWinners <br />
         <script>
+        var cost;
+        var normalizeBallots;
+
+        var oneOverDistanceBallots;
+        var exponentialBallots;
+        var thresholdBallots;
+
+        var seatsPlusOne;
+
+        var cosineSimilarity;
+        var l1Similarity;
+        var jaccardSimilarity;
+        var numberOfWinners;
         function outputUpdate(value) {
           document.querySelector('#costDisplay').value = value/1000000;
+        }
+        function outputUpdateNormalizeBallots(value) {
+          document.querySelector('#normalizeBallotsDisplay').value = value;  
+          //normalizeBallots = value //parseFloat(document.getElementById("normalizeBallots").value));
+        }
+        function oneOverDistanceBallotsUpdate(value) {
+          document.querySelector('#oneOverDistanceBallotsDisplay').value = value;
+            //oneOverDistanceBallots = value //parseFloat(document.getElementById("oneOverDistanceBallots").value);
+        }
+        function exponentialBallotsUpdate(value) {
+          document.querySelector('#exponentialBallotsDisplay').value = value;
+            //exponentialBallots = value //parseFloat(document.getElementById("exponentialBallots").value);
+        }
+        function thresholdBallotsUpdate(value) {
+          document.querySelector('#thresholdBallotsDisplay').value = value;
+            //thresholdBallots = value //parseFloat(document.getElementById("thresholdBallots").value);
+        }
+        function seatsPlusOneUpdate(value) {
+          document.querySelector('#seatsPlusOneDisplay').value = value;
+          //seatsPlusOne = value //parseFloat(document.getElementById("seatsPlusOne").value);
+        }
+        function cosineSimilarityUpdate(value) {
+          document.querySelector('#cosineSimilarityDisplay').value = value;
+          //cosineSimilarity = value //parseFloat(document.getElementById("cosineSimilarity").value);
+        }
+        function l1SimilarityUpdate(value) {
+          document.querySelector('#l1SimilarityDisplay').value = value;
+          //l1Similarity = value //parseFloat(document.getElementById("l1Similarity").value);
+        }
+        function jaccardSimilarityUpdate(value) {
+          document.querySelector('#jaccardSimilarityDisplay').value = value;
+          //jaccardSimilarity = value //parseFloat(document.getElementById("jaccardSimilarity").value);
+        }
+        function numberOfWinnersUpdate(value) {
+          document.querySelector('#numberOfWinnersDisplay').value = value;
+          //numberOfWinners = value //parseFloat(document.getElementById("numberOfWinners").value);
         }
         </script>
       </p>
@@ -637,6 +713,8 @@ var cost = parseFloat(document.getElementById("cost").value)/alpha;
 
 var charge = d3.range(sites.length).map(function(d) { return cost; });
 
+
+    
 // G object for background
 var backgroundG = svg.append("g");
 
@@ -831,14 +909,36 @@ function compute() {
 
   cost = parseFloat(document.getElementById("cost").value)/alpha;
   charge = [];
-  for (var i = 0; i < sites.length; i++) {
-    charge.push(cost);
-  }
+  charge.push(cost);
+    
+  normalizeBallots = parseFloat(document.getElementById("normalizeBallots").value);
+    
+  oneOverDistanceBallots = parseFloat(document.getElementById("oneOverDistanceBallots").value);
+  exponentialBallots = parseFloat(document.getElementById("exponentialBallots").value);
+  thresholdBallots = parseFloat(document.getElementById("thresholdBallots").value);
+    
+  seatsPlusOne = parseFloat(document.getElementById("seatsPlusOne").value);
+    
+  cosineSimilarity = parseFloat(document.getElementById("cosineSimilarity").value);
+  l1Similarity = parseFloat(document.getElementById("l1Similarity").value);
+  jaccardSimilarity = parseFloat(document.getElementById("jaccardSimilarity").value);
+    numberOfWinners = parseFloat(document.getElementById("numberOfWinners").value);
+    
+  charge.push(normalizeBallots);
+  charge.push(oneOverDistanceBallots);
+  charge.push(exponentialBallots);
+  charge.push(thresholdBallots);
+  charge.push(seatsPlusOne);
+  charge.push(cosineSimilarity);
+  charge.push(l1Similarity);
+  charge.push(jaccardSimilarity);
+  charge.push(numberOfWinners);
+
   d3.json('facility.py')
     .header('Content-Type', 'application/json')
     .post(JSON.stringify({'clients': vertices,
                           'facilities': sites,
-                          'charge': charge }), serverResponse);
+                          'charge': charge}), serverResponse);
 }
 
 function serverResponse(error, data) {
