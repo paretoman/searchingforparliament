@@ -71,13 +71,13 @@ def optimize(voters, reps, options, output=False):
 
         for i in range(numVoters):
             m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1)
-
-        m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters))
-                                 for j in range(numReps) ), GRB.MINIMIZE)
+    
+        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            
+        m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
 
 
     elif options['computeSTV']:
-        #nothing yet
         
         from pyvotecore.stv import STV
 
@@ -110,8 +110,7 @@ def optimize(voters, reps, options, output=False):
 
         return [solution1, solution2, "STV"] 
 
-    elif 0:
-        #elif options['computeMaxRRV']:
+    elif options['computeMaxRRV']:
         
         # still to do
         
@@ -125,7 +124,9 @@ def optimize(voters, reps, options, output=False):
         m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
             
         for i in range(numVoters):
-            m.addConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == 1 )
+            m.addConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == 1 ) 
+            # I know it should be == 1 but gurobi won't allow it.
+            # still doesn't work with <= 1
         
         m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters))
                                  for j in range(numReps) ), GRB.MAXIMIZE)
@@ -194,7 +195,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["keepsmultiplier","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","seatsPlusOne","cosineSimilarity","l1Similarity","jaccardSimilarity","numberOfWinners","computeBQP","computeSTV","computeClustering"]
+        optionsNames =  ["keepsmultiplier","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","seatsPlusOne","cosineSimilarity","l1Similarity","jaccardSimilarity","numberOfWinners","computeBQP","computeSTV","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }

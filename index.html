@@ -482,6 +482,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
         var computeBQP;
         var computeSTV;
         var computeClustering;
+        var computeMaxRRV;
         function outputUpdate(value) {
           document.querySelector('#costDisplay').value = value/1000000;
         }
@@ -562,8 +563,10 @@ print(["%d" % x[j1].X for j1 in range(9)])
           if (value == 1) {
               document.querySelector('#computeSTVDisplay').value = 0;
               document.querySelector('#computeClusteringDisplay').value = 0;
+              document.querySelector('#computeMaxRRVDisplay').value = 0;
               document.querySelector('#computeSTV').stepDown();
               document.querySelector('#computeClustering').stepDown();
+              document.querySelector('#computeMaxRRV').stepDown();
           }
           //computeBQP = value //parseFloat(document.getElementById("computeBQP").value);
         }
@@ -572,8 +575,10 @@ print(["%d" % x[j1].X for j1 in range(9)])
           if (value == 1) {
               document.querySelector('#computeBQPDisplay').value = 0;
               document.querySelector('#computeClusteringDisplay').value = 0;
+              document.querySelector('#computeMaxRRVDisplay').value = 0;
               document.querySelector('#computeBQP').stepDown();
               document.querySelector('#computeClustering').stepDown();
+              document.querySelector('#computeMaxRRV').stepDown();
           }
           //computeSTV = value //parseFloat(document.getElementById("computeSTV").value);
         }
@@ -582,10 +587,24 @@ print(["%d" % x[j1].X for j1 in range(9)])
           if (value == 1) {
               document.querySelector('#computeBQPDisplay').value = 0;
               document.querySelector('#computeSTVDisplay').value = 0;
+              document.querySelector('#computeMaxRRVDisplay').value = 0;
               document.querySelector('#computeBQP').stepDown();
               document.querySelector('#computeSTV').stepDown();
+              document.querySelector('#computeMaxRRV').stepDown();
           }
           //computeClustering = value //parseFloat(document.getElementById("computeClustering").value);
+        }
+        function computeMaxRRVUpdate(value) {
+          document.querySelector('#computeMaxRRVDisplay').value = value;
+          if (value == 1) {
+              document.querySelector('#computeBQPDisplay').value = 0;
+              document.querySelector('#computeSTVDisplay').value = 0;
+              document.querySelector('#computeClusteringDisplay').value = 0;
+              document.querySelector('#computeBQP').stepDown();
+              document.querySelector('#computeSTV').stepDown();
+              document.querySelector('#computeClustering').stepDown();
+          }
+          //computeMaxRRV = value //parseFloat(document.getElementById("computeMaxRRV").value);
         }
         </script>
                   
@@ -623,10 +642,13 @@ print(["%d" % x[j1].X for j1 in range(9)])
         <output for=computeBQP id=computeBQPDisplay>1</output> compute Our Binary Quadratic Problem as described above.<br />
           
           <input type="range" min = 0 max = 1 step = 1 id="computeSTV" value="0" oninput="computeSTVUpdate(value)" class="slider-width">
-        <output for=computeSTV id=computeSTVDisplay>0</output> compute STV (not yet implemented)<br />
+        <output for=computeSTV id=computeSTVDisplay>0</output> compute STV <br />
 
                     <input type="range" min = 0 max = 1 step = 1 id="computeClustering" value="0" oninput="computeClusteringUpdate(value)" class="slider-width">
-        <output for=computeClustering id=computeClusteringDisplay>0</output> compute clustering (not yet implemented)<br />
+        <output for=computeClustering id=computeClusteringDisplay>0</output> compute clustering <br />
+
+                    <input type="range" min = 0 max = 1 step = 1 id="computeMaxRRV" value="0" oninput="computeMaxRRVUpdate(value)" class="slider-width">
+        <output for=computeMaxRRV id=computeMaxRRVDisplay>0</output> compute a new formulation (working on it) <br />
 
       </p>
 
@@ -1006,6 +1028,7 @@ function compute() {
   computeBQP = parseFloat(document.getElementById("computeBQP").value);
   computeSTV = parseFloat(document.getElementById("computeSTV").value);
   computeClustering = parseFloat(document.getElementById("computeClustering").value);
+  computeMaxRRV = parseFloat(document.getElementById("computeMaxRRV").value);
     
   charge.push(normalizeBallots);
   charge.push(oneOverDistanceBallots);
@@ -1019,6 +1042,7 @@ function compute() {
   charge.push(computeBQP);
   charge.push(computeSTV);
   charge.push(computeClustering);
+  charge.push(computeMaxRRV);
 
   d3.json('facility.py')
     .header('Content-Type', 'application/json')
