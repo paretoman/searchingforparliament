@@ -89,16 +89,16 @@ def optimize(voters, reps, options, output=False):
             bSTV.append(dssb)
         print(bSTV)
         outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
-        outputSTV['winners'] # set of winners
+        winSet = outputSTV['winners'] # set of winners
         
                 
         solution1 = []
         solution2 = []
-
+        
         for j in range(numReps):
-            if j in outputSTV:
+            if "%d" % j in winSet:
                 solution1.append(j)
-
+        
         for i in range(numVoters):
             maxj = 0
             maxb = 0
@@ -108,7 +108,7 @@ def optimize(voters, reps, options, output=False):
                     maxb = b[i,j]
             solution2.append((i,maxj))
 
-        return [solution1, solution2, "hi"] # output.getvalue? = 0?
+        return [solution1, solution2, "STV"] 
 
     elif 0:
         #elif options['computeMaxRRV']:
