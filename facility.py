@@ -57,38 +57,114 @@ def optimize(voters, reps, options, output=False):
             for j in range(numReps):
                 b[i,j] *= normalizer
 
-    def cosine_similarity(a,b):
-        return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
-    def l1_similarity(a,b):
-        return numpy.dot(a,b) / (numpy.sum(a) * numpy.sum(b))
+    if options['computeClustering']:
+        y = {}
+        for i in range(numVoters):
+            for j in range(numReps):
+                y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+        m.update()
+
+        # Add constraints
+        for i in range(numVoters):
+            for j in range(numReps):
+                m.addConstr(y[(i,j)] <= x[j])
+
+        for i in range(numVoters):
+            m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1)
+
+        m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters))
+                                 for j in range(numReps) ), GRB.MINIMIZE)
+
+
+    elif options['computeSTV']:
+        #nothing yet
         
-    for j in range(numReps):
-        for k in range(numReps):
-            if options['l1Similarity']:
-                s[j,k] = l1_similarity(a,b)
-            else:
-                s[j,k] = cosine_similarity(b[:,j],b[:,k])
-        t[j] = sum(b[:,j])
+        from pyvotecore.stv import STV
+
+        bSTV = []
+        for i in range(numVoters):
+            sb=b[i,:].argsort()[::-1]
+            ssb = ["%d" % n_name for n_name in sb]
+            dssb = {"count":1,"ballot":ssb}
+            bSTV.append(dssb)
+        print(bSTV)
+        outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+        outputSTV['winners'] # set of winners
+        
+                
+        solution1 = []
+        solution2 = []
+
+        for j in range(numReps):
+            if j in outputSTV:
+                solution1.append(j)
+
+        for i in range(numVoters):
+            maxj = 0
+            maxb = 0
+            for j in solution1:
+                if b[i,j] > maxb:
+                    maxj = j
+                    maxb = b[i,j]
+            solution2.append((i,maxj))
+
+        return [solution1, solution2, "hi"] # output.getvalue? = 0?
+
+    elif 0:
+        #elif options['computeMaxRRV']:
+        
+        # still to do
+        
+        # Add variables
+        f = {}
+        for i in range(numVoters):
+            f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
+            #m.addConstr(f[i] <= 1) # maybe not needed
+        
+        # Add constraints
+        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            
+        for i in range(numVoters):
+            m.addConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == 1 )
+        
+        m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters))
+                                 for j in range(numReps) ), GRB.MAXIMIZE)
+        
+
     
-    if options['seatsPlusOne']:
-        keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
-        #keep = options['keepsmultiplier'] * sum(b) / (1 + 5) # might not work
-    else:
-        keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
-    m.update()
-    
-    # Add constraints
-    m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+    else : # computeBQP
+        def cosine_similarity(a,b):
+            return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
+        def l1_similarity(a,b):
+            return numpy.dot(a,b) / (numpy.sum(a) * numpy.sum(b))
 
-    d_obj = LinExpr()
-    for j in range(numReps):
-        d_obj += t[j]*x[j]
-        for k in range(numReps):
-            if k != j:
-                d_obj += -keep*s[j,k]*x[j]*x[k]
+        for j in range(numReps):
+            for k in range(numReps):
+                if options['l1Similarity']:
+                    s[j,k] = l1_similarity(a,b)
+                else:
+                    s[j,k] = cosine_similarity(b[:,j],b[:,k])
+            t[j] = sum(b[:,j])
 
-    m.setObjective( d_obj , GRB.MAXIMIZE)
+        if options['seatsPlusOne']:
+            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
+            #keep = options['keepsmultiplier'] * sum(b) / (1 + 5) # might not work
+        else:
+            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
+        m.update()
+        
+        # Add constraints
+        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            
+        d_obj = LinExpr()
+        for j in range(numReps):
+            d_obj += t[j]*x[j]
+            for k in range(numReps):
+                if k != j:
+                    d_obj += -keep*s[j,k]*x[j]*x[k]
 
+        m.setObjective( d_obj , GRB.MAXIMIZE)
+        
     output = StringIO.StringIO()
     m.__output = output
 
@@ -113,14 +189,12 @@ def optimize(voters, reps, options, output=False):
                 maxb = b[i,j]
         solution2.append((i,maxj))
 
-    
-
     return [solution1, solution2, output.getvalue()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["keepsmultiplier","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","seatsPlusOne","cosineSimilarity","l1Similarity","jaccardSimilarity","numberOfWinners"]
+        optionsNames =  ["keepsmultiplier","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","seatsPlusOne","cosineSimilarity","l1Similarity","jaccardSimilarity","numberOfWinners","computeBQP","computeSTV","computeClustering"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
