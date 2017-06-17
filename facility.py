@@ -57,6 +57,8 @@ def optimize(voters, reps, options, output=False):
             for j in range(numReps):
                 b[i,j] *= normalizer
 
+                
+    # there are a few different computations, depending on the option
     if options['computeClustering']:
         y = {}
         for i in range(numVoters):
@@ -87,7 +89,7 @@ def optimize(voters, reps, options, output=False):
             ssb = ["%d" % n_name for n_name in sb]
             dssb = {"count":1,"ballot":ssb}
             bSTV.append(dssb)
-        print(bSTV)
+        
         outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
         winSet = outputSTV['winners'] # set of winners
         
@@ -110,15 +112,15 @@ def optimize(voters, reps, options, output=False):
 
         return [solution1, solution2, "STV"] 
 
-    elif options['computeMaxRRV']:
+    elif 0:
     
     
         # this is actually an iterative process and we only stop when we reach a particular condition.  Let's just do one iteration
         
         # initialization
         
-        yy = numpy.zeros(numVoters)
-        yy[0] = nWinners
+        xx = numpy.zeros(numVoters)
+        xx[0] = nWinners
         
         
         #
@@ -154,39 +156,44 @@ def optimize(voters, reps, options, output=False):
         
         for i in range(numVoters):
             for j in range(numVoters):
-                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 1 - e[(i,j)] ) <= yy[j] ) # constraint 13
-                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 2 - s[i] - t[j] ) <= yy[j] - e_epsilon ) #  constraint 14
+                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 1 - e[(i,j)] ) <= xx[j] ) # constraint 13
+                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 2 - s[i] - t[j] ) <= xx[j] - e_epsilon ) #  constraint 14
 
-         # ok now maximize e_epsilon.
-         m.setObjective( e_epsilon, GRB.MAXIMIZE)   
+        # ok now maximize e_epsilon.
+        m.setObjective( e_epsilon, GRB.MAXIMIZE)   
              
-             
-             
-                
-        # Add constraints
-        for i in range(numVoters):
-            for j in range(numReps):
 
         m.update()
         
-    elif 0:
+    elif options['computeMaxRRV']:
         
         # still to do
         
+        m = Model("qcp")
+        if not output:
+            m.params.OutputFlag = 0
+        m.setParam('TimeLimit', 100)
+        
+
+        # Add variables
+        x = {}
+        for j in range(numReps):
+            x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+            
         # Add variables
         f = {}
         for i in range(numVoters):
             f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
-            #m.addConstr(f[i] <= 1) # maybe not needed
+            m.addConstr(f[i] <= 1) # maybe not needed ... turns out we needed it.
         
         # Add constraints
         m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
             
         for i in range(numVoters):
-            m.addConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
+            m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
             # I know it should be == 1 but gurobi won't allow it.
             # still gurobi doesn't work with <= 1 because it says the problem is not positive semidefinite.
-            # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f.  
+            # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f, where the equality holds. 
         
         m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
         
