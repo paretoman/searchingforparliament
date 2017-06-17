@@ -34,11 +34,11 @@ a:hover.screenshot {
 .c3 { fill: yellow; stroke: #999900 }
 .c4 { fill: gray; stroke: #404040 }
 
-.v0 { stroke: blue; }
-.v1 { stroke: green; }
-.v2 { stroke: red; }
-.v3 { stroke: yellow; }
-.v4 { stroke: gray; }
+.v0 { fill: blue; stroke: #000099 }
+.v1 { fill: green; stroke: #006600 }
+.v2 { fill: red; stroke: #990000}
+.v3 { fill: yellow; stroke: #999900 }
+.v4 { fill: gray; stroke: #404040 }
 
 .place,
 .place-label {
@@ -898,8 +898,10 @@ d3.json("UKwithCounties.json", function(error, uk) {
         .enter()
         .append("path")
         .attr("d", path)
-        .attr("fill", function(d,i) { return mapColors[i % 9]; })
-        .attr("stroke", "rgb(150,150,150)");
+		//.attr("fill", function(d,i) { return mapColors[i % 9]; })
+        .attr("fill", function(d,i) { return mapColors[i%3+4]; })
+        //.attr("stroke", "rgb(150,150,150)")
+		;
 
     clickableG.selectAll("path")
         .data(counties)
@@ -910,7 +912,7 @@ d3.json("UKwithCounties.json", function(error, uk) {
         .on("mousedown", addPoint);
 
     locationG.append("path")
-             .datum(places)
+             //.datum(places)
              .attr("d", path)
              .attr("class", "place");
 
@@ -1122,26 +1124,28 @@ function serverResponse(error, data) {
               .ease("out")
               .delay(function(d, i) { return i*100 + 300});
 
-          pathG.selectAll("line").remove("line");
+          pathG.selectAll("circle").remove("circle");
 
-          var connections = pathG.selectAll("line")
+          var connections = pathG.selectAll("circle")
                                  .data(solution2)
                                  .enter()
-                                 .append("line")
-                                 .attr("x1", function(d) { var loc = vertices[d[0]]; return loc[0]; })
-                                 .attr("y1", function(d) { var loc = vertices[d[0]]; return loc[1]; })
-                                 .attr("x2", function(d) { var loc = sites[d[1]]; return loc[0]; })
-                                 .attr("y2", function(d) { var loc = sites[d[1]]; return loc[1]; })
+								 .append("circle")
+								 .attr("r", 2)
+								 .attr("cx", function(d) { var loc = vertices[d[0]]; return loc[0]; })
+                                 .attr("cy", function(d) { var loc = vertices[d[0]]; return loc[1]; })
                                  .attr("class", function(d) {   var n = solution1.indexOf(d[1]);
                                                                 return "v" + n % 5; })
-                                 .attr("stroke-width", 0)
                                  .attr("opacity", 0);
 
           connections.transition()
                      .attr("opacity", .6)
-                     .attr("stroke-width", 3)
                      .duration(500)
-                     .delay(1000);
+                     .delay(0);
+		  circleG.transition()
+                     .attr("opacity", 0)
+                     .duration(500)
+                     .delay(0);
+		  
         }
       }
 }
@@ -1151,7 +1155,7 @@ function restart() {
   sitesG.selectAll("circle").remove("circle");
   facilitiesG.selectAll("circle").remove("circle");
   animationG.selectAll("circle").remove("circle");
-  pathG.selectAll("line").remove("line");
+  pathG.selectAll("circle").attr("class", "client").attr("r",2);
   sites = [];
 }
 

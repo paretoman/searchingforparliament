@@ -184,16 +184,24 @@ def optimize(voters, reps, options, output=False):
         f = {}
         for i in range(numVoters):
             f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
-            m.addConstr(f[i] <= 1) # maybe not needed ... turns out we needed it.
+            m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
         
         # Add constraints
         m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
             
-        for i in range(numVoters):
-            m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
-            # I know it should be == 1 but gurobi won't allow it.
-            # still gurobi doesn't work with <= 1 because it says the problem is not positive semidefinite.
-            # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f, where the equality holds. 
+        if 0:
+            for i in range(numVoters):
+                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
+                # I know it should be == 1 but gurobi won't allow it.
+                # still gurobi doesn't work with <= 1 because it says the problem is not positive semidefinite.
+                # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f, where the equality holds. 
+        
+        else:  # try this
+            won1 = {}
+            for i in range(numVoters):
+                won1[i] = m.addVar(vtype=GRB.BINARY, name="won1%d" % i)
+                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == won1[i] )
+                # it looks like equality is allowed if there is a constraint on f.  f <= 1 or even f <= 1000.  
         
         m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
         
@@ -208,7 +216,7 @@ def optimize(voters, reps, options, output=False):
         for j in range(numReps):
             for k in range(numReps):
                 if options['l1Similarity']:
-                    s[j,k] = l1_similarity(a,b)
+                    s[j,k] = l1_similarity(b[:,j],b[:,k])
                 else:
                     s[j,k] = cosine_similarity(b[:,j],b[:,k])
             t[j] = sum(b[:,j])
