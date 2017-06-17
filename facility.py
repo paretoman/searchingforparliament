@@ -111,6 +111,65 @@ def optimize(voters, reps, options, output=False):
         return [solution1, solution2, "STV"] 
 
     elif options['computeMaxRRV']:
+    
+    
+        # this is actually an iterative process and we only stop when we reach a particular condition.  Let's just do one iteration
+        
+        # initialization
+        
+        yy = numpy.zeros(numVoters)
+        yy[0] = nWinners
+        
+        
+        #
+        y = {}
+        for i in range(numVoters):
+            for j in range(numReps):
+                y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+                m.addConstr( y[(i,j)] <= 1) # constraint 1
+                m.addConstr(y[(i,j)] <= x[j]) # y is zero if the rep is not selected. constraint 2
+        
+        m.addConstr(quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ) == nWinners) # constraint 3
+        
+        for i in range(numVoters):
+            m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1) # constraint 4 but with additional constraint that doesn't change things.
+            
+        # add variables
+        e = {}
+        s = {}
+        t = {}
+        for i in range(numVoters):
+            for j in range(numVoters):
+                e[(i,j)] = m.addVar(vtype=GRB.BINARY, name="t%d,%d" % (i,j)) # constraint 7
+            s[i] = m.addVar(vtype=GRB.BINARY, name="s%d" % i) # constraint 8
+            t[i] = m.addVar(vtype=GRB.BINARY, name="t%d" % i) # constraint 9
+        e_epsilon = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="e_epsilon")
+        
+        # constrain
+        for i in range(numVoters):
+            m.addConstr( s[i] + quicksum( e[(i,j)] for j in range(numVoters) ) == 1 ) # constraint 10
+        for j in range(numVoters):
+            m.addConstr( t[j] + quicksum( e[(i,j)] for i in range(numVoters) ) <= 1 ) # constraint 11
+        m.addConstr( quicksum( t[j] for j in range(numVoters) ) == 1 ) # constraint 12
+        
+        for i in range(numVoters):
+            for j in range(numVoters):
+                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 1 - e[(i,j)] ) <= yy[j] ) # constraint 13
+                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 2 - s[i] - t[j] ) <= yy[j] - e_epsilon ) #  constraint 14
+
+         # ok now maximize e_epsilon.
+         m.setObjective( e_epsilon, GRB.MAXIMIZE)   
+             
+             
+             
+                
+        # Add constraints
+        for i in range(numVoters):
+            for j in range(numReps):
+
+        m.update()
+        
+    elif 0:
         
         # still to do
         
@@ -124,12 +183,12 @@ def optimize(voters, reps, options, output=False):
         m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
             
         for i in range(numVoters):
-            m.addConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == 1 ) 
+            m.addConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
             # I know it should be == 1 but gurobi won't allow it.
-            # still doesn't work with <= 1
+            # still gurobi doesn't work with <= 1 because it says the problem is not positive semidefinite.
+            # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f.  
         
-        m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters))
-                                 for j in range(numReps) ), GRB.MAXIMIZE)
+        m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
         
 
     
