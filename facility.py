@@ -83,9 +83,9 @@ def optimize(voters, reps, options, output=False):
         m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
 
 
-    elif options['computeSTV']:
+    elif options['computeSTV'] or options["computePluralityMultiwinner"] or options["computeSchulzeSTV"]:
         
-        if 0:
+        if options['computeSTV']:
             bSTV = []
             for i in range(numVoters):
                 sb=b[i,:].argsort()[::-1]
@@ -93,7 +93,7 @@ def optimize(voters, reps, options, output=False):
                 dssb = {"count":1,"ballot":ssb}
                 bSTV.append(dssb)
             outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
-        elif 0:
+        elif options["computePluralityMultiwinner"]:
             bSTV = []
             for i in range(numVoters):
                 sb=b[i,:].argsort()[::-1]
@@ -101,7 +101,7 @@ def optimize(voters, reps, options, output=False):
                 dssb = {"count":1,"ballot":ssb}
                 bSTV.append(dssb)
             outputSTV = PluralityAtLarge(bSTV, required_winners=nWinners).as_dict()
-        else:
+        else: # options["computeSchulzeSTV"]
             bSTV = []
             for i in range(numVoters):
                 sb=b[i,:].argsort()[::-1]
@@ -315,7 +315,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["keepsmultiplier","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","seatsPlusOne","cosineSimilarity","l1Similarity","jaccardSimilarity","numberOfWinners","computeBQP","computeSTV","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","seatsPlusOne","keepsmultiplier","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","cosineSimilarity","l1Similarity","jaccardSimilarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }

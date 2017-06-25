@@ -453,17 +453,54 @@ print(["%d" % x[j1].X for j1 in range(9)])
       </p>
 	  
 	  
+	  		<aside style="width:150px">
+		<div id="options" style="display:none">
+		<form>
+		<fieldset>
+		<legend>Keeps:</legend>
+		<input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width" style="width:100px"> <br />
+		<output for=cost id=costDisplay>1.0</output> Multiplier <br />
+		<input class="op" checked="false" type="checkbox">	Seats Plus One <br />
+		</fieldset>
+		<fieldset>
+		<legend>Ballot:</legend>
+		<input class="op"  checked="true"  type="checkbox">	Normalize <br />
+		<input class="op" checked="true"  type="radio" name="ballots"> 	1 / Distance<br />
+		<input class="op" type="radio" name="ballots">
+		Exponential <br />
+		<input class="op" type="radio" name="ballots"> 	Threshold (todo) <br />
+		</fieldset>
+		<fieldset>
+		<legend>Similarity Measure:</legend>
+		<input class="op" checked="true"  type="radio" name="similarity"> Cosine<br />
+		<input class="op" type="radio" name="similarity"> L1<br />
+		<input class="op" type="radio" name="similarity"> Jaccard (todo) <br />
+		</fieldset>
+		<fieldset>
+		<legend>Computation:</legend>
+		<input class="op" checked="true" type="radio" name="compute"> Our Binary Quadratic Problem as described above. <br />
+		<input class="op" type="radio" name="compute"> STV <br />
+		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
+		<input class="op" type="radio" name="compute"> Schulze STV <br />
+		<input class="op" type="radio" name="compute"> Clustering like original<br />
+		<input class="op" type="radio" name="compute"> A new formulation (working on it) 
+	    </fieldset>
+		</form>
+		</div>
+	    </aside>
+	  
       <div id="demoarea">
       </div>
+	  
       <div id="spinnerdiv">
       </div>
 	  <p>
       <button class="pure-button" onclick="compute()">Compute Winners</button>
       <button onclick="restart()">Restart</button>
+	  <button class="pure-button" onclick="toggle_options()">Beast Mode</button>
+	  <button class="pure-button" onclick="toggle_div()">Gurobi Log</button>
 	  </p>
 	  
-      
-      Options:
       <p>
           <script>
 			var cost;
@@ -475,38 +512,10 @@ print(["%d" % x[j1].X for j1 in range(9)])
 			  document.querySelector('#numberOfWinnersDisplay').value = value;
 			}
 		  </script>  
-		<input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width">
-		<output for=numberOfWinners id=numberOfWinnersDisplay>5</output> numberOfWinners <br />
-		<div id="options" style="display:none">  
-		<input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width">
-		<output for=cost id=costDisplay>1.0</output> keeps multiplier <br />
-         
-		<input class="op"  checked="true"  type="checkbox">	normalizeBallots <br />
-		<input class="op" checked="true"  type="radio" name="ballots"> 	oneOverDistanceBallots <br />
-		<input class="op" type="radio" name="ballots">
-		exponentialBallots <br />
-		<input class="op" type="radio" name="ballots"> 	thresholdBallots (not yet implemented) <br />
-		<input class="op" checked="false" type="checkbox">				seatsPlusOne <br />
-		<input class="op" checked="true"  type="radio" name="similarity"> cosineSimilarity <br />
-		<input class="op" id="o7"  type="radio" name="similarity"> l1Similarity <br />
-		<input class="op" id="o8"  type="radio" name="similarity"> jaccardSimilarity (not yet implemented) <br />
-		<input class="op" id="o9"  checked="true" type="radio" name="compute"> 	compute Our Binary Quadratic Problem as described above. <br />
-		<input class="op" id="o10" type="radio" name="compute"> 	compute STV <br />
-		<input class="op" id="o11" type="radio" name="compute"> 	compute clustering <br />
-		<input class="op" id="o12" type="radio" name="compute"> 	compute a new formulation (working on it) 
-	  </div>
+		<input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width" style="width:200px">
+		<output for=numberOfWinners id=numberOfWinnersDisplay>5</output> Winners <br />
+
       </p>
-	  
-
-	  
-
-      <p>
-		<button class="pure-button" onclick="toggle_options()">Beast Mode</button>
-	  </p>
-	  <p>
-        <button class="pure-button" onclick="toggle_div()">Gurobi Log</button>
-      </p>
-
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
       <script>
@@ -533,15 +542,11 @@ print(["%d" % x[j1].X for j1 in range(9)])
       <examplecode id=logfile>
       </examplecode>
 
-      <p style="font-size:8px">
-        <a name="geolytix">Location data:</a>
-        <a href="http://geolytix.co.uk/downloads/OpenSupermarkets.zip">Supermarket
-        locations &copy; GeoLytix</a> copyright and database right 2014.
-      </p>
+      
     </div>
 	
 	<p>
-        <button class="pure-button" onclick="toggle_readmore()">More</button>
+        <button id="morebutton" class="pure-button" onclick="toggle_readmore()">Read More</button>
       </p>
 
 
@@ -549,17 +554,21 @@ print(["%d" % x[j1].X for j1 in range(9)])
       <script>
 		function toggle_readmore() {
           var readmorediv = d3.select('#readmore');
-          if (readmorediv.style("display") === "none") {
-            readmorediv.style("display", "block");
-          } else {
-            //readmorediv.style("display", "none"); //actually we don't want to cause confusion.  If you activate beast mode, you can't go back.
-          }
+          readmorediv.style("display", "block");
+          var mb = d3.select('#morebutton');
+          mb.style("display", "none");
 
         }
       </script>
 	<div id="readmore" style="display:none">
+	
      <p>
 		There is also a beast mode where you can see different computations.  STV is included.  There is a clustering computation similar to the project this was forked from.  And I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  Also, there are different ballot types, an option for disabling normalization, an option for adding a +1 to the seats. Also, there are different similarity measures.  Also, you can change the amount of keeps to see how it allows for a proportional distribution of winners.
+      </p>
+	  <p style="font-size:8px">
+        <a name="geolytix">Location data:</a>
+        <a href="http://geolytix.co.uk/downloads/OpenSupermarkets.zip">Supermarket
+        locations &copy; GeoLytix</a> copyright and database right 2014.
       </p>
     <div class="example_section" id="try">
       <h2><a href="#try" name="try">How to use Gurobi</a></h2>
@@ -786,6 +795,7 @@ d3.json("UKwithCounties.json", function(error, uk) {
         .append("path")
         .attr("d", path)
 		.attr("fill", function(d,i) { return mapColors[i % 10 + 10]; })
+		//.attr("fill", function(d,i) { return mapColors[i % 9]; })
         //.attr("fill", function(d,i) { return mapColors[i%3+7]; })
 		//.attr("fill","#CBE6A3")
         //.attr("stroke", "rgb(150,150,150)")
@@ -899,22 +909,17 @@ function compute() {
   var target = document.getElementById('demoarea');
   spinner = new Spinner({left: '375%'}).spin(target);
 
+  // options
   cost = parseFloat(document.getElementById("cost").value)/alpha;
+  numberOfWinners = parseFloat(document.getElementById("numberOfWinners").value);
   charge = [];
+  charge.push(numberOfWinners);
   charge.push(cost);
-    
+  var ops = document.getElementsByClassName('op');
+  for(var i = 0; i < ops.length; i++){
+	charge.push( 0 + ops[i].checked);
+  }
   
-    numberOfWinners = parseFloat(document.getElementById("numberOfWinners").value);
-    
-	
-	var ops = document.getElementsByClassName('op');
-
-	for(var i = 0; i < ops.length; i++){
-		if (i==8) charge.push(numberOfWinners);
-		charge.push( 0 + ops[i].checked);
-	}
-	console.log(charge);
-
   d3.json('facility.py')
     .header('Content-Type', 'application/json')
     .post(JSON.stringify({'clients': vertices,
