@@ -451,18 +451,18 @@ print(["%d" % x[j1].X for j1 in range(9)])
         A few potential rep locations have already been set up, but
         you can add more by clicking the screen.
       </p>
-
-      <p>
-        The silder isn't implemented yet but it would be nice to see what changing the amount of keeps would do.  More keeps would make reps more spread out.  Less keeps would make reps more toward the middle.
-      </p>
-
+	  
+	  
       <div id="demoarea">
       </div>
       <div id="spinnerdiv">
       </div>
+	  <p>
       <button class="pure-button" onclick="compute()">Compute Winners</button>
       <button onclick="restart()">Restart</button>
-
+	  </p>
+	  
+      
       Options:
       <p>
           <script>
@@ -606,11 +606,10 @@ print(["%d" % x[j1].X for j1 in range(9)])
           }
           //computeMaxRRV = value //parseFloat(document.getElementById("computeMaxRRV").value);
         }
-        </script>
-                  
+        </script>  
         <input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width">
         <output for=numberOfWinners id=numberOfWinnersDisplay>5</output> numberOfWinners <br />
-          
+        <div id="options" style="display:none">  
         <input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width">
         <output for=cost id=costDisplay>1.0</output> keeps multiplier <br />
         
@@ -649,10 +648,14 @@ print(["%d" % x[j1].X for j1 in range(9)])
 
                     <input type="range" min = 0 max = 1 step = 1 id="computeMaxRRV" value="0" oninput="computeMaxRRVUpdate(value)" class="slider-width">
         <output for=computeMaxRRV id=computeMaxRRVDisplay>0</output> compute a new formulation (working on it) <br />
-
+		</div>
       </p>
+	  
 
       <p>
+		<button class="pure-button" onclick="toggle_options()">Beast Mode</button>
+	  </p>
+	  <p>
         <button class="pure-button" onclick="toggle_div()">Gurobi Log</button>
       </p>
 
@@ -668,6 +671,15 @@ print(["%d" % x[j1].X for j1 in range(9)])
           }
 
         }
+		function toggle_options() {
+          var optionsdiv = d3.select('#options');
+          if (optionsdiv.style("display") === "none") {
+            optionsdiv.style("display", "block");
+          } else {
+            //optionsdiv.style("display", "none"); //actually we don't want to cause confusion.  If you activate beast mode, you can't go back.
+          }
+
+        }
       </script>
 
       <examplecode id=logfile>
@@ -679,7 +691,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
         locations &copy; GeoLytix</a> copyright and database right 2014.
       </p>
     </div>
-
+     <p>
+		There is also a beast mode where you can see different computations.  STV is included.  There is a clustering computation similar to the project this was forked from.  And I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  Also, there are different ballot types, an option for disabling normalization, an option for adding a +1 to the seats. Also, there are different similarity measures.  Also, you can change the amount of keeps to see how it allows for a proportional distribution of winners.
+      </p>
     <div class="example_section" id="try">
       <h2><a href="#try" name="try">How to use Gurobi</a></h2>
       <p> Here is a link to Gurobi.  I kept it here because I forked this project from Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>)
@@ -851,7 +865,7 @@ var spinnerG = svg.append("g").attr("id", "spinid");
 backgroundG.append("rect")
            .attr("x", 0).attr("y", 0)
            .attr("width", width).attr("height", height)
-           .attr("fill", "#66B2FF");
+           .attr("fill", "#A3CCFF"); // "#66B2FF"
 
 sitesG.selectAll("circle")
        .data(sites)
@@ -866,19 +880,25 @@ var mapColors = [];
 var maxRed = 247, minRed = 116;
 var maxGreen = 252, minGreen = 196;
 var maxBlue = 245, minBlue = 118;
-var numColors = 10;
+var maxRed = 247, minRed = 116+100;
+var maxGreen = 252, minGreen = 196+50;
+var maxBlue = 245, minBlue = 118+100;
+var maxRed = 247, minRed = 203;
+var maxGreen = 252, minGreen = 230;
+var maxBlue = 245, minBlue = 163;
+var numColors = 40;
 for (var i = 0; i < numColors; i++) {
   var red = String( Math.round( minRed + (maxRed - minRed)*i/numColors ) );
   var green = String( Math.round( minGreen + (maxGreen - minGreen)*i/numColors) );
   var blue = String( Math.round( minBlue + (maxBlue - minBlue)*i/numColors ) );
   mapColors.push( "rgb(" + red + "," + green + "," + blue + ")");
 }
-
+var zoomit = 1;
 var projection = d3.geo.albers()
     .center([.2, 53.6])
     .rotate([2.4, 0])
     .parallels([50, 60])
-    .scale(1200 * 20)
+    .scale(1200 * 20 * zoomit)
     .translate([width / 2, height / 2]);
 
 var path = d3.geo.path()
@@ -898,8 +918,9 @@ d3.json("UKwithCounties.json", function(error, uk) {
         .enter()
         .append("path")
         .attr("d", path)
-		//.attr("fill", function(d,i) { return mapColors[i % 9]; })
-        .attr("fill", function(d,i) { return mapColors[i%3+4]; })
+		.attr("fill", function(d,i) { return mapColors[i % 10 + 10]; })
+        //.attr("fill", function(d,i) { return mapColors[i%3+7]; })
+		//.attr("fill","#CBE6A3")
         //.attr("stroke", "rgb(150,150,150)")
 		;
 

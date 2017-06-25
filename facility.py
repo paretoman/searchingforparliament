@@ -184,24 +184,49 @@ def optimize(voters, reps, options, output=False):
         f = {}
         for i in range(numVoters):
             f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
-            m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
-        
+            
         # Add constraints
-        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
             
         if 0:
             for i in range(numVoters):
+                m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
                 m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
                 # I know it should be == 1 but gurobi won't allow it.
                 # still gurobi doesn't work with <= 1 because it says the problem is not positive semidefinite.
                 # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f, where the equality holds. 
         
-        else:  # try this
+        elif 0:  # try this
             won1 = {}
             for i in range(numVoters):
+                m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
                 won1[i] = m.addVar(vtype=GRB.BINARY, name="won1%d" % i)
                 m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == won1[i] )
-                # it looks like equality is allowed if there is a constraint on f.  f <= 1 or even f <= 1000.  
+                # it looks like equality is allowed if there is a constraint on f.  f <= 1 or even f <= 1000.          
+        
+        elif 0:
+            for i in range(numVoters):
+                m.addConstr(f[i] <= 1000)
+                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == 1 )
+                
+        elif 0: 
+            for i in range(numVoters):
+                m.addConstr(f[i] <= 1)
+                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 )      
+        elif 0: 
+            for i in range(numVoters):
+                m.addConstr(f[i] <= 1)
+                m.addQConstr( quicksum( f[i] * (b[i,j]+1) * x[j] for j in range(numReps) ) <= 1 ) # just trying out this b+1
+        elif 0:  # try this
+            for i in range(numVoters):
+                m.addConstr(f[i] <= 1)
+                m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] + 1) for j in range(numReps) ) <= 1 ) # this is a better place for the + 1.  Maybe we should subtract the average score.
+        else:  # try this
+            for i in range(numVoters):
+                m.addConstr(f[i] <= 1)
+                nw0 = (nWinners-1) / nWinners
+                m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] * nw0 + 1) for j in range(numReps) ) <= 1 ) # Let's also subtract the average score to try to match RRV better.
+        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+        
         
         m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
         
