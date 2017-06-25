@@ -466,190 +466,38 @@ print(["%d" % x[j1].X for j1 in range(9)])
       Options:
       <p>
           <script>
-        var cost;
-        var normalizeBallots;
-
-        var oneOverDistanceBallots;
-        var exponentialBallots;
-        var thresholdBallots;
-
-        var seatsPlusOne;
-
-        var cosineSimilarity;
-        var l1Similarity;
-        var jaccardSimilarity;
-        var numberOfWinners;
-        var computeBQP;
-        var computeSTV;
-        var computeClustering;
-        var computeMaxRRV;
-        function outputUpdate(value) {
-          document.querySelector('#costDisplay').value = value/1000000;
-        }
-        function outputUpdateNormalizeBallots(value) {
-          document.querySelector('#normalizeBallotsDisplay').value = value;  
-          //normalizeBallots = value //parseFloat(document.getElementById("normalizeBallots").value));
-        }
-        function oneOverDistanceBallotsUpdate(value) {
-          document.querySelector('#oneOverDistanceBallotsDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#exponentialBallotsDisplay').value = 0;
-              document.querySelector('#thresholdBallotsDisplay').value = 0;
-              document.querySelector('#exponentialBallots').stepDown();
-              document.querySelector('#thresholdBallots').stepDown();
-          }
-            //oneOverDistanceBallots = value //parseFloat(document.getElementById("oneOverDistanceBallots").value);
-        }
-        function exponentialBallotsUpdate(value) {
-          document.querySelector('#exponentialBallotsDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#oneOverDistanceBallotsDisplay').value = 0;
-              document.querySelector('#thresholdBallotsDisplay').value = 0;
-              document.querySelector('#oneOverDistanceBallots').stepDown();
-              document.querySelector('#thresholdBallots').stepDown();
-          }
-            //exponentialBallots = value //parseFloat(document.getElementById("exponentialBallots").value);
-        }
-        function thresholdBallotsUpdate(value) {
-          document.querySelector('#thresholdBallotsDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#exponentialBallotsDisplay').value = 0;
-              document.querySelector('#oneOverDistanceBallotsDisplay').value = 0;
-              document.querySelector('#exponentialBallots').stepDown();
-              document.querySelector('#oneOverDistanceBallots').stepDown();
-          }
-            //thresholdBallots = value //parseFloat(document.getElementById("thresholdBallots").value);
-        }
-        function seatsPlusOneUpdate(value) {
-          document.querySelector('#seatsPlusOneDisplay').value = value;
-          //seatsPlusOne = value //parseFloat(document.getElementById("seatsPlusOne").value);
-        }
-        function cosineSimilarityUpdate(value) {
-          document.querySelector('#cosineSimilarityDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#l1SimilarityDisplay').value = 0;
-              document.querySelector('#jaccardSimilarityDisplay').value = 0;
-              document.querySelector('#l1Similarity').stepDown();
-              document.querySelector('#jaccardSimilarity').stepDown();
-          }
-          //cosineSimilarity = value //parseFloat(document.getElementById("cosineSimilarity").value);
-        }
-        function l1SimilarityUpdate(value) {
-          document.querySelector('#l1SimilarityDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#cosineSimilarityDisplay').value = 0;
-              document.querySelector('#jaccardSimilarityDisplay').value = 0;
-              document.querySelector('#cosineSimilarity').stepDown();
-              document.querySelector('#jaccardSimilarity').stepDown();
-          }
-          //l1Similarity = value //parseFloat(document.getElementById("l1Similarity").value);
-        }
-        function jaccardSimilarityUpdate(value) {
-          document.querySelector('#jaccardSimilarityDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#l1SimilarityDisplay').value = 0;
-              document.querySelector('#cosineSimilarityDisplay').value = 0;
-              document.querySelector('#l1Similarity').stepDown();
-              document.querySelector('#cosineSimilarity').stepDown();
-          }
-          //jaccardSimilarity = value //parseFloat(document.getElementById("jaccardSimilarity").value);
-        }
-        function numberOfWinnersUpdate(value) {
-          document.querySelector('#numberOfWinnersDisplay').value = value;
-          //numberOfWinners = value //parseFloat(document.getElementById("numberOfWinners").value);
-        }
-        function computeBQPUpdate(value) {
-          document.querySelector('#computeBQPDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#computeSTVDisplay').value = 0;
-              document.querySelector('#computeClusteringDisplay').value = 0;
-              document.querySelector('#computeMaxRRVDisplay').value = 0;
-              document.querySelector('#computeSTV').stepDown();
-              document.querySelector('#computeClustering').stepDown();
-              document.querySelector('#computeMaxRRV').stepDown();
-          }
-          //computeBQP = value //parseFloat(document.getElementById("computeBQP").value);
-        }
-        function computeSTVUpdate(value) {
-          document.querySelector('#computeSTVDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#computeBQPDisplay').value = 0;
-              document.querySelector('#computeClusteringDisplay').value = 0;
-              document.querySelector('#computeMaxRRVDisplay').value = 0;
-              document.querySelector('#computeBQP').stepDown();
-              document.querySelector('#computeClustering').stepDown();
-              document.querySelector('#computeMaxRRV').stepDown();
-          }
-          //computeSTV = value //parseFloat(document.getElementById("computeSTV").value);
-        }
-        function computeClusteringUpdate(value) {
-          document.querySelector('#computeClusteringDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#computeBQPDisplay').value = 0;
-              document.querySelector('#computeSTVDisplay').value = 0;
-              document.querySelector('#computeMaxRRVDisplay').value = 0;
-              document.querySelector('#computeBQP').stepDown();
-              document.querySelector('#computeSTV').stepDown();
-              document.querySelector('#computeMaxRRV').stepDown();
-          }
-          //computeClustering = value //parseFloat(document.getElementById("computeClustering").value);
-        }
-        function computeMaxRRVUpdate(value) {
-          document.querySelector('#computeMaxRRVDisplay').value = value;
-          if (value == 1) {
-              document.querySelector('#computeBQPDisplay').value = 0;
-              document.querySelector('#computeSTVDisplay').value = 0;
-              document.querySelector('#computeClusteringDisplay').value = 0;
-              document.querySelector('#computeBQP').stepDown();
-              document.querySelector('#computeSTV').stepDown();
-              document.querySelector('#computeClustering').stepDown();
-          }
-          //computeMaxRRV = value //parseFloat(document.getElementById("computeMaxRRV").value);
-        }
-        </script>  
-        <input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width">
-        <output for=numberOfWinners id=numberOfWinnersDisplay>5</output> numberOfWinners <br />
-        <div id="options" style="display:none">  
-        <input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width">
-        <output for=cost id=costDisplay>1.0</output> keeps multiplier <br />
-        
-          <input type="range" min = 0 max = 1 step = 1 id="normalizeBallots" value="1" oninput="outputUpdateNormalizeBallots(value)" class="slider-width">
-        <output for=normalizeBallots id=normalizeBallotsDisplay>1</output> normalizeBallots <br />
-        
-          <input type="range" min = 0 max = 1 step = 1 id="oneOverDistanceBallots" value="1" oninput="oneOverDistanceBallotsUpdate(value)" class="slider-width">
-        <output for=oneOverDistanceBallots id=oneOverDistanceBallotsDisplay>1</output>  oneOverDistanceBallots <br />
-          
-        <input type="range" min = 0 max = 1 step = 1 id="exponentialBallots" value="0" oninput="exponentialBallotsUpdate(value)" class="slider-width">
-        <output for=exponentialBallots id=exponentialBallotsDisplay>0</output>  exponentialBallots <br />
-          
-        <input type="range" min = 0 max = 1 step = 1 id="thresholdBallots" value="0" oninput="thresholdBallotsUpdate(value)" class="slider-width">
-        <output for=thresholdBallots id=thresholdBallotsDisplay>0</output>  thresholdBallots (not yet implemented)<br />
-          
-        <input type="range" min = 0 max = 1 step = 1 id="seatsPlusOne" value="0" oninput="seatsPlusOneUpdate(value)" class="slider-width">
-        <output for=seatsPlusOne id=seatsPlusOneDisplay>0</output> seatsPlusOne <br />
-        
-          <input type="range" min = 0 max = 1 step = 1 id="cosineSimilarity" value="1" oninput="cosineSimilarityUpdate(value)" class="slider-width">
-        <output for=cosineSimilarity id=cosineSimilarityDisplay>1</output> cosineSimilarity <br />
-        
-          <input type="range" min = 0 max = 1 step = 1 id="l1Similarity" value="0" oninput="l1SimilarityUpdate(value)" class="slider-width">
-        <output for=l1Similarity id=l1SimilarityDisplay>0</output> l1Similarity <br />
-        
-          <input type="range" min = 0 max = 1 step = 1 id="jaccardSimilarity" value="0" oninput="jaccardSimilarityUpdate(value)" class="slider-width">
-        <output for=jaccardSimilarity id=jaccardSimilarityDisplay>0</output> jaccardSimilarity (not yet implemented)<br />
-
-          <input type="range" min = 0 max = 1 step = 1 id="computeBQP" value="1" oninput="computeBQPUpdate(value)" class="slider-width">
-        <output for=computeBQP id=computeBQPDisplay>1</output> compute Our Binary Quadratic Problem as described above.<br />
-          
-          <input type="range" min = 0 max = 1 step = 1 id="computeSTV" value="0" oninput="computeSTVUpdate(value)" class="slider-width">
-        <output for=computeSTV id=computeSTVDisplay>0</output> compute STV <br />
-
-                    <input type="range" min = 0 max = 1 step = 1 id="computeClustering" value="0" oninput="computeClusteringUpdate(value)" class="slider-width">
-        <output for=computeClustering id=computeClusteringDisplay>0</output> compute clustering <br />
-
-                    <input type="range" min = 0 max = 1 step = 1 id="computeMaxRRV" value="0" oninput="computeMaxRRVUpdate(value)" class="slider-width">
-        <output for=computeMaxRRV id=computeMaxRRVDisplay>0</output> compute a new formulation (working on it) <br />
-		</div>
+			var cost;
+			var numberOfWinners;
+			function outputUpdate(value) {
+			  document.querySelector('#costDisplay').value = value/1000000;
+			}
+			function numberOfWinnersUpdate(value) {
+			  document.querySelector('#numberOfWinnersDisplay').value = value;
+			}
+		  </script>  
+		<input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width">
+		<output for=numberOfWinners id=numberOfWinnersDisplay>5</output> numberOfWinners <br />
+		<div id="options" style="display:none">  
+		<input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width">
+		<output for=cost id=costDisplay>1.0</output> keeps multiplier <br />
+         
+		<input class="op"  checked="true"  type="checkbox">	normalizeBallots <br />
+		<input class="op" checked="true"  type="radio" name="ballots"> 	oneOverDistanceBallots <br />
+		<input class="op" type="radio" name="ballots">
+		exponentialBallots <br />
+		<input class="op" type="radio" name="ballots"> 	thresholdBallots (not yet implemented) <br />
+		<input class="op" checked="false" type="checkbox">				seatsPlusOne <br />
+		<input class="op" checked="true"  type="radio" name="similarity"> cosineSimilarity <br />
+		<input class="op" id="o7"  type="radio" name="similarity"> l1Similarity <br />
+		<input class="op" id="o8"  type="radio" name="similarity"> jaccardSimilarity (not yet implemented) <br />
+		<input class="op" id="o9"  checked="true" type="radio" name="compute"> 	compute Our Binary Quadratic Problem as described above. <br />
+		<input class="op" id="o10" type="radio" name="compute"> 	compute STV <br />
+		<input class="op" id="o11" type="radio" name="compute"> 	compute clustering <br />
+		<input class="op" id="o12" type="radio" name="compute"> 	compute a new formulation (working on it) 
+	  </div>
       </p>
+	  
+
 	  
 
       <p>
@@ -691,6 +539,25 @@ print(["%d" % x[j1].X for j1 in range(9)])
         locations &copy; GeoLytix</a> copyright and database right 2014.
       </p>
     </div>
+	
+	<p>
+        <button class="pure-button" onclick="toggle_readmore()">More</button>
+      </p>
+
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+      <script>
+		function toggle_readmore() {
+          var readmorediv = d3.select('#readmore');
+          if (readmorediv.style("display") === "none") {
+            readmorediv.style("display", "block");
+          } else {
+            //readmorediv.style("display", "none"); //actually we don't want to cause confusion.  If you activate beast mode, you can't go back.
+          }
+
+        }
+      </script>
+	<div id="readmore" style="display:none">
      <p>
 		There is also a beast mode where you can see different computations.  STV is included.  There is a clustering computation similar to the project this was forked from.  And I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  Also, there are different ballot types, an option for disabling normalization, an option for adding a +1 to the seats. Also, there are different similarity measures.  Also, you can change the amount of keeps to see how it allows for a proportional distribution of winners.
       </p>
@@ -783,7 +650,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
       </div>
 
     </div>
-
+    </div>
 
     <div style="min-height:100px"></div>
 
@@ -1036,36 +903,17 @@ function compute() {
   charge = [];
   charge.push(cost);
     
-  normalizeBallots = parseFloat(document.getElementById("normalizeBallots").value);
-    
-  oneOverDistanceBallots = parseFloat(document.getElementById("oneOverDistanceBallots").value);
-  exponentialBallots = parseFloat(document.getElementById("exponentialBallots").value);
-  thresholdBallots = parseFloat(document.getElementById("thresholdBallots").value);
-    
-  seatsPlusOne = parseFloat(document.getElementById("seatsPlusOne").value);
-    
-  cosineSimilarity = parseFloat(document.getElementById("cosineSimilarity").value);
-  l1Similarity = parseFloat(document.getElementById("l1Similarity").value);
-  jaccardSimilarity = parseFloat(document.getElementById("jaccardSimilarity").value);
+  
     numberOfWinners = parseFloat(document.getElementById("numberOfWinners").value);
-  computeBQP = parseFloat(document.getElementById("computeBQP").value);
-  computeSTV = parseFloat(document.getElementById("computeSTV").value);
-  computeClustering = parseFloat(document.getElementById("computeClustering").value);
-  computeMaxRRV = parseFloat(document.getElementById("computeMaxRRV").value);
     
-  charge.push(normalizeBallots);
-  charge.push(oneOverDistanceBallots);
-  charge.push(exponentialBallots);
-  charge.push(thresholdBallots);
-  charge.push(seatsPlusOne);
-  charge.push(cosineSimilarity);
-  charge.push(l1Similarity);
-  charge.push(jaccardSimilarity);
-  charge.push(numberOfWinners);
-  charge.push(computeBQP);
-  charge.push(computeSTV);
-  charge.push(computeClustering);
-  charge.push(computeMaxRRV);
+	
+	var ops = document.getElementsByClassName('op');
+
+	for(var i = 0; i < ops.length; i++){
+		if (i==8) charge.push(numberOfWinners);
+		charge.push( 0 + ops[i].checked);
+	}
+	console.log(charge);
 
   d3.json('facility.py')
     .header('Content-Type', 'application/json')

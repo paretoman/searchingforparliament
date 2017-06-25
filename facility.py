@@ -6,6 +6,8 @@ import math
 import StringIO
 import numpy
 from pyvotecore.stv import STV
+from pyvotecore.plurality_at_large import PluralityAtLarge
+from pyvotecore.schulze_stv import SchulzeSTV
 import json
 
 # example of problem data
@@ -83,15 +85,33 @@ def optimize(voters, reps, options, output=False):
 
     elif options['computeSTV']:
         
-
-        bSTV = []
-        for i in range(numVoters):
-            sb=b[i,:].argsort()[::-1]
-            ssb = ["%d" % n_name for n_name in sb]
-            dssb = {"count":1,"ballot":ssb}
-            bSTV.append(dssb)
-        
-        outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+        if 0:
+            bSTV = []
+            for i in range(numVoters):
+                sb=b[i,:].argsort()[::-1]
+                ssb = ["%d" % n_name for n_name in sb]
+                dssb = {"count":1,"ballot":ssb}
+                bSTV.append(dssb)
+            outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+        elif 0:
+            bSTV = []
+            for i in range(numVoters):
+                sb=b[i,:].argsort()[::-1]
+                ssb = ["%d" % sb[0]]
+                dssb = {"count":1,"ballot":ssb}
+                bSTV.append(dssb)
+            outputSTV = PluralityAtLarge(bSTV, required_winners=nWinners).as_dict()
+        else:
+            bSTV = []
+            for i in range(numVoters):
+                sb=b[i,:].argsort()[::-1]
+                ssb = ["%d" % n_name for n_name in sb]
+                dssb = {"count":1,"ballot":ssb}
+                bSTV.append(dssb)
+            outputSTV = SchulzeSTV(bSTV, required_winners=nWinners, ballot_notation=SchulzeSTV.BALLOT_NOTATION_GROUPING).as_dict()
+        #outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+        #outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+        #outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
         winSet = outputSTV['winners'] # set of winners
         
                 
