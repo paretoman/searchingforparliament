@@ -272,7 +272,7 @@ a:hover.screenshot {
         \[
           \begin{align}
         \frac{b_{ij}}{tally_j} * \frac{b_{ik}}{tally_k} = & \text{ Rep j and rep k share the support of voter i as a fraction of their total support.} \\
-        \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{tally_j * tally_k} = & \text{ Similarity between rep j and rep k}
+        \sum_{i \in Voters} \frac{b_{ij}}{tally_j} * \frac{b_{ik}}{tally_k} = & \text{ Similarity between rep j and rep k}
         \end{align}
           \]
         Ha, so we have a measure of similarity!  Actually there are many measures of similarity.  Is this the right one?  I tried a measure called cosine similarity at first because a lot of people use it.  It treats the ballots in support of a rep as a vector.  It is a vector in many dimensions because there are many voters.  Instead of the tally, we use the length of the vector, the Euclidean distance.  This is called cosine similarity.

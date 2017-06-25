@@ -5,6 +5,7 @@ from gurobipy import *
 import math
 import StringIO
 import numpy
+from pyvotecore.stv import STV
 
 # example of problem data
 # voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
@@ -81,7 +82,6 @@ def optimize(voters, reps, options, output=False):
 
     elif options['computeSTV']:
         
-        from pyvotecore.stv import STV
 
         bSTV = []
         for i in range(numVoters):
