@@ -483,7 +483,31 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<input class="op" checked="true" type="radio" name="compute"> Our Binary Quadratic Problem as described above. <br />
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
-		<input class="op" type="radio" name="compute"> Schulze STV <br />
+		<input class="op" type="radio" name="compute"> Schulze STV (todo)<br />
+		<input class="op" type="radio" name="compute"> Meeks STV <br />
+		<input class="op" type="radio" name="compute" id="openstv"> OpenSTV (todo)
+		<select id="stvtype" name="stvtype" onclick="selectOpenstv()">
+			<option value="Approval">Approval</option>
+			<option value="Borda">Borda</option>
+			<option value="Bucklin">Bucklin</option>
+			<option value="CambridgeSTV">CambridgeSTV</option>
+			<option value="Condorcet">Condorcet</option>
+			<option value="Coombs">Coombs</option>
+			<option value="ERS97STV">ERS97STV</option>
+			<option value="FTSTV">FTSTV</option>
+			<option value="GPCA2000STV">GPCA2000STV</option>
+			<option value="IRV">IRV</option>
+			<option value="MeekQXSTV">MeekQXSTV</option>
+			<option value="MeekSTV">MeekSTV</option>
+			<option value="NIrelandSTV">NIrelandSTV</option>
+			<option value="QPQ">QPQ</option>
+			<option value="RTSTV">RTSTV</option>
+			<option value="SNTV">SNTV</option>
+			<option value="ScottishSTV">ScottishSTV</option>
+			<option value="SuppVote">SuppVote</option>
+			<option value="WarrenQXSTV">WarrenQXSTV</option>
+			<option value="WarrenSTV">WarrenSTV</option>
+		</select> <br />
 		<input class="op" type="radio" name="compute"> Clustering like original<br />
 		<input class="op" type="radio" name="compute"> A new formulation (working on it) 
 	    </fieldset>
@@ -530,6 +554,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
 			function updateYshift(value) {
 			  yshift = value;
 			  draw_map();
+			}
+			function selectOpenstv() {
+			document.querySelector('#openstv').checked = true;
 			}
 		  </script>  
 		<input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width" style="width:200px">
@@ -979,9 +1006,11 @@ function compute() {
   // options
   cost = parseFloat(document.getElementById("cost").value)/alpha;
   numberOfWinners = parseFloat(document.getElementById("numberOfWinners").value);
+  stvtype = document.getElementById("stvtype").value;
   charge = [];
   charge.push(numberOfWinners);
   charge.push(cost);
+  charge.push(stvtype);
   var ops = document.getElementsByClassName('op');
   for(var i = 0; i < ops.length; i++){
 	charge.push( 0 + ops[i].checked);

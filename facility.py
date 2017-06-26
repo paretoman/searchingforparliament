@@ -8,6 +8,8 @@ import numpy
 from pyvotecore.stv import STV
 from pyvotecore.plurality_at_large import PluralityAtLarge
 from pyvotecore.schulze_stv import SchulzeSTV
+from openstv.ballots import Ballots
+from openstv.plugins import getMethodPlugins, getReportPlugins
 import json
 
 # example of problem data
@@ -83,36 +85,50 @@ def optimize(voters, reps, options, output=False):
         m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
 
 
-    elif options['computeSTV'] or options["computePluralityMultiwinner"] or options["computeSchulzeSTV"]:
+    elif options['computeSTV'] or options["computePluralityMultiwinner"] or options["computeSchulzeSTV"] or options["MeeksSTV"] or options["openstv"]:
+        
+        # convert ballot format
+        bSTV = []
+        b_text = ""
+        for i in range(numVoters):
+            sb=b[i,:].argsort()[::-1]
+            ssb = ["%d" % n_name for n_name in sb]
+            dssb = {"count":1,"ballot":ssb}
+            bSTV.append(dssb)
+            a_line = " ".join(ssb)
+            b_text += a_line + "\n"
+        b_text = b_text[:-1] # remove last newline
         
         if options['computeSTV']:
-            bSTV = []
-            for i in range(numVoters):
-                sb=b[i,:].argsort()[::-1]
-                ssb = ["%d" % n_name for n_name in sb]
-                dssb = {"count":1,"ballot":ssb}
-                bSTV.append(dssb)
             outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+            winSet = outputSTV['winners'] # set of winners
         elif options["computePluralityMultiwinner"]:
-            bSTV = []
-            for i in range(numVoters):
-                sb=b[i,:].argsort()[::-1]
-                ssb = ["%d" % sb[0]]
-                dssb = {"count":1,"ballot":ssb}
-                bSTV.append(dssb)
             outputSTV = PluralityAtLarge(bSTV, required_winners=nWinners).as_dict()
-        else: # options["computeSchulzeSTV"]
-            bSTV = []
-            for i in range(numVoters):
-                sb=b[i,:].argsort()[::-1]
-                ssb = ["%d" % n_name for n_name in sb]
-                dssb = {"count":1,"ballot":ssb}
-                bSTV.append(dssb)
+            winSet = outputSTV['winners'] # set of winners
+        elif options["computeSchulzeSTV"]:
             outputSTV = SchulzeSTV(bSTV, required_winners=nWinners, ballot_notation=SchulzeSTV.BALLOT_NOTATION_GROUPING).as_dict()
-        #outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
-        #outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
-        #outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
-        winSet = outputSTV['winners'] # set of winners
+            winSet = outputSTV['winners'] # set of winners
+        elif options["MeeksSTV"]:
+            methods = getMethodPlugins("byName", exclude0=False)
+            name="MeekSTV"
+            dirtyBallots = Ballots()
+            dirtyBallots.loadText(b_text)
+            dirtyBallots.numSeats = nWinners
+            cleanBallots = dirtyBallots.getCleanBallots()
+            e = methods[name](cleanBallots)
+            e.runElection()
+            winSet = e.getWinnerList()
+        elif options["openstv"]:
+            methods = getMethodPlugins("byName", exclude0=False)
+            name=options["stvtype"]
+            dirtyBallots = Ballots()
+            dirtyBallots.loadText(b_text)
+            dirtyBallots.numSeats = nWinners
+            cleanBallots = dirtyBallots.getCleanBallots()
+            e = methods[name](cleanBallots)
+            e.runElection()
+            winSet = e.getWinnerList()
+            
         
                 
         solution1 = []
@@ -317,7 +333,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","seatsPlusOne","seatsPlusHalf","seatsPlusZero","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","cosineSimilarity","l1Similarity","jaccardSimilarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusOne","seatsPlusHalf","seatsPlusZero","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","cosineSimilarity","l1Similarity","jaccardSimilarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","MeeksSTV","openstv","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
