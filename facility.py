@@ -270,6 +270,8 @@ def optimize(voters, reps, options, output=False):
         if options['seatsPlusOne']:
             keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
             #keep = options['keepsmultiplier'] * sum(b) / (1 + 5) # might not work
+        elif options['seatsPlusHalf']:
+            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (.5+nWinners)
         else:
             keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
         m.update()
@@ -315,7 +317,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","seatsPlusOne","keepsmultiplier","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","cosineSimilarity","l1Similarity","jaccardSimilarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","seatsPlusOne","seatsPlusHalf","seatsPlusZero","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","cosineSimilarity","l1Similarity","jaccardSimilarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }

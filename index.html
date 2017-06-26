@@ -460,7 +460,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<legend>Keeps:</legend>
 		<input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width" style="width:100px"> <br />
 		<output for=cost id=costDisplay>1.0</output> Multiplier <br />
-		<input class="op" checked="false" type="checkbox">	Seats Plus One <br />
+		<input class="op" type="radio" name="keeps" checked="true">	Seats Plus One <br />
+		<input class="op" type="radio" name="keeps">	Seats Plus Half <br />
+		<input class="op" type="radio" name="keeps">	Seats Plus Zero <br />
 		</fieldset>
 		<fieldset>
 		<legend>Ballot:</legend>
@@ -485,6 +487,12 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<input class="op" type="radio" name="compute"> Clustering like original<br />
 		<input class="op" type="radio" name="compute"> A new formulation (working on it) 
 	    </fieldset>
+		<fieldset>
+		<legend>Map:</legend>
+		<input type="range" min = .1 max = 1 step = .1 id="zoom_id" value="1" oninput="updateZoom(value)" class="slider-width" style="width:60px">Zoom<br />
+		<input type="range" min = -1 max = 1 step = .1 id="xshift_id" value="0" oninput="updateXshift(value)" class="slider-width" style="width:60px">X<br />
+		<input type="range" min = -1 max = 1 step = .1 id="yshift_id" value="0" oninput="updateYshift(value)" class="slider-width" style="width:60px">Y<br />
+		</fieldset>
 		</form>
 		</div>
 	    </aside>
@@ -510,6 +518,18 @@ print(["%d" % x[j1].X for j1 in range(9)])
 			}
 			function numberOfWinnersUpdate(value) {
 			  document.querySelector('#numberOfWinnersDisplay').value = value;
+			}
+			function updateZoom(value) {
+			  zoomit = value;
+			  draw_map();
+			}
+			function updateXshift(value) {
+			  xshift = value;
+			  draw_map();
+			}
+			function updateYshift(value) {
+			  yshift = value;
+			  draw_map();
 			}
 		  </script>  
 		<input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width" style="width:200px">
@@ -706,42 +726,86 @@ var cost = parseFloat(document.getElementById("cost").value)/alpha;
 var charge = d3.range(sites.length).map(function(d) { return cost; });
 
 
-    
 // G object for background
-var backgroundG = svg.append("g");
+var backgroundG;
 
 // G object for map
-var mapG = svg.append("g");
+var mapG;
 
 // G object for animations
-var animationG = svg.append("g");
+var animationG;
 
 // G object for sites
-var sitesG = svg.append("g");
+var sitesG;
 
 // G object for points
-var circleG = svg.append("g");
+var circleG;
 
 // G object for voronoi
-var pathG = svg.append("g");
+var pathG;
 
 // G object for facilities
-var facilitiesG = svg.append("g");
+var facilitiesG;
 
 // G object for location names
-var locationG = svg.append("g");
+var locationG;
 
 // G object for clickable areas
-var clickableG = svg.append("g");
+var clickableG;
 
 // G object for spinner
-var spinnerG = svg.append("g").attr("id", "spinid");
+var spinnerG;
+
+var zoomit = 1;
+var xshift = 0;
+var yshift = 0;
+var projection;
+var path;
+var vertices;
+
+var places;
+var counties;
+
+
+
+function draw_map() {
+    
+// G object for background
+backgroundG = svg.append("g");
+
+// G object for map
+mapG = svg.append("g");
+
+// G object for animations
+animationG = svg.append("g");
+
+// G object for sites
+sitesG = svg.append("g");
+
+// G object for points
+circleG = svg.append("g");
+
+// G object for voronoi
+pathG = svg.append("g");
+
+// G object for facilities
+facilitiesG = svg.append("g");
+
+// G object for location names
+locationG = svg.append("g");
+
+// G object for clickable areas
+clickableG = svg.append("g");
+
+// G object for spinner
+spinnerG = svg.append("g").attr("id", "spinid");
 
 
 backgroundG.append("rect")
            .attr("x", 0).attr("y", 0)
            .attr("width", width).attr("height", height)
            .attr("fill", "#A3CCFF"); // "#66B2FF"
+		   
 
 sitesG.selectAll("circle")
        .data(sites)
@@ -769,84 +833,87 @@ for (var i = 0; i < numColors; i++) {
   var blue = String( Math.round( minBlue + (maxBlue - minBlue)*i/numColors ) );
   mapColors.push( "rgb(" + red + "," + green + "," + blue + ")");
 }
-var zoomit = 1;
-var projection = d3.geo.albers()
-    .center([.2, 53.6])
-    .rotate([2.4, 0])
-    .parallels([50, 60])
-    .scale(1200 * 20 * zoomit)
-    .translate([width / 2, height / 2]);
 
-var path = d3.geo.path()
-    .projection(projection);
 
-var vertices;
+	projection = d3.geo.albers()
+		.center([.2, 53.6 + yshift*3])
+		.rotate([2.4 + xshift* -3, 0])
+		.parallels([50, 60])
+		.scale(1200 * 20 * zoomit)
+		.translate([width / 2 , height / 2]);
+	path = d3.geo.path()
+		.projection(projection);
 
-d3.json("UKwithCounties.json", function(error, uk) {
-  d3.json("supermarket.json", function(supermarket) {
-    vertices = [];
-    // Set up map of UK
-    var places = topojson.feature(uk, uk.objects.placesUK);
-    var counties = topojson.feature(uk, uk.objects.ukcounties).features;
+	d3.json("UKwithCounties.json", function(error, uk) {
+	  d3.json("supermarket.json", function(supermarket) {
+		vertices = [];
+		// Set up map of UK
+		places = topojson.feature(uk, uk.objects.placesUK);
+		counties = topojson.feature(uk, uk.objects.ukcounties).features;
 
-    mapG.selectAll("path")
-        .data(counties)
-        .enter()
-        .append("path")
-        .attr("d", path)
-		.attr("fill", function(d,i) { return mapColors[i % 10 + 10]; })
-		//.attr("fill", function(d,i) { return mapColors[i % 9]; })
-        //.attr("fill", function(d,i) { return mapColors[i%3+7]; })
-		//.attr("fill","#CBE6A3")
-        //.attr("stroke", "rgb(150,150,150)")
-		;
+		mapG.selectAll("path")
+			.data(counties)
+			.enter()
+			.append("path")
+			.attr("d", path)
+			.attr("fill", function(d,i) { return mapColors[i % 10 + 10]; })
+			//.attr("fill", function(d,i) { return mapColors[i % 9]; })
+			//.attr("fill", function(d,i) { return mapColors[i%3+7]; })
+			//.attr("fill","#CBE6A3")
+			//.attr("stroke", "rgb(150,150,150)")
+			;
 
-    clickableG.selectAll("path")
-        .data(counties)
-        .enter()
-        .append("path")
-        .attr("d", path)
-        .attr("opacity", 0)
-        .on("mousedown", addPoint);
+		clickableG.selectAll("path")
+			.data(counties)
+			.enter()
+			.append("path")
+			.attr("d", path)
+			.attr("opacity", 0)
+			.on("mousedown", addPoint);
 
-    locationG.append("path")
-             //.datum(places)
-             .attr("d", path)
-             .attr("class", "place");
+		locationG.append("path")
+				 //.datum(places)
+				 .attr("d", path)
+				 .attr("class", "place");
 
-    locationG.selectAll(".place-label")
-            .data(places.features)
-            .enter().append("text")
-            .attr("class", "place-label")
-            .attr("transform", function(d) { return "translate(" + projection(d.geometry.coordinates) + ")"; })
-            .attr("x", function(d) { return d.geometry.coordinates[0] > -1 ? 6 : -6; })
-            .attr("dy", ".35em")
-            .style("text-anchor", function(d) { return d.geometry.coordinates[0] > -1 ? "start" : "end"; })
-            .text(function(d) { return d.properties.name; })
-            .attr("font-family", "Helvetica Neue")
-            .attr("font-size", 15)
-            .attr("font-weight", 400);
+		locationG.selectAll(".place-label")
+				.data(places.features)
+				.enter().append("text")
+				.attr("class", "place-label")
+				.attr("transform", function(d) { return "translate(" + projection(d.geometry.coordinates) + ")"; })
+				.attr("x", function(d) { return d.geometry.coordinates[0] > -1 ? 6 : -6; })
+				.attr("dy", ".35em")
+				.style("text-anchor", function(d) { return d.geometry.coordinates[0] > -1 ? "start" : "end"; })
+				.text(function(d) { return d.properties.name; })
+				.attr("font-family", "Helvetica Neue")
+				.attr("font-size", 15)
+				.attr("font-weight", 400);
 
-    // Set up supermarket locations
-    // Add locations to vertices array
-    circleG.selectAll("circle")
-           .data(supermarket)
-           .enter()
-           .append("circle")
-           .filter(function(d) {
-              var loc = projection([d.LongWGS84, d.LatWGS84]);
-              return ( loc[0] >= 0 && loc[0] <= width && loc[1] >= 0 && loc[1] <= height);})
-           .attr("cx", function (d) { var loc = projection([d.LongWGS84, d.LatWGS84]);
-                                      vertices.push([parseFloat(loc[0]), parseFloat(loc[1])]);
-                                      return loc[0]; })
-           .attr("cy", function (d) { var loc = projection([d.LongWGS84, d.LatWGS84]);
-                                      return loc[1]; })
-           .attr("r", 2)
-           .attr("class", "client");
+		// Set up supermarket locations
+		// Add locations to vertices array
+		circleG.selectAll("circle")
+			   .data(supermarket)
+			   .enter()
+			   .append("circle")
+			   .filter(function(d) {
+				  var loc = projection([d.LongWGS84, d.LatWGS84]);
+				  return ( loc[0] >= 0 && loc[0] <= width && loc[1] >= 0 && loc[1] <= height);})
+			   .attr("cx", function (d) { var loc = projection([d.LongWGS84, d.LatWGS84]);
+										  vertices.push([parseFloat(loc[0]), parseFloat(loc[1])]);
+										  return loc[0]; })
+			   .attr("cy", function (d) { var loc = projection([d.LongWGS84, d.LatWGS84]);
+										  return loc[1]; })
+			   .attr("r", 2)
+			   .attr("class", "client");
 
-    console.log('number of vertices', vertices.length);
-  });
-});
+		console.log('number of vertices', vertices.length);
+	  });
+	});
+	
+	if (zoomit != 1 || xshift !=0 || yshift !=0) restart(); // really I'd like to keep some initial points but it wasn't working.
+}
+
+draw_map();
 
 function addPoint() {
   facilitiesG.selectAll("circle").remove("circle");
