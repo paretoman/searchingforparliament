@@ -71,7 +71,7 @@ a:hover.screenshot {
     </p>
 
     <p>
-      The implementation of the model and the structure of this explanation is forked from the work of Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>).  The code for this website is (on <a href="https://github.com/paretoman/searchingforparliament">github</a>.
+      The implementation of the model and the structure of this explanation is forked from the work of Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>).  The code for this website is on <a href="https://github.com/paretoman/searchingforparliament">github</a>.
     </p>
 
     <h3>
@@ -152,10 +152,10 @@ a:hover.screenshot {
         \]
       </p>
       <p>
-        (The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to let voters who don't have a very close candidate vote with their full vote for their closest candidate.  This normalization is here because voters would give the candidate closest to them the highest score possible even if they aren't actually all that close.) voter rep
+        (The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to let voters who don't have a very close candidate vote with their full vote for their closest candidate.  This normalization is here because voters would give the candidate closest to them the highest score possible even if they aren't actually all that close.)
       </p>
         <p>
-        <img src="./tally.png" align="center" />
+        <img src="./tally.png" align="middle" />
         </p> 
       <p>
         We need a way to count the ballots.  The easiest way is to add them together to get the reps' tallies.
@@ -178,8 +178,6 @@ a:hover.screenshot {
             \end{array}
 			\right]
         \]
-		\text{an amount of score. same units as ballots.  same for each winning rep.}
-        \]
       </p>
       <p>
         The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  
@@ -189,11 +187,11 @@ a:hover.screenshot {
         The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).
       </p>
       <p>
-        Let's try something like the STV quota.
+        Let's try something similar:
         \[
         keep = \frac{\text{voters}}{\text{seats}}
         \]
-		We want to subtract this somehow, and we want to show why this STV-style quota selects the correct number of reps for a group of voters.
+		We want to subtract this somehow, and we want to show why it selects the correct number of reps for a group of voters.
       </p>
       <h3> Mini example to show proportionality</h3>
       <p>
@@ -253,9 +251,9 @@ a:hover.screenshot {
         \]
 		
 		We want to choose the 3 reps with the most votes.  So we try each combination, and for each we add the tallies and subtract the keeps.
-		\[
-		\]
-		One from A and two from B is the best combination:
+		</p>
+		<p>
+		1 from A and 2 from B is the best combination:
 		\[
 			\left[
             \begin{array}{rr}
@@ -326,7 +324,7 @@ a:hover.screenshot {
 		What is the support per candidate?
 		
 		\[
-			N_A-K*(C-1)
+			N_A-K*(C_A-1)
         \]
 		Choose the best candidates so they all get the same votes (approximation for inifinite candidates):
 		
@@ -401,26 +399,29 @@ a:hover.screenshot {
 		B: & 0 & 1 & 1 
 		\end{bmatrix}
 		\]
-		How do we account for this in our bookkeeping about kept votes?  1/3 of the votes for A or B were for both A and B.  So we reduce the number of kept votes to 1/3 of the usual.
-		
-		This measure is actually common.  It is called the Jaccard similarity.  Stated mathematically,
+		How do we account for this in our bookkeeping about kept votes?  1/2 of the votes for A were for both A and B.  A has to keep some votes, so 1/2 of the votes that A keeps are taken from B:
         \[
-		\begin{align}
-		\frac{1}{3} & = \frac{0 + 1 + 0}{1 + 1 + 1} \nonumber \\
-s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} \text{ } \text{ } \text{ } \text{ (Similarity between rep j and rep k)}\nonumber \\
-            keeps_{jk} & = keep * s_{jk} \nonumber
-		\end{align}
+		\begin{array}{rll}
+		\frac{1}{2} & = {\displaystyle \frac{0 + 1 + 0}{1 + 1 + 0}} \nonumber \\
+s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} b_{ij}} }& \text{Fraction of votes for rep j that were for both reps j and k} \nonumber \\
+            keeps_{jk} & = keep * s_{jk} & \text{Rep j keeps these votes from rep k}\nonumber \\
+		\end{array}
         \]
-        We have refined our model to maximize the following, called an objective function:
+		We only do this when both reps win.   Remember the $x$ is binary and it indicates the winners.
+		\[
+		\begin{array}{l}
+			x_j * x_k & \text{Indicates when both reps have won}
+			\end{array}
+			\]
+        We can now refine our model to maximize the following, called an objective function:
 		\[
         \text{Maximize} \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k
         \]
-        Remember the $x$ is binary and it indicates the winners.  This expression is just the sum of the table, so it's basically just letting us add up the tally and subtract the keeps for the winning reps. Also! <b>We have a new and better table to add up and maximize!  It is better because now we don't need parties!</b>
+         This expression is just the sum of the table, so it's basically just letting us add up the tally and subtract the keeps for the winning reps. Also! <b>We have a new and better table to add up and maximize!  It is better because now we don't need parties!</b>
       </p>
 	  <h3> The model is actually like a sudoku </h3>
-      
       <p>
-        There is a really easy way to visualize what the model is trying to do.  We reduced the problem to crossing out the rows and columns in a table.  Cross out the row and column for each rep that lost. Add the remaining tallies and keeps.
+        There is a really easy way to visualize what the model is trying to do.  We reduced the problem to crossing out the rows and columns in a table.  Cross out the row and column for each rep that lost. Add the remaining tallies and keeps.  Try to find the 4 winners by crossing out the losing rep's row and column.
         \[
           \begin{bmatrix}
         10 & -4 & -3 &  0 & -1 \\
@@ -430,17 +431,14 @@ s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} ma
         -1 & -1 &  0 &  0 & 17 \\
           \end{bmatrix}
         \]
-          Try to find the 4 winners by crossing out the losing rep's row and column.
-      </p>
-      <p>
-      <img src="./crossout.png" align="center">
-      </p>
-      <p>
       The solution is to cross out the 3rd rep's row and column.  He had the lowest tally overall and he also overlapped in similarity with most of the other reps, so basically his territory was covered better by the other reps.
+      </p>
+      <p>
+      <img src="./crossout.png" align="middle">
       </p>
 	  <h3>Formal Model</h3>
       <p>
-        To sum up, the model has variables $x_j$ that work with a table of measurements.  We maximize a sum with terms that multiply the variables once by each other (quadratic binary terms) and by the table of measurements.   There is a constraint on the sum of these variables.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).
+        To sum up, the model maximizes a sum of linear and quadratic terms involving binary variables $x_j$ and a table of measurements.  There is a constraint that there are a specified number of winners.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).
       </p>
       <p>
         The problem is defined by the following model in the variable $x_j$ :
@@ -453,11 +451,10 @@ s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} ma
                           & x_j \in \{ 0, 1 \} \\
 						  \\
         \end{array}
-        \]
-		\[
+		\\
         \begin{array}{lrll}
-        \text{Constants } & keeps_{jk} & = keep * s_{jk}\\
-                          & s_{jk} & =  {\displaystyle \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} } & \text{Similarity between rep j and rep k}\\
+        \text{Constants } & keeps_{jk} & = keep * s_{jk}& \text{Rep j keeps these votes from rep k}\\
+                          & s_{jk} & = {\displaystyle \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} b_{ij}} }& \text{Fraction of votes for rep j that were for both reps j and k} \nonumber \\
                           & keep & = {\displaystyle \frac{\text{voters}}{\text{seats}} } & \text{Amount of ballots kept (if s=1, e.g. for clones)}\\
                           & tally_j & = {\displaystyle \sum_{i \in Voters} b_{ij} } & \text{Add up the ballots}\\
 						  & b_{ij} & = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Ballot} \\
@@ -571,7 +568,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
     </svg>
       </p>
       <p>
-        Click "Compute Winners" to find the reps who will win. These will be drawn as:
+        Click "Compute Winners" to find the winners. These will be drawn as:
         <svg height="20" width="100">
       <circle cx="10" cy="10" r="8" stroke="#000099" stroke-width="3" fill="blue" />
           <circle cx="30" cy="10" r="8" stroke="#006600" stroke-width="3" fill="green" />
@@ -608,7 +605,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</fieldset>
 		<fieldset>
 		<legend>Similarity Measure:</legend>
-		<input class="op" type="radio" name="similarity" checked="true"> Jaccard<br />
+		<input class="op" type="radio" name="similarity" checked="true"> Both Out Of One<br />
+		<input class="op" type="radio" name="similarity"> Jaccard<br />
+		<input class="op" type="radio" name="similarity"> One From Either<br />
 		<input class="op" type="radio" name="similarity"> Cosine<br />
 		<input class="op" type="radio" name="similarity"> L1<br />
 		</fieldset>
@@ -616,8 +615,6 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<legend>Computation:</legend>
 		<input class="op" checked="true" type="radio" name="compute"> Our Binary Quadratic Problem as described above. <br />
 		<input class="op" type="radio" name="compute"> STV <br />
-		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
-		<input class="op" type="radio" name="compute"> Schulze STV (todo)<br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
 		<input class="op" type="radio" name="compute" id="openstv"> OpenSTV (todo)
 		<select id="stvtype" name="stvtype" onclick="selectOpenstv()">
@@ -642,6 +639,8 @@ print(["%d" % x[j1].X for j1 in range(9)])
 			<option value="WarrenQXSTV">WarrenQXSTV</option>
 			<option value="WarrenSTV">WarrenSTV</option>
 		</select> <br />
+		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
+		<input class="op" type="radio" name="compute"> Schulze STV (bug)<br />
 		<input class="op" type="radio" name="compute"> Clustering like original<br />
 		<input class="op" type="radio" name="compute"> A new formulation (working on it) 
 	    </fieldset>

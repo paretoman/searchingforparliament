@@ -28,6 +28,7 @@ def optimize(voters, reps, options, output=False):
     if not output:
         m.params.OutputFlag = 0
     m.setParam('TimeLimit', 100)
+    options_str = '\n'.join(["%s - %s" % (options[i],i) for i in options])
     
     numReps = len(reps)
     numVoters = len(voters)
@@ -153,7 +154,7 @@ def optimize(voters, reps, options, output=False):
                     maxb = b[i,j]
             solution2.append((i,maxj))
 
-        return [solution1, solution2, "STV"] 
+        return [solution1, solution2, "STV" + options_str] 
 
     elif 0:
     
@@ -282,13 +283,23 @@ def optimize(voters, reps, options, output=False):
             return numpy.dot(a,b) / (numpy.sum(a) * numpy.sum(b))
         def jaccard_similarity(a,b):
             return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
+        def both_out_of_one(a,b):
+            return numpy.sum(numpy.minimum(a,b)) / numpy.sum(a)
+        def oneFromBoth(a,b):
+            return numpy.sum(a) / numpy.sum(numpy.maximum(a,b))
 
+        
+            
         for j in range(numReps):
             for k in range(numReps):
                 if options['l1Similarity']:
                     s[j,k] = l1_similarity(b[:,j],b[:,k])
                 elif options['cosineSimilarity']:
                     s[j,k] = cosine_similarity(b[:,j],b[:,k])
+                elif options["bothOutOfOne"]: 
+                    s[j,k] = both_out_of_one(b[:,j],b[:,k])
+                elif options["oneFromBoth"]: 
+                    s[j,k] = oneFromBoth(b[:,j],b[:,k])
                 else: #options["jaccardSimilarity"]:
                     s[j,k] = jaccard_similarity(b[:,j],b[:,k])
             t[j] = sum(b[:,j])
@@ -300,6 +311,7 @@ def optimize(voters, reps, options, output=False):
             keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (.5+nWinners)
         else:
             keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
+        print(keep)
         m.update()
         
         # Add constraints
@@ -338,12 +350,12 @@ def optimize(voters, reps, options, output=False):
                 maxb = b[i,j]
         solution2.append((i,maxj))
 
-    return [solution1, solution2, output.getvalue()]
+    return [solution1, solution2, output.getvalue() + options_str]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","cosineSimilarity","l1Similarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","MeeksSTV","openstv","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","bothOutOfOne","jaccardSimilarity","oneFromBoth","cosineSimilarity","l1Similarity","computeBQP","computeSTV","MeeksSTV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
