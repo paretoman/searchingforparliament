@@ -48,22 +48,24 @@ def optimize(voters, reps, options, output=False):
         dx = a[0] - b[0]
         dy = a[1] - b[1]
         return math.sqrt(dx*dx + dy*dy)
-
+        
     for i in range(numVoters):
         for j in range(numReps):
             d[i,j] = distance(voters[i], reps[j])
-            if options["exponentialBallots"]:
-                b[i,j] = numpy.exp(- d[i,j]/10 )
-            else:
-                b[i,j] = 1 /( d[i,j]/10 + 1 )
+    
+    if options["exponentialBallots"]:
+        b = numpy.exp(- d/10 )
+    elif options["oneOverDistanceBallots"]:
+        b = 1 /( d/10 + 1 )
+    else: #if options["linearBallots"]:
+        b = (numpy.max(d) - d) / 400
     
     if options['normalizeBallots']:
         for i in range(numVoters):
             normalizer = 1 / max(b[i,:])
             for j in range(numReps):
                 b[i,j] *= normalizer
-
-                
+            
     # there are a few different computations, depending on the option
     if options['computeClustering']:
         y = {}
@@ -89,12 +91,16 @@ def optimize(voters, reps, options, output=False):
         
         # convert ballot format
         bSTV = []
+        bPlur = []
         b_text = ""
         for i in range(numVoters):
             sb=b[i,:].argsort()[::-1]
             ssb = ["%d" % n_name for n_name in sb]
+            ssb0 = ["%d" % sb[0]]
             dssb = {"count":1,"ballot":ssb}
+            dssb0 = {"count":1,"ballot":ssb0}
             bSTV.append(dssb)
+            bPlur.append(dssb0)
             a_line = " ".join(ssb)
             b_text += a_line + "\n"
         b_text = b_text[:-1] # remove last newline
@@ -103,7 +109,7 @@ def optimize(voters, reps, options, output=False):
             outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
             winSet = outputSTV['winners'] # set of winners
         elif options["computePluralityMultiwinner"]:
-            outputSTV = PluralityAtLarge(bSTV, required_winners=nWinners).as_dict()
+            outputSTV = PluralityAtLarge(bPlur, required_winners=nWinners).as_dict()
             winSet = outputSTV['winners'] # set of winners
         elif options["computeSchulzeSTV"]:
             outputSTV = SchulzeSTV(bSTV, required_winners=nWinners, ballot_notation=SchulzeSTV.BALLOT_NOTATION_GROUPING).as_dict()
@@ -274,13 +280,17 @@ def optimize(voters, reps, options, output=False):
             return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
         def l1_similarity(a,b):
             return numpy.dot(a,b) / (numpy.sum(a) * numpy.sum(b))
+        def jaccard_similarity(a,b):
+            return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
 
         for j in range(numReps):
             for k in range(numReps):
                 if options['l1Similarity']:
                     s[j,k] = l1_similarity(b[:,j],b[:,k])
-                else:
+                elif options['cosineSimilarity']:
                     s[j,k] = cosine_similarity(b[:,j],b[:,k])
+                else: #options["jaccardSimilarity"]:
+                    s[j,k] = jaccard_similarity(b[:,j],b[:,k])
             t[j] = sum(b[:,j])
 
         if options['seatsPlusOne']:
@@ -333,7 +343,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusOne","seatsPlusHalf","seatsPlusZero","normalizeBallots","oneOverDistanceBallots","exponentialBallots","thresholdBallots","cosineSimilarity","l1Similarity","jaccardSimilarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","MeeksSTV","openstv","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusOne","seatsPlusHalf","seatsPlusZero","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","cosineSimilarity","l1Similarity","computeBQP","computeSTV","computePluralityMultiwinner","computeSchulzeSTV","MeeksSTV","openstv","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }

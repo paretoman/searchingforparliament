@@ -104,11 +104,7 @@ a:hover.screenshot {
 
     <p>We will find the optimal tradeoff between reps being near all the voters and voters having reps nearby.</p>
 
-    </div>
-
-    <div class="example_section" id="model">
-      <h2><a href="#model" name="model">Mathematical Model</a></h2>
-
+    <h3> Search Trees </h3>
       <p>
         Our problem is related to a very famous problem in computer science called the knapsack problem.  It differs in many ways.  It is similar in how it can be solved.  Both are kinds of binary search.  A search problem tries to find a combination of variables that is in some way the best combination.  One way to approach such a problem is the branch and bound method.  Here is a video on the <a href="https://www.coursera.org/learn/discrete-optimization/lecture/66OlO/knapsack-5-relaxation-branch-and-bound">branch and bound method</a> from a fantastic Coursera course in the field of <a href="https://www.coursera.org/learn/discrete-optimization/">discrete optimization</a>.  From this video, just understand that <b>there is a large number of possible choices to make and that they can all be organized in a tree structure</b>.  (The actual algorithm for searching through the tree will be taken care of by Gurobi, and we don't talk about it below.)  We still haven't said what the score is for each choice (or path) in the tree, so let's do that.  Most of the writing below is about that.  Each choice in the tree represents whether a rep wins.  The first split is for the first rep, the second split is for the second rep, etc.
       </p>
@@ -117,9 +113,15 @@ a:hover.screenshot {
         </p>
       <p>
           This tree is not for the problem at hand, but our problem is similar because it has the same binary variables $x_i$.
+	  </p>
+    </div>
+
+    <div class="example_section" id="model">
+      <h2><a href="#model" name="model">Mathematical Model</a></h2>
       <p>
         Let us now formulate a mathematical model for our problem.
       </p>
+	    
       <p>
         We need to say when we choose a rep.  Let's list all the reps as rep #1, rep #2, rep #3, etc, and let's make variables for each one.  If we choose rep #1, then $x_1=1$ and if we don't choose rep #2, then $x_2=0$.  Basically, $x_j$ is binary.
         \[
@@ -128,172 +130,295 @@ a:hover.screenshot {
                0 & \mathrm{otherwise.}
               \end{array}\right.
         \]
+		We set a constraint on the $x_j$ variables because there are only a limited number of seats in the legislature.  We set the sum of all $x_j$ to this number of seats.
+        \[
+        \sum_{j \in Reps} x_j = \text{number of seats}
+        \]
       </p>
       <p>
-        We need to say how close a voter is to a rep.  Let's list all the voters as voter #1, voter #2, etc, and let's make measurements for each voter and rep combination.  If the distance between voter #1 and rep #3 is 100 km, then $d_{13}=100$.  Technically, this is not a variable; it's a constant.
+        We need to say how close a voter is to a rep.  Let's list all the voters as voter #1, voter #2, etc, and let's make measurements for each voter and rep combination.  If the distance between voter #1 and rep #3 is 100 km, then $d_{13}=100$.
         \[
         d_{ij} = \text{distance between voter i and rep j}
         \]
       </p>
 
       <p>
-        We need to say what a ballot looks like.  We're going to make a simplification of the problem so that we can move forward.  We're going to let the voters give the candidates scores.  This is actually nicer for the voters because they get to say what they think of every rep.  Also, we're going to make every voter use the same scoring scale, and they will base their score entirely on how far away the rep is.  Basically, the inverse of distance.  
+        What does a ballot look like? We want to make this problem easy to show on a map so we're going to make a simplification of the problem.  We're going to let the voters give the candidates scores.  This is actually nicer for the voters because they get to say what they think of every rep.  Also, we're going to make every voter use the same scoring scale, and they will base their score entirely on how far away the rep is.  Basically, the inverse of distance.
         \[
-        b_{ij} = \frac{1}{d_{ij}/10 + 1} \text{ (ballot)}
+		\begin{array}{ll}
+        a_{ij} & = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{Inverting distance}\nonumber \\
+		b_{ij} & = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Ballot normalized}  \nonumber
+		\end{array}
         \]
       </p>
       <p>
-        (The 10 is here for normalizing distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function, and we may even want to allow voters to vote on different scales because voters would often give the candidate closest to them the highest score possible even if they aren't actually all that close.)
+        (The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to let voters who don't have a very close candidate vote with their full vote for their closest candidate.  This normalization is here because voters would give the candidate closest to them the highest score possible even if they aren't actually all that close.) voter rep
       </p>
+        <p>
+        <img src="./tally.png" align="center" />
+        </p> 
       <p>
         We need a way to count the ballots.  The easiest way is to add them together to get the reps' tallies.
         \[
         tally_j = \sum_{i \in Voters} b_{ij} 
         \]
       </p>
-        <p>
-        <img src="./tally.png" />
-        </p> 
       <p>
         If we stop here then we just end up picking the candidates in the middle because they have the highest tallies.
       </p>
       <p>
         We want to avoid overrepresenting the middle voters.  Our solution is to let the winning reps keep a fraction of their voters' ballots.  Basically, these voters have the reps, so the reps get to keep the voters.  Each winning rep keeps the same amount of support.
         \[
-        keep = \text{an amount of score. same units as ballots.  same for each winning rep.}
+        keep = 
+			\left[
+            \begin{array}{ll}
+				& \text{an amount of score,} \\
+				& \text{same units as ballots} \\
+				& \text{same for each pair of reps} \\
+            \end{array}
+			\right]
+        \]
+		\text{an amount of score. same units as ballots.  same for each winning rep.}
         \]
       </p>
       <p>
         The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  
         \[
-        \text{STV quota} = \frac{voters}{seats + 1}
+        \text{STV quota} = \frac{\text{voters}}{\text{seats} + 1}
         \]
         The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).
       </p>
       <p>
         Let's try something like the STV quota.
         \[
-        keep = \frac{\sum_{i \in Voters} \max_{j \in Reps} b_{ij}}{seats + 1}
+        keep = \frac{\text{voters}}{\text{seats}}
         \]
-        Usually, we would use 1 as the maximum score a voter could give.  In our specific problem, we are basing the score on distance, so we need to use a different number.  We add up each voter's max score they gave on their ballot.  Then we divide by the same number of seats as STV.
+		We want to subtract this somehow, and we want to show why this STV-style quota selects the correct number of reps for a group of voters.
       </p>
-      <p>
-          However, there is an issue that is still unsettled.  I have a +1 in the keeps formula because STV has a +1.  However, this might not be needed because there is no iterative step in this problem.
-      </p>
-      <p>
-        There actually is a nice example I will show to say how this STV-style quota selects the correct number of reps for a group of voters.  It also will motivate the next step.
-      </p>
-      <h3> Mini Example </h3>
+      <h3> Mini example to show proportionality</h3>
       <p>
         Ok, we'll show an example.  We can actually see the method at work.
-      </p>
-      <p>
-        There are 4 seats to fill. There are 20 voters.  For 10 of the voters, they like only 2 reps and give them a score of 1 on their ballots.  So ideally, we would expect those 2 candidates to win.  Let's make a chart to describe the situation:
-        \[
-        \begin{array}{ll}
-        & \text{10: tally for each rep} \\
-        & \text{4: amount of tally kept by each rep} \\
-        & keeps = \frac{20}{4 + 1} = 4 \\
-        & \text{table of reps:}
-          \begin{bmatrix} 
-                10 & -4  \\
-                -4 & 10  \\
-            \end{bmatrix}
-        \end{array}
-        \]
-          
-        The table describes all the kinds of tally's, the total tallies and the kept tallies. The reps are organized in the rows and the columns.  
-          \[
-          \text{Row 1 column 1 says rep #1 has a tally of 10 votes in support.  } \\
-          \text{Row 1 column 2 says rep #1 keeps 4 from the tally of rep #2.} \\
-          \text{Row 2 column 2 says rep #2 has a tally of 10 votes in support.} \\
-          \text{Row 2 column 1 says rep #2 keeps 4 from the tally of rep #1.}
-          \]
-      </p>
-      <p>
-      Here is a part of the problem statement that took a long time for me to figure out.  In STV, you might think that the kept votes only happen in one direction.  It might seem that the keeps are happening twice because both reps keep some voters.  This actually does happen in STV because it happens once after the first rep wins and again after the second rep wins.  
-      </p>
-      <p>
-        A Venn diagram works well to show how votes are kept.
-      </p>
-      <p>  
-        <img src="venndiagram.png" />
-      </p>
-        <ul>
-            <li>Rep #1 keeps 4 ballots. </li><li> Rep #2 keeps 4 ballots.  </li><li>They share the 2 remaining ballots. </li><li> There are 10 total ballots.  </li><li>Each rep gets 6 points.  </li><li>The total is 12 points.</li></ul>
-      
-      <p>  
-        Result: The kept votes are 8 and the total count is 20 - 8 = 12.  <b>We have a measure of voter support!  Let's maximize it!</b>
-        </p>
-        <p>
-        Option: If there was only one candidate running, the score would be 10, which is lower, so it is good that this second candidate is running.
-        </p>
-        <p>
-        Now consider what would happen if a 3rd candidate tried to run.
-        </p>
-        <p>
-        Say the full table for all the reps is this:
-        \[
-            \begin{bmatrix}
-                10 & -4 &  0 &  0 \\
-                -4 & 10 &  0 &  0 \\
-                 0 &  0 & 10 & -4 \\
-                 0 &  0 & -4 & 10 \\
-            \end{bmatrix}
-        \]
-        This is actually kinda simple because there are 4 seats and 4 reps, so all the reps win.  But Let's see what happens if we add a 5th rep on one side.
-                    \[
-            \begin{bmatrix}
-                10 & -4 &  0 &  0 &  0 \\
-                -4 & 10 &  0 &  0 &  0 \\
-                 0 &  0 & 10 & -4 & -4 \\
-                 0 &  0 & -4 & 10 & -4 \\
-                 0 &  0 & -4 & -4 & 10 \\
-            \end{bmatrix}
-        \]
 
-        </p>
-        <p>
-        If a third candidate ran, then the kept votes would add up faster than the support. Just look at the lower right part of the table.  The kept votes are 6 * 4 = 24.  The score would be 30 - 24 = 6.  That's 2 points per rep, and points per rep is a good figure of merit for deciding on an individual rep.  This is less than the score when 2 reps won, so it is not optimal for 3 reps to win. 
-        </p>
-        <p>
-        So the idea of the quota is borrowed from Droop's quota in STV and it seems to work well here.  We also gained a nice representation of the tally as a table.
+	    \[
+        \begin{align}
+        3& \text{ seats} \nonumber \\
+        6& \text{ voters} \nonumber \\
+        2& \text{ voters for party A: A1,A2,A3,...} \nonumber \\
+        4& \text{ voters for party B: B1,B2,B3,...} \nonumber \\
+        \end{align}
+        \]
+		
+		Here are the ballots for just the parties:
+				\[
+		\begin{bmatrix}
+		A: & 1 & 1 & 0 & 0 & 0 & 0 \\
+		B: & 0 & 0 & 1 & 1 & 1 & 1 
+		\end{bmatrix}
+		\]
+		
+		Here are the tallies for each of the reps:
+		\[
+		\begin{bmatrix}
+		A_1: & 2 \\
+		A_2: & 2 \\
+		B_1: & 4 \\
+		B_2: & 4 \\
+		\end{bmatrix}
+		\]
+		
+		We can also write the tallies along the diagonals of this table
+		
+		\[
+            \begin{bmatrix}
+				      &A_1 &A_2 &B_1 &B_2  \\
+                 A_1: &  2 &    &    &     \\
+                 A_2: &    &  2 &    &     \\
+                 B_1: &    &    &  4 &     \\
+                 B_2: &    &    &    &  4  \\
+            \end{bmatrix}
+        \]
+		
+		Keeps happen when two reps from the same party get elected.  For every pair, there is a table entry, so lets fill in those entries with keeps.
+		
+		\[
+			\left[
+            \begin{array}{rr}
+				      &A_1 &A_2 &B_1 &B_2  \\
+                 A_1: &  2 & -2 &    &     \\
+                 A_2: & -2 &  2 &    &     \\
+                 B_1: &    &    &  4 & -2  \\
+                 B_2: &    &    & -2 &  4  \\
+            \end{array}
+			\right]
+        \]
+		
+		We want to choose the 3 reps with the most votes.  So we try each combination, and for each we add the tallies and subtract the keeps.
+		\[
+		\]
+		One from A and two from B is the best combination:
+		\[
+			\left[
+            \begin{array}{rr}
+				      &A_1 &  \text{   }  &B_1 &B_2  \\
+                 A_1: &  2 &    &    &     \\
+                      &    &    &    &     \\
+                 B_1: &    &    &  4 & -2  \\
+                 B_2: &    &    & -2 &  4  \\
+            \end{array}
+			\right] = 2+4+4-2-2=6
+        \]
+		2 from A is not as good because there are a disproportionate number from A:
+		\[
+			\left[
+            \begin{array}{rr}
+				      &A_1 &A_2 &B_1 & \text{   }  \\
+                 A_1: &  2 & -2 &    &     \\
+                 A_2: & -2 &  2 &    &     \\
+                 B_1: &    &    &  4 &     \\
+                      &    &    &    &     \\
+            \end{array}
+			\right] =2+2+4-2-2=4
+        \]
+		If there were 3 winners from B, the total votes would be even less.  
+		\[
+			\left[
+            \begin{array}{rr}
+				      &    &  \text{   }  &B_1 &B_2& B_3  \\
+                      &    &    &    &    &     \\
+                      &    &    &    &    &     \\
+                 B_1: &    &    &  4 & -2 & -2  \\
+                 B_2: &    &    & -2 &  4 & -2  \\
+                 B_3: &    &    & -2 & -2 & 4  \\
+            \end{array}
+			\right] = 4+4+4-2-2-2-2-2-2=0
+        \]
+		The best combination was when there the proportion of votes matched the proportion of seats.  <b>That means the way we count votes is proportional.</b>  We also gained a nice table graphic for counting votes.
+		</p>
+	  <h3> Proportionality </h3>
+	  <p>
+	    Lets do some algebra to show that this is the right number of keeps.  It might seem that the keeps in this table are happening twice.  So we will find out if the amount of keeps should be some other number.
+		
+	    \[
+        \begin{align}
+        C_t& \text{ seats} \nonumber \\
+        N_t& \text{ voters} \nonumber \\
+        N_A& \text{ voters for party A: A1,A2,A3,...} \nonumber \\
+        N_B& \text{ voters for party B: B1,B2,B3,...} \nonumber \\
+		C_A& \text{ number of winners for party A} \nonumber \\
+        C_B& \text{ number of winners for party B} \nonumber \\
+        \end{align}
+        \]
+		
+		For each party, let's look at the winners add the tallies and subtract the keeps:
+		
+				\[
+			\left[
+            \begin{array}{rr}
+				      & A_1 & A_2 & \text{...} & A_{C_A}  \\
+                 A_1: & N_A &  -K &     &   -K   \\
+                 A_2: &  -K & N_A &     &   -K   \\
+                 \text{...} &     &     &     &        \\
+                 A_{C_A}:  &  -K &  -K &     & N_A    \\
+            \end{array}
+			\right] = N_A*C_A-K*C_A*(C_A-1)
+        \]
+      
+		What is the support per candidate?
+		
+		\[
+			N_A-K*(C-1)
+        \]
+		Choose the best candidates so they all get the same votes (approximation for inifinite candidates):
+		
+		\[
+			N_A-K*(C_A-1)=N_B-K*(C_B-1)
+        \]
+		
+		Solve for K:
+		\[
+			K=\frac{N_A-N_B}{C_A-C_B}
+        \]
+		
+		
+		Proportionality means every party has the same number of voters per candidate:
+		
+		\[
+		\frac{N_A}{C_A}=\frac{N_B}{C_B}=\frac{N_t}{C_t}
+		\]
+		Do algebra:
+		\[
+        \begin{align}
+			K & =\frac{N_A-N_B}{C_A-C_B}=\frac{C_A\frac{N_t}{C_t}-C_B\frac{N_t}{C_t}}{C_A-C_B}=\frac{C_A-C_B}{C_A-C_B}\frac{N_t}{C_t}=\frac{N_t}{C_t}=\frac{\text{voters}}{\text{seats}} \nonumber\\
+			keep & =\frac{\text{voters}}{\text{seats}} \nonumber
+        \end{align}
+        \]
+		So we know we have a proportional system.
       </p>
       <h3> Finishing the Model: Similarity </h3>
       <p>
-        What if the voters don't fall into parties? (like the short example above) 
+        What if the voters don't fall into parties?
       </p>
       <p>
-        How much of the ballot should the rep keep?  Let's look at one voter. If a voter likes a rep more, then that rep should keep a bigger portion of the ballot.  That vote is kept from other reps.  The more the voter likes those other reps, the more the other reps lose.  So there are two numbers to multiply.
+	    A party is just a group of people who vote the same.  Take an example.  Say rep A and B say they are from different parties.  What if a voter votes for both?  How do we account for proportionality?
+		</p>
+        <p>
+		
+		\[
+		\text{The ballot of a voter for A and B.} \\
+		\begin{bmatrix}
+		A: & 1 \\
+		B: & 1 
+		\end{bmatrix}
+		\]
+		</p>
+        <p>
+		This voter voted for rep A and rep B.  Now look at all the ballots of two more voters.
+		
+		
+		\[
+		\text{A partisan voter for A} \\
+		\begin{bmatrix}
+		A: & 1 \\
+		B: & 0 
+		\end{bmatrix}
+		\]
+		
+		
+		\[
+		\text{A partisan voter for B} \\
+		\begin{bmatrix}
+		A: & 0 \\
+		B: & 1 
+		\end{bmatrix}
+		\]
+		
+		All 3 of these voters voted differently, but A and B are from just 2 parties, so how many parties are there?  Well, let's get rid of the idea of reps belonging to parties.  It's the voters who count.  We actually have 3 pools of voters.  Let's look at all the ballots together.
+		
+		\[
+		\text{Three voter pools} \\
+		\begin{bmatrix}
+		A: & 1 & 1 & 0 \\
+		B: & 0 & 1 & 1 
+		\end{bmatrix}
+		\]
+		How do we account for this in our bookkeeping about kept votes?  1/3 of the votes for A or B were for both A and B.  So we reduce the number of kept votes to 1/3 of the usual.
+		
+		This measure is actually common.  It is called the Jaccard similarity.  Stated mathematically,
         \[
-        b_{ij} * b_{ik} = \text{Voter i likes rep j and rep k this much}
+		\begin{align}
+		\frac{1}{3} & = \frac{0 + 1 + 0}{1 + 1 + 1} \nonumber \\
+s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} \text{ } \text{ } \text{ } \text{ (Similarity between rep j and rep k)}\nonumber \\
+            keeps_{jk} & = keep * s_{jk} \nonumber
+		\end{align}
         \]
-        Oh yeah, we actually want this number as a fraction of the total tally for each rep.  Now we define a new constant (not a variable).
-        \[
-          \begin{align}
-        \frac{b_{ij}}{tally_j} * \frac{b_{ik}}{tally_k} = & \text{ Rep j and rep k share the support of voter i as a fraction of their total support.} \\
-        \sum_{i \in Voters} \frac{b_{ij}}{tally_j} * \frac{b_{ik}}{tally_k} = & \text{ Similarity between rep j and rep k}
-        \end{align}
-          \]
-        Ha, so we have a measure of similarity!  Actually there are many measures of similarity.  Is this the right one?  I tried a measure called cosine similarity at first because a lot of people use it.  It treats the ballots in support of a rep as a vector.  It is a vector in many dimensions because there are many voters.  Instead of the tally, we use the length of the vector, the Euclidean distance.  This is called cosine similarity.
-          \[
-          s_{jk} = \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{\sqrt{\sum_{i \in Voters} b_{ij}^2} *  \sqrt{\sum_{i \in Voters} b_{ik}^2}}  = \text{Cosine similarity between rep j and rep k}
-          \]
-      </p>
-      <p>
-        So, how much of the ballot should the rep keep?
-        \[
-            keeps_{jk} = keep * s_{jk}
+        We have refined our model to maximize the following, called an objective function:
+		\[
+        \text{Maximize} \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k
         \]
-        <b>Now we have a new table to add up and maximize!  This is better than the table in the simple example because now the voters don't have to fall into parties.</b> (By the way, with this kind of method of elections, we don't need parties.)
+        Remember the $x$ is binary and it indicates the winners.  This expression is just the sum of the table, so it's basically just letting us add up the tally and subtract the keeps for the winning reps. Also! <b>We have a new and better table to add up and maximize!  It is better because now we don't need parties!</b>
       </p>
-      <p>
-        This is the part of the model where we say what we want to maximize.  This part is called the objective function.
-        \[
-        O = \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k
-        \]
-        Remember the $x$ is binary, so it's basically just letting us add up tally and keeps for the winning reps.
-      </p>
+	  <h3> The model is actually like a sudoku </h3>
+      
       <p>
         There is a really easy way to visualize what the model is trying to do.  We reduced the problem to crossing out the rows and columns in a table.  Cross out the row and column for each rep that lost. Add the remaining tallies and keeps.
         \[
@@ -308,33 +433,36 @@ a:hover.screenshot {
           Try to find the 4 winners by crossing out the losing rep's row and column.
       </p>
       <p>
-      <img src="./crossout.png">
+      <img src="./crossout.png" align="center">
       </p>
       <p>
       The solution is to cross out the 3rd rep's row and column.  He had the lowest tally overall and he also overlapped in similarity with most of the other reps, so basically his territory was covered better by the other reps.
       </p>
+	  <h3>Formal Model</h3>
       <p>
-        <b>At last, we set a constraint on the $x_j$ variables because there are only a limited number of seats in the legislature.</b>  We set the sum of all $x_j$ to this number of seats.
-        \[
-        \sum_{j \in Reps} x_j = \text{number of seats}
-        \]
-      <p>
-        <b>To sum up, the model has variables $x_j$ that work with a table of measurements.  We maximize a sum with terms that multiply the variables once by each other (quadratic binary terms) and by the table of measurements.   There is a constraint on the sum of these variables.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).</b>
+        To sum up, the model has variables $x_j$ that work with a table of measurements.  We maximize a sum with terms that multiply the variables once by each other (quadratic binary terms) and by the table of measurements.   There is a constraint on the sum of these variables.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).
       </p>
       <p>
         The problem is defined by the following model in the variable $x_j$ :
 
         \[
         \begin{array}{ll}
-        \text{maximize}   & {\displaystyle \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k } \\
-        \text{subject to} & {\displaystyle \sum_{j \in Reps} x_j} = \text{number of seats}, \\
+        \text{Maximize}   & {\displaystyle \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k } \\
+		\\
+        \text{Subject to} & {\displaystyle \sum_{j \in Reps} x_j} = \text{number of seats} \\
                           & x_j \in \{ 0, 1 \} \\
-        \text{constants} & keeps_{jk} = keep * s_{jk},\\
-                          & s_{jk} = \frac{\sum_{i \in Voters} b_{ij} * b_{ik}}{\sqrt{\sum_{i \in Voters} b_{ij}^2} *  \sqrt{\sum_{i \in Voters} b_{ik}^2}}  = \text{Cosine similarity between rep j and rep k},\\
-                          & keep = \frac{\sum_{i \in Voters} \max_{j \in Reps} b_{ij}}{seats + 1} = \text{Amount of ballots kept (if s=1, e.g. for clones)},\\
-                          & tally_j = \sum_{i \in Voters} b_{ij} = \text{(add up the ballots)},\\
-                          & b_{ij} = \frac{1}{d_{ij}/10 + 1} \text{ (ballot)},\\
-                          & d_{ij} = \text{distance between voter i and rep j on the map}
+						  \\
+        \end{array}
+        \]
+		\[
+        \begin{array}{lrll}
+        \text{Constants } & keeps_{jk} & = keep * s_{jk}\\
+                          & s_{jk} & =  {\displaystyle \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} } & \text{Similarity between rep j and rep k}\\
+                          & keep & = {\displaystyle \frac{\text{voters}}{\text{seats}} } & \text{Amount of ballots kept (if s=1, e.g. for clones)}\\
+                          & tally_j & = {\displaystyle \sum_{i \in Voters} b_{ij} } & \text{Add up the ballots}\\
+						  & b_{ij} & = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Ballot} \\
+						  & a_{ij} & = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{Inverting distance}\\
+                          & d_{ij} &  & \text{Distance between voter i and rep j on the map}
         \end{array}
         \]
 
@@ -367,7 +495,9 @@ for j in range(numReps):
     x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
 
 # Add constants
+numWinners = 5
 d = numpy.zeros((numVoters,numReps))
+a = numpy.zeros((numVoters,numReps))
 b = numpy.zeros((numVoters,numReps))
 s = numpy.zeros((numReps,numReps))
 t = numpy.zeros(numReps)
@@ -380,21 +510,25 @@ def distance(a,b):
 for i in range(numVoters):
     for j in range(numReps):
         d[i,j] = distance(voters[i], reps[j])
-        b[i,j] = 1 /( d[i,j]/10 + 1 )
 
-def cosine_similarity(a,b):
-    return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
+a = 1 /( d/10 + 1 )
+
+for i in range(numVoters):
+	b[i,:] = a[i,:] / max(a[i,:])
+
+def jaccard_similarity(a,b):
+    return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
 
 for j in range(numReps):
     for k in range(numReps):
-        s[j,k] = cosine_similarity(b[:,j],b[:,k])
+        s[j,k] = jaccard_similarity(b[:,j],b[:,k])
     t[j] = sum(b[:,j])
-keep = sum(numpy.max(b,1)) / (1+5)
+keep = numVoters / numWinners
 
 m.update()
 
 # Add constraints
-m.addConstr(quicksum(x[j] for j in range(numReps)) == 5)
+m.addConstr(quicksum(x[j] for j in range(numReps)) == numWinners)
 
 d_obj = LinExpr()
 for j in range(numReps):
@@ -468,15 +602,15 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<legend>Ballot:</legend>
 		<input class="op"  checked="true"  type="checkbox">	Normalize <br />
 		<input class="op" checked="true"  type="radio" name="ballots"> 	1 / Distance<br />
-		<input class="op" type="radio" name="ballots">
-		Exponential <br />
+		<input class="op" type="radio" name="ballots">  Linear <br />
+		<input class="op" type="radio" name="ballots">  Exponential <br />
 		<input class="op" type="radio" name="ballots"> 	Threshold (todo) <br />
 		</fieldset>
 		<fieldset>
 		<legend>Similarity Measure:</legend>
+		<input class="op" type="radio" name="similarity"> Jaccard<br />
 		<input class="op" checked="true"  type="radio" name="similarity"> Cosine<br />
 		<input class="op" type="radio" name="similarity"> L1<br />
-		<input class="op" type="radio" name="similarity"> Jaccard (todo) <br />
 		</fieldset>
 		<fieldset>
 		<legend>Computation:</legend>
@@ -684,17 +818,14 @@ print(["%d" % x[j1].X for j1 in range(9)])
         Basically, this cosine similarity is a measure of an angle.  It is not a typical angle.  It is not in 2 dimensions.  It is actually in many more dimensions, as many dimensions as there are candidates.  Still, the same idea holds in 2 dimensions that the more aligned 2 candidates are, the bigger the cosine similarity.  It ranges from 0 for candidates that have nothing in common to 1 for identical "clone" candidates.
         </p>
         <p>
-        This information gets put into the problem definition matrix by simply multiplying each entry by cosine similarity.  Even the diagonals work! It's actually pretty easy.
+        This information gets put into the problem definition table by simply multiplying each entry by cosine similarity.  Even the diagonals work! It's actually pretty easy.
         </p>
         <p>
 
         Now we just tell the optimization software to pick the 5 best rows and columns that have the biggest sum.  Those are the best winners.
         </p>
         <p>
-        Here's a demo.
-        </p>
-        <p>
-        You can see that some areas have 2 candidates close together.  This one cluster of voters is big enough and supportive enough (close to the candidates), to elect 2 candidates.
+        You can see that some areas have 2 candidates close together.  Sometimes a cluster of voters is big enough and supportive enough (close to the candidates), to elect 2 candidates.
         </p>
         <p>
         Of course there are details I left out.
@@ -702,9 +833,15 @@ print(["%d" % x[j1].X for j1 in range(9)])
         <p>
         These are just my thoughts.
         </p>
-
-      </div>
-
+		<p>
+		So What?
+		</p>
+		<p>
+		Distance is good, 2D is great.  Let's think about the 3rd Dimension.  What would it be?  It doesn't have to be distance.  It can be political affiliation.  Now, the 4th.  It can be a particular issue.  And we can have as many dimensions as their are issues  and there won't be any more wedge issues that keep you stuck in a 1-dimensional partisan left-right line.
+		</p>
+		</div>
+	  
+	  
     </div>
     </div>
 
