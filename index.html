@@ -594,9 +594,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<legend>Keeps:</legend>
 		<input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width" style="width:100px"> <br />
 		<output for=cost id=costDisplay>1.0</output> Multiplier <br />
-		<input class="op" type="radio" name="keeps" checked="true">	Seats Plus One <br />
+		<input class="op" type="radio" name="keeps" checked="true">	Seats Plus Zero <br />
 		<input class="op" type="radio" name="keeps">	Seats Plus Half <br />
-		<input class="op" type="radio" name="keeps">	Seats Plus Zero <br />
+		<input class="op" type="radio" name="keeps">	Seats Plus One <br />
 		</fieldset>
 		<fieldset>
 		<legend>Ballot:</legend>
@@ -608,8 +608,8 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</fieldset>
 		<fieldset>
 		<legend>Similarity Measure:</legend>
-		<input class="op" type="radio" name="similarity"> Jaccard<br />
-		<input class="op" checked="true"  type="radio" name="similarity"> Cosine<br />
+		<input class="op" type="radio" name="similarity" checked="true"> Jaccard<br />
+		<input class="op" type="radio" name="similarity"> Cosine<br />
 		<input class="op" type="radio" name="similarity"> L1<br />
 		</fieldset>
 		<fieldset>
