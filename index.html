@@ -71,7 +71,7 @@ a:hover.screenshot {
     </p>
 
     <p>
-      The implementation of the model and the structure of this explanation is forked from the work of Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>).  The code for this website is on <a href="https://github.com/paretoman/searchingforparliament">github</a>.
+      The implementation of the model and the structure of this explanation is forked from the work of Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>).  The code for <a href="https://github.com/paretoman/searchingforparliament">this website is on github</a>.
     </p>
 
     <h3>
@@ -109,7 +109,11 @@ a:hover.screenshot {
         Our problem is related to a very famous problem in computer science called the knapsack problem.  It differs in many ways.  It is similar in how it can be solved.  Both are kinds of binary search.  A search problem tries to find a combination of variables that is in some way the best combination.  One way to approach such a problem is the branch and bound method.  Here is a video on the <a href="https://www.coursera.org/learn/discrete-optimization/lecture/66OlO/knapsack-5-relaxation-branch-and-bound">branch and bound method</a> from a fantastic Coursera course in the field of <a href="https://www.coursera.org/learn/discrete-optimization/">discrete optimization</a>.  From this video, just understand that <b>there is a large number of possible choices to make and that they can all be organized in a tree structure</b>.  (The actual algorithm for searching through the tree will be taken care of by Gurobi, and we don't talk about it below.)  We still haven't said what the score is for each choice (or path) in the tree, so let's do that.  Most of the writing below is about that.  Each choice in the tree represents whether a rep wins.  The first split is for the first rep, the second split is for the second rep, etc.
       </p>
         <p> 
-        <img src = "./tree.png" />
+        <div style="text-align: center">
+		<p>
+		<img src = "./tree.png"/>
+		</p>
+		</div>
         </p>
       <p>
           This tree is not for the problem at hand, but our problem is similar because it has the same binary variables $x_i$.
@@ -154,9 +158,9 @@ a:hover.screenshot {
       <p>
         (The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to let voters who don't have a very close candidate vote with their full vote for their closest candidate.  This normalization is here because voters would give the candidate closest to them the highest score possible even if they aren't actually all that close.)
       </p>
-        <p>
-        <img src="./tally.png" align="middle" />
-        </p> 
+        <div style="text-align: center">
+		<p><img src="./tally.png" style="text-align: center" /></p>
+		</div>
       <p>
         We need a way to count the ballots.  The easiest way is to add them together to get the reps' tallies.
         \[
@@ -265,6 +269,16 @@ a:hover.screenshot {
             \end{array}
 			\right] = 2+4+4-2-2=6
         \]
+		The keeps can be drawn on a Venn diagram to make sure we aren't over-counting.  There are 4 voters here.  First take 2 from the shared voter pool for one rep.  Then take 2 for the other.  The count of votes for both is reduced from 8 to 6 to 4 because reps keep some votes.
+		</p>
+		<p>
+		<div style="text-align: center">
+		<p>
+		<img src="venndiagram.png"  style="text-align: center" />
+		</p>
+		</div>
+		</p>
+		<p>
 		2 from A is not as good because there are a disproportionate number from A:
 		\[
 			\left[
@@ -434,7 +448,11 @@ s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i 
       The solution is to cross out the 3rd rep's row and column.  He had the lowest tally overall and he also overlapped in similarity with most of the other reps, so basically his territory was covered better by the other reps.
       </p>
       <p>
-      <img src="./crossout.png" align="middle">
+	  <div style="text-align: center">
+	  <p>
+      <img src="./crossout.png"  style="text-align: center" />
+	  </p>
+	  </div>
       </p>
 	  <h3>Formal Model</h3>
       <p>
@@ -513,12 +531,12 @@ a = 1 /( d/10 + 1 )
 for i in range(numVoters):
 	b[i,:] = a[i,:] / max(a[i,:])
 
-def jaccard_similarity(a,b):
-    return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
-
+def both_out_of_one(a,b):
+            return numpy.sum(numpy.minimum(a,b)) / numpy.sum(a)
+			
 for j in range(numReps):
     for k in range(numReps):
-        s[j,k] = jaccard_similarity(b[:,j],b[:,k])
+        s[j,k] = both_out_of_one(b[:,j],b[:,k])
     t[j] = sum(b[:,j])
 keep = numVoters / numWinners
 
@@ -610,6 +628,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<input class="op" type="radio" name="similarity"> One From Either<br />
 		<input class="op" type="radio" name="similarity"> Cosine<br />
 		<input class="op" type="radio" name="similarity"> L1<br />
+		<input class="op" type="radio" name="similarity"> multiplySupport<br />
 		</fieldset>
 		<fieldset>
 		<legend>Computation:</legend>
