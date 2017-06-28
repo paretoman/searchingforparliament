@@ -269,7 +269,7 @@ a:hover.screenshot {
             \end{array}
 			\right] = 2+4+4-2-2=6
         \]
-		The keeps can be drawn on a Venn diagram to make sure we aren't over-counting.  There are 4 voters here.  First take 2 from the shared voter pool for one rep.  Then take 2 for the other.  The count of votes for both is reduced from 8 to 6 to 4 because reps keep some votes.
+		The keeps can be drawn on a Venn diagram to make sure we aren't over-counting.  There are 4 voters here.  First take 2 from the shared voter pool for one rep.  Then take 2 for the other.  Now all the candidates $A_1, B_1, and B_2$ each have 2 votes:
 		</p>
 		<p>
 		<div style="text-align: center">
@@ -635,6 +635,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<input class="op" checked="true" type="radio" name="compute"> Our Binary Quadratic Problem as described above. <br />
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
+		<input class="op" type="radio" name="compute"> RRV  <br />
 		<input class="op" type="radio" name="compute" id="openstv"> OpenSTV (todo)
 		<select id="stvtype" name="stvtype" onclick="selectOpenstv()">
 			<option value="Approval">Approval</option>

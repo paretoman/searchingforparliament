@@ -209,6 +209,41 @@ def optimize(voters, reps, options, output=False):
 
         m.update()
         
+    elif options['computeRRV']:
+        
+        winBool = numpy.zeros(numReps)
+        winList = []
+        voterWeight = numpy.ones(numVoters)
+        voterWinSum = numpy.zeros(numVoters)
+        voterMax = numpy.max(b,1)
+        for i in range(nWinners):
+            t = numpy.matmul(voterWeight,b)
+            t[winList]=0
+            winner = numpy.argmax(t)
+            winBool[winner]=1
+            winList += [winner]
+            voterWinSum += b[:,winner]
+            voterWeight = 1/(1+voterWinSum/voterMax)
+        
+                
+        solution1 = []
+        solution2 = []
+        
+        for j in range(numReps):
+            if j in winList:
+                solution1.append(j)
+        
+        for i in range(numVoters):
+            maxj = 0
+            maxb = 0
+            for j in solution1:
+                if b[i,j] > maxb:
+                    maxj = j
+                    maxb = b[i,j]
+            solution2.append((i,maxj))
+
+        return [solution1, solution2, "STV" + options_str] 
+    
     elif options['computeMaxRRV']:
         
         # still to do
@@ -359,7 +394,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","bothOutOfOne","jaccardSimilarity","oneFromBoth","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","bothOutOfOne","jaccardSimilarity","oneFromBoth","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
