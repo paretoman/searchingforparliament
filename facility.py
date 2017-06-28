@@ -297,12 +297,12 @@ def optimize(voters, reps, options, output=False):
                 m.addQConstr( quicksum( f[i] * (b[i,j]+1) * x[j] for j in range(numReps) ) <= 1 ) # just trying out this b+1
         elif 0:  # try this
             for i in range(numVoters):
-                m.addConstr(f[i] <= 1)
+                # hey I don't need the extra f <= 1 constraints.
                 m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] + 1) for j in range(numReps) ) <= 1 ) # this is a better place for the + 1.  Maybe we should subtract the average score.
         else:  # try this
             for i in range(numVoters):
-                m.addConstr(f[i] <= 1)
-                nw0 = (nWinners-1) / nWinners
+                # hey I don't need the extra f <= 1 constraints.
+                nw0 = (nWinners-1) / nWinners # for some reason, computations go a lot faster with this factor.
                 m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] * nw0 + 1) for j in range(numReps) ) <= 1 ) # Let's also subtract the average score to try to match RRV better.
         m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
         
