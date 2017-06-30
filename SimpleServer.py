@@ -16,6 +16,7 @@ else:
 
 import facility
 
+
 class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
@@ -41,8 +42,22 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
 Handler = ServerHandler
 
-httpd = SocketServer.TCPServer(("", PORT), Handler)
 
-print "Starting simple server"
-print "serving at port", PORT
-httpd.serve_forever()
+if 0:
+
+	httpd = SocketServer.TCPServer(("", PORT), Handler)
+
+	print "Starting simple server"
+	print "serving at port", PORT
+	httpd.serve_forever()
+else:
+	import BaseHTTPServer
+	class ThreadingSimpleServer( SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer ):
+	    pass
+	server = ThreadingSimpleServer(('', PORT), Handler)
+	try:
+	    while 1:
+	        sys.stdout.flush()
+	        server.handle_request()
+	except KeyboardInterrupt:
+	    print "Finished"

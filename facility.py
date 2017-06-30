@@ -409,12 +409,32 @@ def optimize(voters, reps, options, output=False):
     if (m.status != 2):
         return ["error"]
 
+        
     solution1 = []
     solution2 = []
 
     for j in range(numReps):
         if (x[j].X > .5):
             solution1.append(j)
+    
+    wholetable = -.5*keep*s
+    for j in range(numReps):
+        wholetable[j,j] = t[j]
+    solutiontable = wholetable[solution1][:,solution1]
+    
+    out3 = "\n\nProblem:\n"
+    for i in wholetable:
+        for j in i:
+            out3 += "%-6i" % j
+        out3 += '\n'
+    out3 += '\nSolution:\n'
+    for i in solutiontable:
+        for j in i:
+            out3 += "%-6i" % j
+        out3 += '\n'
+            
+    
+    options_str += out3
     
     for i in range(numVoters):
         maxj = 0
