@@ -95,7 +95,7 @@ a:hover.screenshot {
 
     <p>Northern England gets rid of district boundaries because there was too much debate about where the boundaries should go.  It wants to pick 5 reps.  And it wants to space them out instead of having them all from the middle.  It wants regional interests to be represented and it doesn't want all the seats to be taken by people from the same neighborhood in the middle of Northern England.</p>
 
-    <p>Several good reps have decided to run, but it remains to decide which of the reps should win.</p>
+    <p>Several good reps (lets say "reps" instead of "potential representatives" or "candidates") have decided to run, but it remains to decide which of the reps should win.</p>
 
         <aside> A typical rep.<span style="font-size: 10px"></span>
     </aside>
@@ -366,57 +366,117 @@ a:hover.screenshot {
         What if the voters don't fall into parties?
       </p>
       <p>
-	    A party is just a group of people who vote the same.  Take an example.  Say rep A and B say they are from different parties.  What if a voter votes for both?  How do we account for proportionality?
+	  A party is just a group of people who vote the same.  Take an example.  Say rep A and B say they are from different parties.  What if a voter votes for both?  How do we account for proportionality?
 		</p>
         <p>
-		
+		Take an example of 3 voters.  One for A, one for B, and one for both:
 		\[
-		\text{The ballot of a voter for A and B.} \\
-		\begin{bmatrix}
-		A: & 1 \\
-		B: & 1 
-		\end{bmatrix}
-		\]
-		</p>
-        <p>
-		This voter voted for rep A and rep B.  Now look at all the ballots of two more voters.
-		
-		
-		\[
-		\text{A partisan voter for A} \\
+		\text{A partisan voter for A: } \
 		\begin{bmatrix}
 		A: & 1 \\
 		B: & 0 
 		\end{bmatrix}
 		\]
-		
-		
 		\[
-		\text{A partisan voter for B} \\
+		\text{A partisan voter for B: } \
 		\begin{bmatrix}
 		A: & 0 \\
 		B: & 1 
 		\end{bmatrix}
 		\]
-		
-		All 3 of these voters voted differently, but A and B are from just 2 parties, so how many parties are there?  Well, let's get rid of the idea of reps belonging to parties.  It's the voters who count.  We actually have 3 pools of voters.  Let's look at all the ballots together.
-		
 		\[
-		\text{Three voter pools} \\
+		\text{A voter for A and B: } \
+		\begin{bmatrix}
+		A: & 1 \\
+		B: & 1 
+		\end{bmatrix}
+		\]
+		Let's look at all the ballots together.  We have 3 kinds of voter.  1 out of 3 treats A and B as a single party.  It is like A and B are part of the same party, the AB party:
+		\[
+		\text{Three voter pools: } \
 		\begin{bmatrix}
 		A: & 1 & 1 & 0 \\
 		B: & 0 & 1 & 1 
 		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 1 \\
+		A:  & 1 \\
+		B:  & 1 \\
+		\end{bmatrix}
 		\]
-		How do we account for this in our bookkeeping about kept votes?  1/2 of the votes for A were for both A and B.  A has to keep some votes, so 1/2 of the votes that A keeps are taken from B:
+		How do we account for this in our bookkeeping about kept votes?  1/3 of the votes for A or B were for both A and B.  So we reduce the number of kept votes to 1/3 of the usual.
+		\[
+		\frac{1}{3} = \frac{0 + 1 + 0}{1 + 1 + 1}
+		\]
+		This measure is actually common.  It is called the Jaccard similarity.  Stated mathematically,
         \[
-		\begin{array}{rll}
-		\frac{1}{2} & = {\displaystyle \frac{0 + 1 + 0}{1 + 1 + 0}} \nonumber \\
-s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} b_{ij}} }& \text{Fraction of votes for rep j that were for both reps j and k} \nonumber \\
-            keeps_{jk} & = \frac{1}{2} keep * s_{jk} & \text{Rep j keeps these votes from rep k}\nonumber \\
-		\end{array}
+		\begin{align}
+		 \nonumber \\
+s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} \text{ } \text{ } \text{ } \text{ (Similarity between rep j and rep k)}\nonumber \\
+		\end{align}
         \]
-		We only do this when both reps win.   Remember the $x$ is binary and it indicates the winners.
+		<h4> Mixture Example</h4>
+		Let's try to justify this more and build an intuition by working through an example:
+		\[
+		\text{mixture example: } \
+		\begin{bmatrix}
+		A: & 1 & 1 & 1 & 1 & 0 & 0 \\
+		B: & 0 & 0 & 1 & 1 & 1 & 1 
+		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 2 \\
+		A:  & 2 \\
+		B:  & 2 \\
+		\end{bmatrix}
+		\]
+		This is actually a mixture of two extremes.  A 1-party extreme where A and B are actually from the same party, and a 2 party extreme where A and B are from different parties:
+		
+		\[
+		\text{1-party extreme: } \
+		\begin{bmatrix}
+		A: & 1 & 1 & 1 & 1 & 1 & 1 \\
+		B: & 1 & 1 & 1 & 1 & 1 & 1 
+		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 6 \\
+		A:  & 0 \\
+		B:  & 0 \\
+		\end{bmatrix}
+		\]
+		
+		\[
+		\text{2-party extreme: } \
+		\begin{bmatrix}
+		A: & 1 & 1 & 1 & 0 & 0 & 0 \\
+		B: & 0 & 0 & 0 & 1 & 1 & 1 
+		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 0 \\
+		A:  & 3 \\
+		B:  & 3 \\
+		\end{bmatrix}
+		\]
+		Across both extreme examples, the same number of candidates win from each party.  So the middle example should have the same result. 
+		\[
+		\text{different examples, same result: } \
+		\begin{bmatrix}
+		    & \text{2P:} & \text{M:} & \text{1P:}\\
+		AB: & 0 & 2 & 6 \\
+		A:  & 3 & 2 & 0 \\
+		B:  & 3 & 2 & 0 \\
+		\end{bmatrix}
+		\]
+		A test with Jaccard similarity would show that maximizing the table sum gives the same composition of winners.  Let's now see how we would write up this test.
+		<h4> Add Similarity to Model </h4>
+		Let's include this similarity measure in our model.  We need to adjust the number of votes that are kept when a pair of candidates share the same voter support:
+		\[
+		keeps_{jk} = keep * s_{jk} \nonumber
+		\]
+		We only do this when both reps win.  We want to make an indicator for when both reps win.  Remember the $x$ is binary and it indicates the winners.
 		\[
 		\begin{array}{l}
 			x_j * x_k & \text{Indicates when both reps have won}
@@ -424,9 +484,9 @@ s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i 
 			\]
         We can now refine our model to maximize the following, called an objective function:
 		\[
-        \text{Maximize} \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k
+        \text{Maximize} \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} \frac{1}{2} keeps_{jk} * x_j * x_k
         \]
-         This expression is just the sum of the table, so it's basically just letting us add up the tally and subtract the keeps for the winning reps. Also! <b>We have a new and better table to add up and maximize!  It is better because now we don't need parties!</b>
+         This expression is just the sum of the table, so it's basically just letting us add up the tally and subtract the keeps for the winning reps. The 1/2 factor is in there because there are 2 entries $x_{jk}$ and $x_{kj}$ for each pair.  So! <b>We have a new and better table to add up and maximize!  It is better because now we don't need parties!  It's the voters that matter, not the parties.</b>
       </p>
 	  <h3> The model is actually like a sudoku </h3>
       <p>
@@ -458,7 +518,7 @@ s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i 
 
         \[
         \begin{array}{ll}
-        \text{Maximize}   & {\displaystyle \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} keeps_{jk} * x_j * x_k } \\
+        \text{Maximize}   & {\displaystyle \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} \frac{1}{2} keeps_{jk} * x_j * x_k } \\
 		\\
         \text{Subject to} & {\displaystyle \sum_{j \in Reps} x_j} = \text{number of seats} \\
                           & x_j \in \{ 0, 1 \} \\
@@ -466,12 +526,12 @@ s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i 
         \end{array}
 		\\
         \begin{array}{lrll}
-        \text{Constants } & keeps_{jk} & = \frac{1}{2} keep * s_{jk}& \text{Rep j keeps these votes from rep k}\\
-                          & s_{jk} & = {\displaystyle \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} b_{ij}} }& \text{Fraction of votes for rep j that were for both reps j and k} \nonumber \\
-                          & keep & = {\displaystyle \frac{\text{voters}}{\text{seats}} } & \text{Amount of ballots kept (if s=1, e.g. for clones)}\\
-                          & tally_j & = {\displaystyle \sum_{i \in Voters} b_{ij} } & \text{Add up the ballots}\\
-						  & b_{ij} & = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Ballot} \\
-						  & a_{ij} & = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{Inverting distance}\\
+        \text{Constants } & keeps_{jk} & = keep * s_{jk}& \text{Rep j keeps these votes from rep k}\\ \\
+                          & s_{jk} & = {\displaystyle \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} }& \text{Similarity between reps j and k} \nonumber \\ \\
+                          & keep & = {\displaystyle \frac{\text{voters}}{\text{seats}} } & \text{Amount of ballots kept (if s=1, e.g. for clones)}\\ \\
+                          & tally_j & = {\displaystyle \sum_{i \in Voters} b_{ij} } & \text{Add up the ballots}\\ \\
+						  & b_{ij} & = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Ballot} \\ \\
+						  & a_{ij} & = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{Inverting distance}\\ \\
                           & d_{ij} &  & \text{Distance between voter i and rep j on the map}
         \end{array}
         \]
@@ -513,9 +573,9 @@ s = numpy.zeros((numReps,numReps))
 t = numpy.zeros(numReps)
 
 def distance(a,b):
-  dx = a[0] - b[0]
-  dy = a[1] - b[1]
-  return math.sqrt(dx*dx + dy*dy)
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
+    return math.sqrt(dx*dx + dy*dy)
 
 for i in range(numVoters):
     for j in range(numReps):
@@ -526,14 +586,15 @@ a = 1 /( d/10 + 1 )
 for i in range(numVoters):
 	b[i,:] = a[i,:] / max(a[i,:])
 
-def both_out_of_one(a,b):
-            return numpy.sum(numpy.minimum(a,b)) / numpy.sum(a)
+keep = numVoters / numWinners
+
+def jaccard_similarity(a,b):
+    return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
 			
 for j in range(numReps):
-    for k in range(numReps):
-        s[j,k] = both_out_of_one(b[:,j],b[:,k])
     t[j] = sum(b[:,j])
-keep = numVoters / numWinners
+    for k in range(numReps):
+        s[j,k] = jaccard_similarity(b[:,j],b[:,k])
 
 m.update()
 
@@ -618,8 +679,8 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</fieldset>
 		<fieldset>
 		<legend>Similarity Measure:</legend>
-		<input class="op" type="radio" name="similarity" checked="true"> Both Out Of One<br />
-		<input class="op" type="radio" name="similarity"> Jaccard<br />
+		<input class="op" type="radio" name="similarity" checked="true"> Jaccard<br />
+		<input class="op" type="radio" name="similarity"> Both Out Of One<br />
 		<input class="op" type="radio" name="similarity"> One From Either<br />
 		<input class="op" type="radio" name="similarity"> Simultaneous<br />
 		<input class="op" type="radio" name="similarity"> integrateKeeps<br />
