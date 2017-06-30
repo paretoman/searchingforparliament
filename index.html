@@ -63,7 +63,7 @@ a:hover.screenshot {
         <subtitle>(the computer science kind of search)</subtitle>
     </div>
     <p>
-      Selecting a group of people to represent a nation is an example of what computer science calls an assignment search problem.  Which candidates are the most representative of the voters?
+      Selecting a group of people to represent a nation is an example of what computer science calls an assignment search problem.  Which reps (candidates) are the most representative of the voters?
     </p>
 
     <p>
@@ -93,9 +93,9 @@ a:hover.screenshot {
       </a>
     </div>
 
-    <p>Northern England gets rid of district boundaries because there was too much debate about where the boundaries should go.  It wants to elect 4 reps (representatives).  And it wants to space them out instead of having them all from the middle.  It wants regional interests to be represented and it doesn't want all the seats to be taken by people from the same neighborhood in the middle of Northern England.</p>
+    <p>Northern England gets rid of district boundaries because there was too much debate about where the boundaries should go.  It wants to pick 5 reps.  And it wants to space them out instead of having them all from the middle.  It wants regional interests to be represented and it doesn't want all the seats to be taken by people from the same neighborhood in the middle of Northern England.</p>
 
-    <p>Several good potential reps have decided to run, but it remains to decide which of the reps should win.</p>
+    <p>Several good reps have decided to run, but it remains to decide which of the reps should win.</p>
 
         <aside> A typical rep.<span style="font-size: 10px"></span>
     </aside>
@@ -147,7 +147,7 @@ a:hover.screenshot {
       </p>
 
       <p>
-        What does a ballot look like? We want to make this problem easy to show on a map so we're going to make a simplification of the problem.  We're going to let the voters give the candidates scores.  This is actually nicer for the voters because they get to say what they think of every rep.  Also, we're going to make every voter use the same scoring scale, and they will base their score entirely on how far away the rep is.  Basically, the inverse of distance.
+        What does a ballot look like? We want to make this problem easy to show on a map so we're going to make a simplification of the problem.  We're going to let the voters give the reps scores.  This is actually nicer for the voters because they get to say what they think of every rep.  Also, we're going to make every voter use the same scoring scale, and they will base their score entirely on how far away the rep is.  Basically, the inverse of distance.
         \[
 		\begin{array}{ll}
         a_{ij} & = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{Inverting distance}\nonumber \\
@@ -156,7 +156,7 @@ a:hover.screenshot {
         \]
       </p>
       <p>
-        (The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to let voters who don't have a very close candidate vote with their full vote for their closest candidate.  This normalization is here because voters would give the candidate closest to them the highest score possible even if they aren't actually all that close.)
+        (The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to let voters who don't have a very close rep vote with their full vote for their closest rep.  This normalization is here because voters would give the rep closest to them the highest score possible even if they aren't actually all that close.)
       </p>
         <div style="text-align: center">
 		<p><img src="./tally.png" style="text-align: center" /></p>
@@ -168,7 +168,7 @@ a:hover.screenshot {
         \]
       </p>
       <p>
-        If we stop here then we just end up picking the candidates in the middle because they have the highest tallies.
+        If we stop here then we just end up picking the reps in the middle because they have the highest tallies.
       </p>
       <p>
         We want to avoid overrepresenting the middle voters.  Our solution is to let the winning reps keep a fraction of their voters' ballots.  Basically, these voters have the reps, so the reps get to keep the voters.  Each winning rep keeps the same amount of support.
@@ -312,7 +312,7 @@ a:hover.screenshot {
 		</p>
 	  <h3> Proportionality </h3>
 	  <p>
-	    Lets do some maximization to show that this is the right number of keeps.  It might seem that each candidate should hold on to the keeps rather than splitting them.  So we will find out if the amount of keeps should be some other number.
+	    Lets do some maximization to show that this is the right number of keeps.  It might seem that each rep should hold on to the keeps rather than splitting them.  So we will find out if the amount of keeps should be some other number.
 		
 	    \[
         \begin{align}
@@ -350,7 +350,7 @@ a:hover.screenshot {
 			K &= \frac{N_A-N_B}{C_A-C_B} \nonumber
 			\end{align}
 		\]
-		Now lets enforce proportionality. Proportionality means every party has the same number of voters per candidate:
+		Now lets enforce proportionality. Proportionality means every party has the same number of voters per rep:
 		\[
 		\frac{N_A}{C_A}=\frac{N_B}{C_B}=\frac{N_t}{C_t}
 		\]
@@ -574,7 +574,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
       </p>
 
       <p>
-        By clicking the map you can add <em>potential</em> rep locations.
+        By clicking the map you can add rep locations.
         These are drawn as:
         <svg height="20" width="20">
       <circle cx="10" cy="10" r="8" stroke="black" stroke-width="1" fill="white" />
@@ -592,7 +592,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
       </p>
 
       <p>
-        A few potential rep locations have already been set up, but
+        A few rep locations have already been set up, but
         you can add more by clicking the screen.
       </p>
 	  
@@ -794,13 +794,13 @@ print(["%d" % x[j1].X for j1 in range(9)])
       <div class="example_section" id="thoughts">
       <h2>Here's my thoughts.</h2>
       <p>
-      It turns out I finally invented a good voting system.  So, how did I come up with it?  Well, I had thought of it before but couldn't work out the math.  It is the same as STV because it has a quota.  It is different than STV because it searches for the best combination of candidates that would maximize voter support for the winners.  
+      It turns out I finally invented a good voting system.  So, how did I come up with it?  Well, I had thought of it before but couldn't work out the math.  It is the same as STV because it has a quota.  It is different than STV because it searches for the best combination of reps that would maximize voter support for the winners.  
         </p>
         <p>
-        I didn't think it would work.  I thought I was over-penalizing.  However, I realized that I could set the quota so that it optimized the number of candidates coming from a voter base.  The optimization is for proportionality.  I tried to use the same quota as STV's droop quota: number of voters over number-of-seats-plus-1.  
+        I didn't think it would work.  I thought I was over-penalizing.  However, I realized that I could set the quota so that it optimized the number of reps coming from a voter base.  The optimization is for proportionality.  I tried to use the same quota as STV's droop quota: number of voters over number-of-seats-plus-1.  
         </p>
         <p>
-        Some things to change:  I'm not sure exactly what the quota should be because I'm not sure how they'll actually vote.  Right now, I have put them as all voting depending on their distance from a candidate.  Maybe I would choose a different function.  Maybe voters would want to maximize the range of their vote.  Maybe they would have just two levels of support, high and low, and they would change their threshold depending on who is running and who other people are voting for.
+        Some things to change:  I'm not sure exactly what the quota should be because I'm not sure how they'll actually vote.  Right now, I have put them as all voting depending on their distance from a rep.  Maybe I would choose a different function.  Maybe voters would want to maximize the range of their vote.  Maybe they would have just two levels of support, high and low, and they would change their threshold depending on who is running and who other people are voting for.
         </p>
         <p>
         Things to do.
@@ -815,7 +815,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
         </li><li>add CPO-STV comparison
         </li><li>far future: put this into ncase's better ballot.
         </li><li>far future: yee diagram in background
-        </li><li>explanation: what is the incentive of the voters to vote honestly?  Couldn't they find a way to avoid penalties by only supporting one candidate?  Isn't that strategy also applicable to STV?
+        </li><li>explanation: what is the incentive of the voters to vote honestly?  Couldn't they find a way to avoid penalties by only supporting one rep?  Isn't that strategy also applicable to STV?
         </li></ul>
           </p>
         <p>
@@ -825,13 +825,13 @@ print(["%d" % x[j1].X for j1 in range(9)])
         In clustering, voters dont have influence outside their cluster.  In this penalty system, they can have negative influence if they get too many representatives... maybe.. but they would never get too many
         </p>
         <p>
-        I need to motivate this with the idea of search.  There is depth-first, which is greedy and assigns the single candidates with the highest vote counts first.  Standard STV does this kind of depth-first search.  In STV, if more people like a candidate than the quota, then those people can get their second choices as well.  This is like at-large voting, except after your candidate gets a seat, part of your vote stays with them and only part of it gets to go to a second candidate.  This kind of division of the vote can be accomplished by subtracting the "kept" votes from the total vote count.  This avoids overcounting.
+        I need to motivate this with the idea of search.  There is depth-first, which is greedy and assigns the single reps with the highest vote counts first.  Standard STV does this kind of depth-first search.  In STV, if more people like a rep than the quota, then those people can get their second choices as well.  This is like at-large voting, except after your rep gets a seat, part of your vote stays with them and only part of it gets to go to a second rep.  This kind of division of the vote can be accomplished by subtracting the "kept" votes from the total vote count.  This avoids overcounting.
         </p>
         <p>
-        The algorithm searches through all the possible combinations of seat assignments for the candidates.  It tries to maximize the number of voters who support the winning candidates.  It avoids double-counting in the same way as STV.  It keeps some of the votes for similar candidates.
+        The algorithm searches through all the possible combinations of seat assignments for the reps.  It tries to maximize the number of voters who support the winning reps.  It avoids double-counting in the same way as STV.  It keeps some of the votes for similar reps.
         </p>
         <p>
-        Basically, this cosine similarity is a measure of an angle.  It is not a typical angle.  It is not in 2 dimensions.  It is actually in many more dimensions, as many dimensions as there are candidates.  Still, the same idea holds in 2 dimensions that the more aligned 2 candidates are, the bigger the cosine similarity.  It ranges from 0 for candidates that have nothing in common to 1 for identical "clone" candidates.
+        Basically, this cosine similarity is a measure of an angle.  It is not a typical angle.  It is not in 2 dimensions.  It is actually in many more dimensions, as many dimensions as there are reps.  Still, the same idea holds in 2 dimensions that the more aligned 2 reps are, the bigger the cosine similarity.  It ranges from 0 for reps that have nothing in common to 1 for identical "clone" reps.
         </p>
         <p>
         This information gets put into the problem definition table by simply multiplying each entry by cosine similarity.  Even the diagonals work! It's actually pretty easy.
@@ -841,7 +841,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
         Now we just tell the optimization software to pick the 5 best rows and columns that have the biggest sum.  Those are the best winners.
         </p>
         <p>
-        You can see that some areas have 2 candidates close together.  Sometimes a cluster of voters is big enough and supportive enough (close to the candidates), to elect 2 candidates.
+        You can see that some areas have 2 reps close together.  Sometimes a cluster of voters is big enough and supportive enough (close to the reps), to elect 2 reps.
         </p>
         <p>
         Of course there are details I left out.
@@ -1129,7 +1129,7 @@ function addPoint() {
 function compute() {
 
   if (sites.length < 1) {
-    alert("Add potential sites to compute the optimal facility locations!");
+    alert("Add reps!");
     return;
   }
 
@@ -1190,7 +1190,7 @@ function serverResponse(error, data) {
           // Import solution and put it into correct format
           var solution = data['solution'];
           if (solution[0] === "error") {
-            alert("10 second solve time limit exceeded. Reduce the number of the candidate facilities.");
+            alert("100 second solve time limit exceeded. Reduce the number of reps.");
             return;
           }
           var solution1 = solution[0]; // Facilities to open
