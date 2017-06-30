@@ -184,7 +184,7 @@ a:hover.screenshot {
         \]
       </p>
       <p>
-        The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  
+        The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  When a rep is declared a winner, he keeps a quota of votes and the extra go to other reps similar to him if the voters have both on their ballot.
         \[
         \text{STV quota} = \frac{\text{voters}}{\text{seats} + 1}
         \]
@@ -195,7 +195,7 @@ a:hover.screenshot {
         \[
         keep = \frac{\text{voters}}{\text{seats}}
         \]
-		We want to subtract this somehow, and we want to show why it selects the correct number of reps for a group of voters.
+		STV subtracts this for each pair of reps when one of the pair wins and they are supported by the same group of voters.  We want to subtract this for each similar pair, and we want to show why it selects the correct number of reps for a group of voters.
       </p>
       <h3> Mini example to show proportionality</h3>
       <p>
@@ -240,16 +240,20 @@ a:hover.screenshot {
             \end{bmatrix}
         \]
 		
-		Keeps happen when two reps from the same party get elected.  For every pair, there is a table entry, so lets fill in those entries with keeps.
+		Keeps happen when two reps from the same party get elected.  For every pair, there is a table entry, so lets fill in those entries with keeps.  
 		
+        \[
+        keep = \frac{\text{voters}}{\text{seats}} = \frac{\text{6}}{\text{3}} = 2
+        \]
+		There are two table entries for each pair, so we divide this $keep$ between them.
 		\[
 			\left[
             \begin{array}{rr}
 				      &A_1 &A_2 &B_1 &B_2  \\
-                 A_1: &  2 & -2 &    &     \\
-                 A_2: & -2 &  2 &    &     \\
-                 B_1: &    &    &  4 & -2  \\
-                 B_2: &    &    & -2 &  4  \\
+                 A_1: &  2 & -1 &    &     \\
+                 A_2: & -1 &  2 &    &     \\
+                 B_1: &    &    &  4 & -1  \\
+                 B_2: &    &    & -1 &  4  \\
             \end{array}
 			\right]
         \]
@@ -264,12 +268,12 @@ a:hover.screenshot {
 				      &A_1 &  \text{   }  &B_1 &B_2  \\
                  A_1: &  2 &    &    &     \\
                       &    &    &    &     \\
-                 B_1: &    &    &  4 & -2  \\
-                 B_2: &    &    & -2 &  4  \\
+                 B_1: &    &    &  4 & -1  \\
+                 B_2: &    &    & -1 &  4  \\
             \end{array}
-			\right] = 2+4+4-2-2=6
+			\right] = 2+4+4-1-1=8
         \]
-		The keeps can be drawn on a Venn diagram to make sure we aren't over-counting.  There are 4 voters here.  First take 2 from the shared voter pool for one rep.  Then take 2 for the other.  Now all the candidates $A_1, B_1, and B_2$ each have 2 votes:
+		The keeps can be drawn on a Venn diagram.  There are 4 voters here.  First take 1 from the shared voter pool for one rep.  Then take 1 for the other.
 		</p>
 		<p>
 		<div style="text-align: center">
@@ -284,12 +288,12 @@ a:hover.screenshot {
 			\left[
             \begin{array}{rr}
 				      &A_1 &A_2 &B_1 & \text{   }  \\
-                 A_1: &  2 & -2 &    &     \\
-                 A_2: & -2 &  2 &    &     \\
+                 A_1: &  2 & -1 &    &     \\
+                 A_2: & -1 &  2 &    &     \\
                  B_1: &    &    &  4 &     \\
                       &    &    &    &     \\
             \end{array}
-			\right] =2+2+4-2-2=4
+			\right] =2+2+4-1-1=6
         \]
 		If there were 3 winners from B, the total votes would be even less.  
 		\[
@@ -298,17 +302,17 @@ a:hover.screenshot {
 				      &    &  \text{   }  &B_1 &B_2& B_3  \\
                       &    &    &    &    &     \\
                       &    &    &    &    &     \\
-                 B_1: &    &    &  4 & -2 & -2  \\
-                 B_2: &    &    & -2 &  4 & -2  \\
-                 B_3: &    &    & -2 & -2 & 4  \\
+                 B_1: &    &    &  4 & -1 & -1  \\
+                 B_2: &    &    & -1 &  4 & -1  \\
+                 B_3: &    &    & -1 & -1 & 4  \\
             \end{array}
-			\right] = 4+4+4-2-2-2-2-2-2=0
+			\right] = 4+4+4-1-1-1-1-1-1=6
         \]
-		The best combination was when there the proportion of votes matched the proportion of seats.  <b>That means the way we count votes is proportional.</b>  We also gained a nice table graphic for counting votes.
+		The best combination was when there the proportion of votes matched the proportion of seats.  <b>That means the way we count votes is proportional.</b>  Also notice we lost 2 points whether we went forward or back, so we're right on the maximum.  We can get proportionality by just maxmizing the sum of this table.  We also gained a nice table graphic for counting votes.
 		</p>
 	  <h3> Proportionality </h3>
 	  <p>
-	    Lets do some algebra to show that this is the right number of keeps.  It might seem that the keeps in this table are happening twice.  So we will find out if the amount of keeps should be some other number.
+	    Lets do some maximization to show that this is the right number of keeps.  It might seem that each candidate should hold on to the keeps rather than splitting them.  So we will find out if the amount of keeps should be some other number.
 		
 	    \[
         \begin{align}
@@ -327,42 +331,33 @@ a:hover.screenshot {
 			\left[
             \begin{array}{rr}
 				      & A_1 & A_2 & \text{...} & A_{C_A}  \\
-                 A_1: & N_A &  -K &     &   -K   \\
-                 A_2: &  -K & N_A &     &   -K   \\
+                 A_1: & N_A &  -K/2 &     &   -K/2   \\
+                 A_2: &  -K/2 & N_A &     &   -K/2   \\
                  \text{...} &     &     &     &        \\
-                 A_{C_A}:  &  -K &  -K &     & N_A    \\
+                 A_{C_A}:  &  -K/2 &  -K/2 &     & N_A    \\
             \end{array}
-			\right] = N_A*C_A-K*C_A*(C_A-1)
-        \]
-      
-		What is the support per candidate?
-		
+			\right] = N_A*C_A-\frac{1}{2}K*C_A*(C_A-1)
+			\]
+		For both parties, 
+			\[
+				Obj = N_A*C_A-\frac{1}{2}K*C_A*(C_A-1) + N_B*C_B-\frac{1}{2}K*C_B*(C_B-1) 
+			\]
+		Let's maximize this objective function on $C_A$ by setting its derivative to $0$ and solving for $K$:
 		\[
-			N_A-K*(C_A-1)
-        \]
-		Choose the best candidates so they all get the same votes (approximation for inifinite candidates):
-		
-		\[
-			N_A-K*(C_A-1)=N_B-K*(C_B-1)
-        \]
-		
-		Solve for K:
-		\[
-			K=\frac{N_A-N_B}{C_A-C_B}
-        \]
-		
-		
-		Proportionality means every party has the same number of voters per candidate:
-		
+			\begin{align}
+			\frac{d \ Obj}{d \ C_A} &= 0 \nonumber \\
+			0 &= N_A-N_B-K*C_A+K*C_B \nonumber \\
+			K &= \frac{N_A-N_B}{C_A-C_B} \nonumber
+			\end{align}
+		\]
+		Now lets enforce proportionality. Proportionality means every party has the same number of voters per candidate:
 		\[
 		\frac{N_A}{C_A}=\frac{N_B}{C_B}=\frac{N_t}{C_t}
 		\]
-		Do algebra:
+		So we substitute and do algebra to get a confirmation of what we already guessed.
 		\[
-        \begin{align}
-			K & =\frac{N_A-N_B}{C_A-C_B}=\frac{C_A\frac{N_t}{C_t}-C_B\frac{N_t}{C_t}}{C_A-C_B}=\frac{C_A-C_B}{C_A-C_B}\frac{N_t}{C_t}=\frac{N_t}{C_t}=\frac{\text{voters}}{\text{seats}} \nonumber\\
-			keep & =\frac{\text{voters}}{\text{seats}} \nonumber
-        \end{align}
+			K  =\frac{N_A-N_B}{C_A-C_B}=\frac{N_t}{C_t}=\frac{\text{voters}}{\text{seats}} \nonumber\\
+			keep =\frac{\text{voters}}{\text{seats}} \nonumber
         \]
 		So we know we have a proportional system.
       </p>
@@ -418,7 +413,7 @@ a:hover.screenshot {
 		\begin{array}{rll}
 		\frac{1}{2} & = {\displaystyle \frac{0 + 1 + 0}{1 + 1 + 0}} \nonumber \\
 s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} b_{ij}} }& \text{Fraction of votes for rep j that were for both reps j and k} \nonumber \\
-            keeps_{jk} & = keep * s_{jk} & \text{Rep j keeps these votes from rep k}\nonumber \\
+            keeps_{jk} & = \frac{1}{2} keep * s_{jk} & \text{Rep j keeps these votes from rep k}\nonumber \\
 		\end{array}
         \]
 		We only do this when both reps win.   Remember the $x$ is binary and it indicates the winners.
@@ -471,7 +466,7 @@ s_{jk} & {\displaystyle= \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i 
         \end{array}
 		\\
         \begin{array}{lrll}
-        \text{Constants } & keeps_{jk} & = keep * s_{jk}& \text{Rep j keeps these votes from rep k}\\
+        \text{Constants } & keeps_{jk} & = \frac{1}{2} keep * s_{jk}& \text{Rep j keeps these votes from rep k}\\
                           & s_{jk} & = {\displaystyle \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} b_{ij}} }& \text{Fraction of votes for rep j that were for both reps j and k} \nonumber \\
                           & keep & = {\displaystyle \frac{\text{voters}}{\text{seats}} } & \text{Amount of ballots kept (if s=1, e.g. for clones)}\\
                           & tally_j & = {\displaystyle \sum_{i \in Voters} b_{ij} } & \text{Add up the ballots}\\
@@ -550,7 +545,7 @@ for j in range(numReps):
     d_obj += t[j]*x[j]
     for k in range(numReps):
         if k != j:
-            d_obj += -keep*s[j,k]*x[j]*x[k]
+            d_obj += -.5*keep*s[j,k]*x[j]*x[k]
 
 m.setObjective( d_obj , GRB.MAXIMIZE)
 
@@ -626,6 +621,8 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<input class="op" type="radio" name="similarity" checked="true"> Both Out Of One<br />
 		<input class="op" type="radio" name="similarity"> Jaccard<br />
 		<input class="op" type="radio" name="similarity"> One From Either<br />
+		<input class="op" type="radio" name="similarity"> Simultaneous<br />
+		<input class="op" type="radio" name="similarity"> integrateKeeps<br />
 		<input class="op" type="radio" name="similarity"> Cosine<br />
 		<input class="op" type="radio" name="similarity"> L1<br />
 		<input class="op" type="radio" name="similarity"> multiplySupport<br />
@@ -809,12 +806,12 @@ print(["%d" % x[j1].X for j1 in range(9)])
         Things to do.
         </p>
         <p>
-          <ul><li>compare to clustering
-        </li><li>normalize votes
-        </li><li>try exponential choice function
-        </li><li>try linear choice function
+          <ul><li>compare to clustering (done)
+        </li><li>normalize votes (done)
+        </li><li>try exponential choice function (done)
+        </li><li>try linear choice function (done)
         </li><li>try threshold choice function
-        </li><li>add STV comparison
+        </li><li>add STV comparison (done)
         </li><li>add CPO-STV comparison
         </li><li>far future: put this into ncase's better ballot.
         </li><li>far future: yee diagram in background

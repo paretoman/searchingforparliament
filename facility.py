@@ -312,6 +312,15 @@ def optimize(voters, reps, options, output=False):
 
     
     else : # computeBQP
+        
+        if options['seatsPlusOne']:
+            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
+            #keep = options['keepsmultiplier'] * sum(b) / (1 + 5) # might not work
+        elif options['seatsPlusHalf']:
+            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (.5+nWinners)
+        else:
+            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
+        
         def cosine_similarity(a,b):
             return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
         def l1_similarity(a,b):
@@ -324,9 +333,40 @@ def optimize(voters, reps, options, output=False):
             return numpy.sum(numpy.minimum(a,b)) / numpy.sum(a)
         def oneFromBoth(a,b):
             return numpy.sum(a) / numpy.sum(numpy.maximum(a,b))
-
-        
-            
+        def simultaneous(a,b):
+            return both_out_of_one(a,b)-.5*keep*numpy.sum(numpy.minimum(a,b)) / (numpy.sum(a) * numpy.sum(b))
+        def integrateKeeps(a,b):
+            av = numpy.sum(a)
+            bv = numpy.sum(b)
+            cv = numpy.sum(numpy.minimum(a,b))
+            if 0:
+                return cv * (1-numpy.exp(-(1/av+1/bv)*keep)) / (2 * keep)
+            elif 0:
+                if keep>=cv:
+                    return 1000000  # don't allow this to happen
+                keep_star = -cv/2*numpy.log(1-keep/cv)
+                return cv * (1-numpy.exp(-(1/av+1/bv)*keep_star)) / (2 * keep)
+            elif 0:
+                if (cv/av+cv/bv)*keep >cv:
+                    return 100000 # don't allow the pair if they don't have enough votes (if the venn diagram would go negative)
+                else:
+                    return cv/av;
+            elif 0:
+                if (cv/av+cv/bv)*keep >cv:
+                    extra = (cv/av+cv/bv)*keep - cv
+                    return cv/av + extra/(2*keep) # double cost for borrowing to meet the keep
+                else:
+                    return cv/av;
+            elif 0:
+                return .5 * cv * min(1/av+1/bv,1/keep) # no negatives in the venn diagram
+            elif 0:
+                return min(cv/(2*keep),1)  # separate voter groups
+            elif 1:
+                return cv/av * (numVoters-av-bv+cv)/numVoters  # reduce number of total voters
+            else:
+                jg = 1/2*cv/(2*(av+bv-cv)-numVoters) #hmm doesn't work
+                kg = 1+jg
+                return jg
         for j in range(numReps):
             for k in range(numReps):
                 if options['l1Similarity']:
@@ -339,18 +379,14 @@ def optimize(voters, reps, options, output=False):
                     s[j,k] = oneFromBoth(b[:,j],b[:,k])
                 elif options["multiplySupport"]: 
                     s[j,k] = multiply_support_not_min(b[:,j],b[:,k])
+                elif options["simultaneous"]: 
+                    s[j,k] = simultaneous(b[:,j],b[:,k])
+                elif options["integrateKeeps"]: 
+                    s[j,k] = integrateKeeps(b[:,j],b[:,k])
                 else: #options["jaccardSimilarity"]:
                     s[j,k] = jaccard_similarity(b[:,j],b[:,k])
             t[j] = sum(b[:,j])
 
-        if options['seatsPlusOne']:
-            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
-            #keep = options['keepsmultiplier'] * sum(b) / (1 + 5) # might not work
-        elif options['seatsPlusHalf']:
-            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (.5+nWinners)
-        else:
-            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
-        print(keep)
         m.update()
         
         # Add constraints
@@ -361,7 +397,7 @@ def optimize(voters, reps, options, output=False):
             d_obj += t[j]*x[j]
             for k in range(numReps):
                 if k != j:
-                    d_obj += -keep*s[j,k]*x[j]*x[k]
+                    d_obj += -.5*keep*s[j,k]*x[j]*x[k]
 
         m.setObjective( d_obj , GRB.MAXIMIZE)
         
@@ -394,7 +430,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","bothOutOfOne","jaccardSimilarity","oneFromBoth","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","bothOutOfOne","jaccardSimilarity","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
