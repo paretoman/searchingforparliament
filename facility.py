@@ -11,6 +11,9 @@ from pyvotecore.schulze_stv import SchulzeSTV
 from openstv.ballots import Ballots
 from openstv.plugins import getMethodPlugins, getReportPlugins
 import json
+import community
+from collections import defaultdict
+import networkx
 
 # example of problem data
 # voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
@@ -413,9 +416,11 @@ def optimize(voters, reps, options, output=False):
     solution1 = []
     solution2 = []
 
+    solutionb = numpy.zeros(numReps)
     for j in range(numReps):
         if (x[j].X > .5):
             solution1.append(j)
+            solutionb[j] = 1
     
     wholetable = -.5*keep*s
     for j in range(numReps):
@@ -425,15 +430,36 @@ def optimize(voters, reps, options, output=False):
     out3 = "\n\nProblem:\n"
     for i in wholetable:
         for j in i:
-            out3 += "%-6i" % j
+            out3 += "%6i" % j
         out3 += '\n'
     out3 += '\nSolution:\n'
     for i in solutiontable:
         for j in i:
-            out3 += "%-6i" % j
+            out3 += "%6i" % j
         out3 += '\n'
-            
     
+    G=networkx.from_numpy_matrix(s)
+    # Run louvain community finding algorithm
+    louvain_community_dict = community.best_partition(G)
+    # Convert community assignmet dict into list of communities
+    louvain_comms = defaultdict(list)
+    for node_index, comm_id in louvain_community_dict.iteritems():
+        louvain_comms[comm_id].append(node_index)
+    louvain_comms = louvain_comms.values()
+    nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
+    orderedtable = wholetable[nodes_louvain_ordered][:,nodes_louvain_ordered]
+    ords = s[nodes_louvain_ordered][:,nodes_louvain_ordered]
+    orderedsolutionb = solutionb[nodes_louvain_ordered]
+    out3 += "\nOrdered Table:\n"
+    for i in range(numReps):
+        for j in range(numReps):
+            out3 += "%6i" % orderedtable[i,j]
+            if orderedsolutionb[i] or orderedsolutionb[j]:
+                out3 += "*"
+            else:
+                out3 += " "
+        out3 += '\n'
+        
     options_str += out3
     
     for i in range(numVoters):
@@ -445,7 +471,7 @@ def optimize(voters, reps, options, output=False):
                 maxb = b[i,j]
         solution2.append((i,maxj))
 
-    return [solution1, solution2, output.getvalue() + options_str]
+    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),t.tolist()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
