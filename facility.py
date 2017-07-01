@@ -370,24 +370,27 @@ def optimize(voters, reps, options, output=False):
                 jg = 1/2*cv/(2*(av+bv-cv)-numVoters) #hmm doesn't work
                 kg = 1+jg
                 return jg
+                
+        if options['l1Similarity']:
+            similarity = l1_similarity
+        elif options['cosineSimilarity']:
+            similarity = cosine_similarity
+        elif options["bothOutOfOne"]: 
+            similarity = both_out_of_one
+        elif options["oneFromBoth"]: 
+            similarity = oneFromBoth
+        elif options["multiplySupport"]: 
+            similarity = multiply_support_not_min
+        elif options["simultaneous"]: 
+            similarity = simultaneous
+        elif options["integrateKeeps"]: 
+            similarity = integrateKeeps
+        else: #options["jaccardSimilarity"]:
+            similarity = jaccard_similarity
+                
         for j in range(numReps):
             for k in range(numReps):
-                if options['l1Similarity']:
-                    s[j,k] = l1_similarity(b[:,j],b[:,k])
-                elif options['cosineSimilarity']:
-                    s[j,k] = cosine_similarity(b[:,j],b[:,k])
-                elif options["bothOutOfOne"]: 
-                    s[j,k] = both_out_of_one(b[:,j],b[:,k])
-                elif options["oneFromBoth"]: 
-                    s[j,k] = oneFromBoth(b[:,j],b[:,k])
-                elif options["multiplySupport"]: 
-                    s[j,k] = multiply_support_not_min(b[:,j],b[:,k])
-                elif options["simultaneous"]: 
-                    s[j,k] = simultaneous(b[:,j],b[:,k])
-                elif options["integrateKeeps"]: 
-                    s[j,k] = integrateKeeps(b[:,j],b[:,k])
-                else: #options["jaccardSimilarity"]:
-                    s[j,k] = jaccard_similarity(b[:,j],b[:,k])
+                s[j,k] = similarity(b[:,j],b[:,k])
             t[j] = sum(b[:,j])
 
         m.update()
@@ -465,6 +468,8 @@ def optimize(voters, reps, options, output=False):
         return (a-mi)/(ma-mi)
     nsudoku = normalize_a(sudoku)
     
+    # find the communities within the adjacency matrix
+    
     if 1:
         G=networkx.from_numpy_matrix(s)
     else:
@@ -485,6 +490,7 @@ def optimize(voters, reps, options, output=False):
     orderedsolutionb = solutionb[nodes_louvain_ordered]
     orderedsolutionfid = solutionfid[nodes_louvain_ordered]
     
+    # add a table of numbers to solve, like a sudoku
     out3 += "\nOrdered Table:\n"
     for i in range(numReps):
         for j in range(numReps):
@@ -497,6 +503,7 @@ def optimize(voters, reps, options, output=False):
         
     options_str += out3
     
+    votercolor = numpy.zeros(numVoters)
     for i in range(numVoters):
         maxj = 0
         maxb = 0
@@ -505,13 +512,64 @@ def optimize(voters, reps, options, output=False):
                 maxj = j
                 maxb = b[i,j]
         solution2.append((i,maxj))
-
-    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),ordt.tolist(),nordsudoku.tolist(),nodes_louvain_ordered,orderedsolutionfid.tolist()]
+        votercolor[i] = solutionfid[maxj]
+        
+    # see what a similarity measure would look like for voters - if there are communities
+    if options["Calculate Voter Communities"]:
+        vd = numpy.zeros((numVoters,numVoters))
+        vb = numpy.zeros((numVoters,numVoters))
+        vs = numpy.zeros((numVoters,numVoters))
+        for i in range(numVoters):
+            for j in range(numVoters):
+                vd[i,j] = distance(voters[i], voters[j])
+        if options["exponentialBallots"]:
+            vb = numpy.exp(- vd/10 )
+        elif options["oneOverDistanceBallots"]:
+            vb = 1 /( vd/10 + 1 )
+        else: #if options["linearBallots"]:
+            vb = (numpy.max(vd) - vd) / 400
+        for j in range(numVoters):
+            for k in range(numVoters):
+                vs[j,k] = similarity(vb[:,j],vb[:,k])
+        # find the communities within the adjacency matrix
+        def getcommunityorder(a):
+            G=networkx.from_numpy_matrix(a)
+            # Run louvain community finding algorithm
+            louvain_community_dict = community.best_partition(G)
+            # Convert community assignmet dict into list of communities
+            louvain_comms = defaultdict(list)
+            for node_index, comm_id in louvain_community_dict.iteritems():
+                louvain_comms[comm_id].append(node_index)
+            louvain_comms = louvain_comms.values()
+            nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
+            return nodes_louvain_ordered
+        vorder = getcommunityorder(vs)
+        votercommunities = vs[vorder][:,vorder]
+        votercomcolor = votercolor[vorder]
+    else:
+        votercommunities = numpy.zeros(2)
+        votercomcolor = numpy.zeros(2)
+        vorder = [0,0]
+    
+    # just once for set up.
+    if 0:
+        f = open('voterCom.txt','w')
+        votercommunities.tofile(f,",","%1.2f")
+        #f.write( [["%1.3f" % a for a in b ] for b in votercommunities.tolist()] )
+        f.close()
+        f = open('vorder.txt','w')
+        f.write("[")
+        for a in vorder:
+            f.write( "%i," % a )
+        f.write("]")
+        f.close()
+        
+    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),ordt.tolist(),nordsudoku.tolist(),nodes_louvain_ordered,orderedsolutionfid.tolist(),keep,options["Calculate Voter Communities"],votercommunities.tolist(),votercomcolor.tolist(),votercolor.tolist(),vorder]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","Calculate Voter Communities","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
