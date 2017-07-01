@@ -449,6 +449,7 @@ def optimize(voters, reps, options, output=False):
     nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
     orderedtable = wholetable[nodes_louvain_ordered][:,nodes_louvain_ordered]
     ords = s[nodes_louvain_ordered][:,nodes_louvain_ordered]
+    ordt = t[nodes_louvain_ordered]
     orderedsolutionb = solutionb[nodes_louvain_ordered]
     out3 += "\nOrdered Table:\n"
     for i in range(numReps):
@@ -471,7 +472,7 @@ def optimize(voters, reps, options, output=False):
                 maxb = b[i,j]
         solution2.append((i,maxj))
 
-    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),t.tolist()]
+    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),ordt.tolist()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:

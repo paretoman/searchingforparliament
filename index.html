@@ -737,6 +737,10 @@ print(["%d" % x[j1].X for j1 in range(9)])
 	  
       <div id="spinnerdiv">
       </div>
+	  <div  style="width: 500px; float: right">
+	  <canvas id="tableshow" width="350" height="300" style="display:none"></canvas>
+	  </div>
+	  <div >
 	  <p>
       <button class="pure-button" onclick="compute()">Compute Winners</button>
       <button onclick="restart()">Restart</button>
@@ -774,6 +778,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<output for=numberOfWinners id=numberOfWinnersDisplay>5</output> Winners <br />
 
       </p>
+	  </div>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
       <script>
@@ -800,13 +805,13 @@ print(["%d" % x[j1].X for j1 in range(9)])
 
         }
       </script>
-
+	  
       <examplecode id=logfile>
       </examplecode>
 
       
     </div>
-	
+	<div>
 	<p>
         <button id="morebutton" class="pure-button" onclick="toggle_readmore()">Read More</button>
       </p>
@@ -822,7 +827,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 
         }
       </script>
-	  <canvas id="tableshow" width="350" height="300" style="display:none"></canvas>
+	</div>
 	<div id="readmore" style="display:none">
 	
      <p>
@@ -1334,82 +1339,86 @@ function serverResponse(error, data) {
                      .attr("opacity", 0)
                      .duration(500)
                      .delay(0);
-					 
-		  var s_table = solution[3];
-		  var w_winnersb = solution[4];
+		  
 		  var c=document.getElementById("tableshow");
-			var ctx=c.getContext("2d");
-			var ld = w_winnersb.length;
-			var imgData=ctx.createImageData(ld,ld);
-			for (var i=0;i<ld;i+=1) {
-				for (var j=0;j<ld;j+=1) {
-				  ind = (i*ld+j)*4
-				  val = s_table[i][j];
-				  w_won = w_winnersb[i] == 1 && w_winnersb[j] == 1 ;
-				  imgData.data[ind+0]=255*val;
-				  imgData.data[ind+1]=255*val;
-				  imgData.data[ind+2]=255*val;
-				  imgData.data[ind+3]=255;
-				  if (w_won) imgData.data[ind+1] *= .6;
+		  var ctx=c.getContext("2d");
+		  ctx.clearRect(0, 0, c.width, c.height);
+				
+		  if (solution.length > 3) {
+			  var s_table = solution[3];
+			  var w_winnersb = solution[4];
+			  var ld = w_winnersb.length;
+				var imgData=ctx.createImageData(ld,ld);
+				for (var i=0;i<ld;i+=1) {
+					for (var j=0;j<ld;j+=1) {
+					  ind = (i*ld+j)*4
+					  val = s_table[i][j];
+					  w_won = i==j && w_winnersb[i] == 1 && w_winnersb[j] == 1 ;
+					  imgData.data[ind+0]=255*val;
+					  imgData.data[ind+1]=255*val;
+					  imgData.data[ind+2]=255*val;
+					  imgData.data[ind+3]=255;
+					  if (w_won) imgData.data[ind+1] *= .6;
+					}
 				}
-			}
-			
-			
-			function scaleImageData(imageData, scale) {
-			  var scaled = ctx.createImageData(imageData.width * scale, imageData.height * scale);
-			  for(var row = 0; row < imageData.height; row++) {
-				for(var col = 0; col < imageData.width; col++) {
-				  var sourcePixel = [
-					imageData.data[(row * imageData.width + col) * 4 + 0],
-					imageData.data[(row * imageData.width + col) * 4 + 1],
-					imageData.data[(row * imageData.width + col) * 4 + 2],
-					imageData.data[(row * imageData.width + col) * 4 + 3]
-				  ];
-				  for(var y = 0; y < scale; y++) {
-					var destRow = row * scale + y;
-					for(var x = 0; x < scale; x++) {
-					  var destCol = col * scale + x;
-					  for(var i = 0; i < 4; i++) {
-						scaled.data[(destRow * scaled.width + destCol) * 4 + i] =
-						  sourcePixel[i];
+				
+				
+				function scaleImageData(imageData, scale) {
+				  var scaled = ctx.createImageData(imageData.width * scale, imageData.height * scale);
+				  for(var row = 0; row < imageData.height; row++) {
+					for(var col = 0; col < imageData.width; col++) {
+					  var sourcePixel = [
+						imageData.data[(row * imageData.width + col) * 4 + 0],
+						imageData.data[(row * imageData.width + col) * 4 + 1],
+						imageData.data[(row * imageData.width + col) * 4 + 2],
+						imageData.data[(row * imageData.width + col) * 4 + 3]
+					  ];
+					  for(var y = 0; y < scale; y++) {
+						var destRow = row * scale + y;
+						for(var x = 0; x < scale; x++) {
+						  var destCol = col * scale + x;
+						  for(var i = 0; i < 4; i++) {
+							scaled.data[(destRow * scaled.width + destCol) * 4 + i] =
+							  sourcePixel[i];
+						  }
+						}
 					  }
 					}
 				  }
+				  return scaled;
 				}
-			  }
-			  return scaled;
-			}
-			
-			
-			a_border=10;
-			a_width = 300-2*a_border;
-			a_scale = Math.min(10,Math.round(a_width/ld))
-			ctx.putImageData(scaleImageData(imgData,a_scale),a_border+50+10,a_border);
-			
-			var t_tallys = solution[5];
-			var t_max = Math.max(...t_tallys);
-			var t_max_inv = 1/t_max;
-			
-			var imgData2=ctx.createImageData(50,ld*a_scale);
-			for (var i=0;i<ld;i+=1) {
-				for (var r=0;r<a_scale;r+=1) {
-					for (var y=0;y<50;y+=1) {
-						ind = 4*(y + 50*(r + a_scale*i));
-						if (y<50*t_tallys[i]*t_max_inv) {
-							imgData2.data[ind+0]=255;
-							imgData2.data[ind+1]=255*.8;
-							imgData2.data[ind+2]=255;
-							imgData2.data[ind+3]=255;
-						} else {
-							imgData2.data[ind+0]=255;
-							imgData2.data[ind+1]=255;
-							imgData2.data[ind+2]=255;
-							imgData2.data[ind+3]=255;
+				
+				
+				a_border=10;
+				a_width = 300-2*a_border;
+				a_scale = Math.min(10,Math.round(a_width/ld))
+				ctx.putImageData(scaleImageData(imgData,a_scale),a_border+50+10,a_border);
+				
+				var t_tallys = solution[5];
+				var t_max = Math.max(...t_tallys);
+				var t_max_inv = 1/t_max;
+				
+				var imgData2=ctx.createImageData(50,ld*a_scale);
+				for (var i=0;i<ld;i+=1) {
+					for (var r=0;r<a_scale;r+=1) {
+						for (var y=0;y<50;y+=1) {
+							ind = 4*(y + 50*(r + a_scale*i));
+							if (y<50*t_tallys[i]*t_max_inv) {
+								imgData2.data[ind+0]=255;
+								imgData2.data[ind+1]=255*.8;
+								imgData2.data[ind+2]=255;
+								imgData2.data[ind+3]=255;
+							} else {
+								imgData2.data[ind+0]=255;
+								imgData2.data[ind+1]=255;
+								imgData2.data[ind+2]=255;
+								imgData2.data[ind+3]=255;
+							}
 						}
 					}
 				}
+				ctx.putImageData(imgData2,a_border,a_border);
 			}
-			ctx.putImageData(imgData2,a_border,a_border);
         }
       }
 }
