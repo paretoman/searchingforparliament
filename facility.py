@@ -326,8 +326,8 @@ def optimize(voters, reps, options, output=False):
         
         def cosine_similarity(a,b):
             return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
-        def l1_similarity(a,b):
-            return numpy.dot(a,b) / (numpy.sum(a) * numpy.sum(b))
+        def l1_similarity(a,b): # well sorensen-dice coefficient
+            return 2*numpy.sum(numpy.minimum(a,b)) / (numpy.sum(a) + numpy.sum(b))
         def multiply_support_not_min(a,b): # instead of finding the amount of support shared by two candidates, multiply their support ... maybe
             return numpy.dot(a,b) / (numpy.sum(a) * numpy.max(b))
         def jaccard_similarity(a,b):
@@ -417,10 +417,14 @@ def optimize(voters, reps, options, output=False):
     solution2 = []
 
     solutionb = numpy.zeros(numReps)
+    solutionfid = numpy.zeros(numReps)
+    i=0
     for j in range(numReps):
         if (x[j].X > .5):
             solution1.append(j)
             solutionb[j] = 1
+            solutionfid[j] = i
+            i+=1
     
     wholetable = -.5*keep*s
     for j in range(numReps):
@@ -438,7 +442,33 @@ def optimize(voters, reps, options, output=False):
             out3 += "%6i" % j
         out3 += '\n'
     
-    G=networkx.from_numpy_matrix(s)
+    sudoku = numpy.zeros([numReps,numReps])
+    runsum = 0
+    for j in range(numReps):
+        for k in range(numReps):
+            if 1:
+                if j != k:
+                    a_entry = -.5*keep*s[j,k] + .5*1/(numReps-1)*(t[j]+t[k])
+                    sudoku[j,k] = a_entry
+                    runsum += a_entry 
+            else:
+                if j == k:
+                    sudoku[j,k] = .5*1/numReps*(t[j]+t[k])
+                else:
+                    sudoku[j,k] = -.5*keep*s[j,k] + .5*1/numReps*(t[j]+t[k])
+    a_avg = runsum / ( numReps * (numReps-1) )
+    for j in range(numReps):
+        sudoku[j,j] = a_avg
+    def normalize_a(a):
+        ma = numpy.max(numpy.max(a))
+        mi = numpy.min(numpy.min(a))
+        return (a-mi)/(ma-mi)
+    nsudoku = normalize_a(sudoku)
+    
+    if 1:
+        G=networkx.from_numpy_matrix(s)
+    else:
+        G=networkx.from_numpy_matrix(nsudoku)
     # Run louvain community finding algorithm
     louvain_community_dict = community.best_partition(G)
     # Convert community assignmet dict into list of communities
@@ -448,14 +478,18 @@ def optimize(voters, reps, options, output=False):
     louvain_comms = louvain_comms.values()
     nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
     orderedtable = wholetable[nodes_louvain_ordered][:,nodes_louvain_ordered]
+    
+    nordsudoku = nsudoku[nodes_louvain_ordered][:,nodes_louvain_ordered]
     ords = s[nodes_louvain_ordered][:,nodes_louvain_ordered]
     ordt = t[nodes_louvain_ordered]
     orderedsolutionb = solutionb[nodes_louvain_ordered]
+    orderedsolutionfid = solutionfid[nodes_louvain_ordered]
+    
     out3 += "\nOrdered Table:\n"
     for i in range(numReps):
         for j in range(numReps):
             out3 += "%6i" % orderedtable[i,j]
-            if orderedsolutionb[i] or orderedsolutionb[j]:
+            if orderedsolutionb[i] and orderedsolutionb[j]:
                 out3 += "*"
             else:
                 out3 += " "
@@ -472,7 +506,7 @@ def optimize(voters, reps, options, output=False):
                 maxb = b[i,j]
         solution2.append((i,maxj))
 
-    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),ordt.tolist()]
+    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),ordt.tolist(),nordsudoku.tolist(),nodes_louvain_ordered,orderedsolutionfid.tolist()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
