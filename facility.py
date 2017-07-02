@@ -14,6 +14,7 @@ import json
 import community
 from collections import defaultdict
 import networkx
+import random
 
 # example of problem data
 # voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
@@ -516,36 +517,57 @@ def optimize(voters, reps, options, output=False):
         
     # see what a similarity measure would look like for voters - if there are communities
     if options["Calculate Voter Communities"]:
-        vd = numpy.zeros((numVoters,numVoters))
-        vb = numpy.zeros((numVoters,numVoters))
-        vs = numpy.zeros((numVoters,numVoters))
-        for i in range(numVoters):
-            for j in range(numVoters):
-                vd[i,j] = distance(voters[i], voters[j])
-        if options["exponentialBallots"]:
-            vb = numpy.exp(- vd/10 )
-        elif options["oneOverDistanceBallots"]:
-            vb = 1 /( vd/10 + 1 )
-        else: #if options["linearBallots"]:
-            vb = (numpy.max(vd) - vd) / 400
-        for j in range(numVoters):
-            for k in range(numVoters):
-                vs[j,k] = similarity(vb[:,j],vb[:,k])
-        # find the communities within the adjacency matrix
-        def getcommunityorder(a):
-            G=networkx.from_numpy_matrix(a)
-            # Run louvain community finding algorithm
-            louvain_community_dict = community.best_partition(G)
-            # Convert community assignmet dict into list of communities
-            louvain_comms = defaultdict(list)
-            for node_index, comm_id in louvain_community_dict.iteritems():
-                louvain_comms[comm_id].append(node_index)
-            louvain_comms = louvain_comms.values()
-            nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
-            return nodes_louvain_ordered
-        vorder = getcommunityorder(vs)
-        votercommunities = vs[vorder][:,vorder]
-        votercomcolor = votercolor[vorder]
+        if options["stateInitialMap"]:
+            # don't need to do new calculations
+            vorder = numpy.genfromtxt('vorder.txt', delimiter=',',dtype='int').tolist()
+            votercomcolor = votercolor[vorder]
+            votercommunities = numpy.genfromtxt('voterCom.txt', delimiter=',')
+            votercommunities = votercommunities.reshape((len(vorder),len(vorder)))
+        else:
+            # make a random sample of voters
+            if numVoters > 140:
+                if 0: #test
+                    numVoters2 = numVoters
+                else:    
+                    numVoters2 = 140
+                rv = numpy.array(random.sample(range(numVoters),numVoters2))
+                rv.sort() # there is actually a good ordering to the data already. neat.
+            else:
+                numVoters2 = numVoters
+                rv = numpy.array(range(numVoters))
+            vd = numpy.zeros((numVoters2,numVoters2))
+            vb = numpy.zeros((numVoters2,numVoters2))
+            vs = numpy.zeros((numVoters2,numVoters2))
+            for i in range(numVoters2):
+                for j in range(numVoters2):
+                    vd[i,j] = distance(voters[rv[i]], voters[rv[j]])
+            if options["exponentialBallots"]:
+                vb = numpy.exp(- vd/10 )
+            elif options["oneOverDistanceBallots"]:
+                vb = 1 /( vd/10 + 1 )
+            else: #if options["linearBallots"]:
+                vb = (numpy.max(vd) - vd) / 400
+            for j in range(numVoters2):
+                for k in range(numVoters2):
+                    vs[j,k] = similarity(vb[:,j],vb[:,k])
+            # find the communities within the adjacency matrix
+            def getcommunityorder(a):
+                G=networkx.from_numpy_matrix(a)
+                # Run louvain community finding algorithm
+                louvain_community_dict = community.best_partition(G)
+                # Convert community assignmet dict into list of communities
+                louvain_comms = defaultdict(list)
+                for node_index, comm_id in louvain_community_dict.iteritems():
+                    louvain_comms[comm_id].append(node_index)
+                louvain_comms = louvain_comms.values()
+                nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
+                return nodes_louvain_ordered
+            nvorder = getcommunityorder(vs)
+            votercommunities = vs[nvorder][:,nvorder]
+            vorder = rv[nvorder].tolist()
+            votercomcolor = votercolor[vorder]
+            
+            
     else:
         votercommunities = numpy.zeros(2)
         votercomcolor = numpy.zeros(2)
@@ -553,11 +575,11 @@ def optimize(voters, reps, options, output=False):
     
     # just once for set up.
     if 0:
-        f = open('voterCom.txt','w')
+        f = open('voterCom1.txt','w')
         votercommunities.tofile(f,",","%1.2f")
         #f.write( [["%1.3f" % a for a in b ] for b in votercommunities.tolist()] )
         f.close()
-        f = open('vorder.txt','w')
+        f = open('vorder1.txt','w')
         f.write("[")
         for a in vorder:
             f.write( "%i," % a )
@@ -569,7 +591,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","Calculate Voter Communities","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","Calculate Voter Communities","stateInitialMap","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computePluralityMultiwinner","computeSchulzeSTV","openstv","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }

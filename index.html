@@ -672,7 +672,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<form>
 		<fieldset>
 		<legend>Output:</legend>
-		<input id="calcVoterCom" type="checkbox"> Calculate Voter Communities <br />
+		<input id="calcVoterCom" type="checkbox" checked="true"> Calculate Voter Communities <br />
 		</fieldset>
 		<fieldset>
 		<legend>Keeps:</legend>
@@ -753,33 +753,33 @@ print(["%d" % x[j1].X for j1 in range(9)])
 	  
 	  <div style="float:left;width:800px;">
 	  
-	  <div id="divtableshow" style="width: 50%; float: right; display:none">
+	  
+	  
+	  <div style="float: left; width: 100%;">
+	  <p>
+      <button class="pure-button" onclick="compute()">Compute Winners</button>
+      <button onclick="restart()">Restart</button>
+	  <button class="pure-button" onclick="toggle_options()">Beast Mode</button>
+	  <button class="pure-button" onclick="toggle_div()">Gurobi Log</button>
+	  &nbsp; &nbsp; &nbsp; &nbsp;
+	  <input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width" style="width:200px">
+	  <output for=numberOfWinners id=numberOfWinnersDisplay>5</output> Winners <br />
+
+      </p>
+	  </div>
+	  
+	  <div id="divtableshow" style="width: 50%; float: right; ">
 	  <p>
 	  Election Results:
 	  </p>
 	  <canvas id="tableshow" width="350" height="300"></canvas>
 	  </div>
 	  
-	  <div style="float: left; width: 49%;">
-	  <p>
-      <button class="pure-button" onclick="compute()">Compute Winners</button>
-      <button onclick="restart()">Restart</button>
-	  <button class="pure-button" onclick="toggle_options()">Beast Mode</button>
-	  <button class="pure-button" onclick="toggle_div()">Gurobi Log</button>
-	  </p>
-      <p>
-
-		<input type="range" min = 1 max = 20 step = 1 id="numberOfWinners" value="5" oninput="numberOfWinnersUpdate(value)" class="slider-width" style="width:200px">
-		<output for=numberOfWinners id=numberOfWinnersDisplay>5</output> Winners <br />
-
-      </p>
-	  </div>
-	  
-	  <div id="divvotertableshow" style="width: 50%; float: right; display:none">
+	  <div id="divvotertableshow" style="width: 49%; float: right;">
 	  <p>
 	  Voter Communities:
 	  </p>
-	  <canvas id="votertableshow" width="350" height="300"></canvas>
+	  <canvas id="votertableshow" width="350" height="350"></canvas>
 	  </div>
 	  
 	  </div>
@@ -862,7 +862,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
       </script>
 	</div>
 	<div id="readmore" style="display:none; float:left">
-	
+	<p>
+		The output is worth explaining.  The similarity measures can be put into a table so that more similar pairs of reps are indicated by light grey and distant pairs are dark grey.  Similarity is a measure from 0 (dark) to 1 (light).  Each pair is a square on the table (technically 2 squares).  Also, to the left of the table is the tallys of votes for each rep.  The scale at the bottom has tick marks that indicate 1 keep (votes/seats).  The great thing about this kind of table of election results is that it shows communities of similar reps.  Each community of reps looks like a big bright square along the diagonal.  You can really see this effect if you add about 20 reps.  Even better is to use the 200 voters to show communities.  This kind of data would not be available in an election.  It is kind of cheating to know where the voters are.  You can see how big each community of voters is and which reps (color) is serving each community.
+	</p>
      <p>
 		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> are there.  There is a clustering computation similar to the project this was forked from.  And I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  Also, there are different ballot types, an option for disabling normalization, an option for adding a +1 to the seats. Also, there are different similarity measures.  Also, you can change the amount of keeps to see how it allows for a proportional distribution of winners.
       </p>
@@ -1050,13 +1052,19 @@ var vertices;
 var places;
 var counties;
 
-var stateVoterCom = "new map";
+var stateVoterCom = "initial";
 var voterCom;
 var vorder;
+var stateInitialMap = 1;
 
 function draw_map() {
 
-if (stateVoterCom == "old still good") stateVoterCom = "new map";
+if (stateVoterCom == "old still good" | stateVoterCom == "new map") {
+	stateVoterCom = "new map";
+	stateInitialMap = 0;
+} else if (stateVoterCom == "initial") {
+	stateVoterCom = "new map";
+}
     
 // G object for background
 backgroundG = svg.append("g");
@@ -1288,6 +1296,7 @@ function compute() {
 		stateVoterCom = "option not selected"
 	}
   }
+  charge.push(stateInitialMap)
   
   var ops = document.getElementsByClassName('op');
   for(var i = 0; i < ops.length; i++){
@@ -1473,8 +1482,11 @@ function serverResponse(error, data) {
 				
 				
 				a_border=10;
-				a_width = 300-2*a_border;
-				a_scale = Math.min(10,Math.round(a_width/ld))
+				a_width = c.width-50-10-2*a_border;
+				a_height = c.height-7;
+				//a_scale = Math.min(10,Math.floor(a_width/ld))
+				a_scale = Math.floor(Math.min(a_width,a_height)/ld)
+				//a_scale = Math.round(a_width/(ld));
 				ctx.putImageData(scaleImageData(imgData,a_scale),a_border+50+10,a_border);
 				
 				// Highlight the winners
@@ -1544,9 +1556,9 @@ function serverResponse(error, data) {
 				var keep = solution[9];
 				var tick = 50*keep/t_max
 				ctx.fillStyle = "gray";
-				y_axis = 10 + a_scale*ld + 3;
-				ctx.fillRect( 10, y_axis, 50, 1 );
-				for (var i = 0; i < 50; i += tick) ctx.fillRect( 10+i, y_axis+1, 1, 3 );
+				y_axis = a_border + a_scale*ld + 3;
+				ctx.fillRect( a_border, y_axis, 50, 1 );
+				for (var i = 0; i < 50; i += tick) ctx.fillRect( a_border+i, y_axis+1, 1, 3 );
 				
 				
 				// Show adjacency matrix for voters only
@@ -1554,20 +1566,20 @@ function serverResponse(error, data) {
 					dummy=1;// don't need to do anything
 				} else {
 					if (stateVoterCom == "old still good") {
-						var s_table3 = voterCom; // voterCom from last time
+						// voterCom from last time
 						votercolor = solution[13];  // new colors
 						votercomcolor = vorder.map(function (i) { return votercolor[i] }); // vorder from last time
 						var v_id = votercomcolor;
-					} else { // stateVoterCom == "getting new"  never going to be "need new" since we pressed calculate
+					} else { // if (stateVoterCom == "getting new"){ //never going to be "need new" since we pressed calculate
 					    // if (solution[10]) { // double check
 						stateVoterCom = "old still good";
-						var s_table3 = voterCom; // voterCom from last time
+						// voterCom from last time
 						voterCom = solution[11];
 						votercomcolor = solution[12];
 						var v_id = votercomcolor;
 						vorder = solution[14];
-					}
-					var ld3 = s_table3.length;
+					} 
+					var ld3 = voterCom.length;
 					var imgData3=ctx3.createImageData(ld3+10,ld3+10);
 					
 					for (var j=10;j<ld3+10;j+=1) {
@@ -1599,7 +1611,7 @@ function serverResponse(error, data) {
 								imgData3.data[ind+2]=h_color.b;
 								imgData3.data[ind+3]=255;
 							} else {
-							val = s_table3[i-10][j-10];
+							val = voterCom[i-10][j-10];
 							if (0) val = 1-val;
 								imgData3.data[ind+0]=255*val;
 								imgData3.data[ind+1]=255*val;
@@ -1608,7 +1620,9 @@ function serverResponse(error, data) {
 							}
 						}
 					}
-					ctx3.putImageData(imgData3,0,0);
+					b_width = Math.min(c3.width,c3.height) - 10;
+					b_scale = Math.max(1,Math.floor(b_width/ld3));
+					ctx3.putImageData(scaleImageData(imgData3,b_scale),0,0);
 				}
 			}
         }
