@@ -347,8 +347,8 @@ a:hover.screenshot {
 		Let's maximize this objective function on $C_A$ by setting its derivative to $0$ and solving for $K$:
 		\[
 			\begin{align}
-			\frac{d \ Obj}{d \ C_A} &= 0 \nonumber \\
-			0 &= N_A-N_B-K*C_A+K*C_B \nonumber \\
+			\frac{d \ Obj}{d \ C_A} &= 0 \nonumber \\ \nonumber \\
+			0 &= N_A-N_B-K*C_A+K*C_B \nonumber \\ \nonumber \\
 			K &= \frac{N_A-N_B}{C_A-C_B} \nonumber
 			\end{align}
 		\]
@@ -358,7 +358,9 @@ a:hover.screenshot {
 		\]
 		So we substitute and do algebra to get a confirmation of what we already guessed.
 		\[
-			K  =\frac{N_A-N_B}{C_A-C_B}=\frac{N_t}{C_t}=\frac{\text{voters}}{\text{seats}} \nonumber\\
+			K  =\frac{N_A-N_B}{C_A-C_B}=\frac{N_t}{C_t}=\frac{\text{voters}}{\text{seats}} \nonumber \\
+		\]
+		\[
 			keep =\frac{\text{voters}}{\text{seats}} \nonumber
         \]
 		So we know we have a proportional system.
@@ -549,6 +551,28 @@ s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} ma
         <p>
             For the full implementation, see <a href="https://github.com/paretoman/searchingforparliament">https://github.com/paretoman/searchingforparliament</a>.
         </p>
+      <p> Here is a link to Gurobi.  I kept it here because I forked this project from Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>)
+      </p>
+      <div class="col_5 column">
+        <a href="http://www.gurobi.com/downloads/evaluation-request">
+          <button class="red stack-button">
+            <i class="fa fa-lg fa-line-chart"></i>
+            Commercial Users: Free Evaluation Version
+          </button>
+        </a>
+      </div>
+      <div class="col_5 column">
+        <a href="http://www.gurobi.com/downloads/download-center">
+          <button class="red stack-button">
+            <i class="fa fa-lg fa-line-chart"></i>
+            Academic Users: Free Academic Version
+          </button>
+        </a>
+	  </div>
+	  <p>
+      I suggest using conda to install it.  And then there is a license to download, so you have to make an account on the gurobi website.  I used Python 2.
+      </p>
+      
 <examplecode>
 from gurobipy import *
 import math
@@ -863,39 +887,17 @@ print(["%d" % x[j1].X for j1 in range(9)])
 	</div>
 	<div id="readmore" style="display:none; float:left">
 	<p>
-		The output is worth explaining.  The similarity measures can be put into a table so that more similar pairs of reps are indicated by light grey and distant pairs are dark grey.  Similarity is a measure from 0 (dark) to 1 (light).  Each pair is a square on the table (technically 2 squares).  Also, to the left of the table is the tallys of votes for each rep.  The scale at the bottom has tick marks that indicate 1 keep (votes/seats).  The great thing about this kind of table of election results is that it shows communities of similar reps.  Each community of reps looks like a big bright square along the diagonal.  You can really see this effect if you add about 20 reps.  Even better is to use the 200 voters to show communities.  This kind of data would not be available in an election.  It is kind of cheating to know where the voters are.  You can see how big each community of voters is and which reps (color) is serving each community.
+		The output is worth explaining.  The similarity measures can be put into a table so that more similar pairs of reps are indicated by light grey and distant pairs are dark grey.  Similarity is a measure from 0 (dark) to 1 (light).  Each pair is a square on the table (technically 2 squares).  Also, to the left of the election results table is a bar chart showing the vote totals for each rep.  The scale at the bottom has tick marks that indicate 1 keep (votes/seats).  The great thing about this kind of table of election results is that it shows communities of similar reps.  Each community of reps looks like a big bright square along the diagonal.  You can really see this effect if you add about 20 reps.  Even better is to use the 200 voters to show communities.  This kind of data would not be available in an election.  It is kind of cheating to know where the voters are.  You can see how big each community of voters is and which reps (colors) are serving each community.
 	</p>
      <p>
-		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> are there.  There is a clustering computation similar to the project this was forked from.  And I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  Also, there are different ballot types, an option for disabling normalization, an option for adding a +1 to the seats. Also, there are different similarity measures.  Also, you can change the amount of keeps to see how it allows for a proportional distribution of winners.
+		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> of several voting methods are there.  Another method is a clustering method where the total distance between voters and reps is minimized.  This is similar to the project that this project was forked from.  Also, I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  There is normal reweighted range voting (RRV) as an option as well.  In addition to computations, there are also different ballot types, an option for disabling normalization, an option for adding a +1 to the seats, different similarity measures, etc. .  Also, you can change the amount of keeps to test how proportional a different level would be.
       </p>
 	  <p style="font-size:8px">
         <a name="geolytix">Location data:</a>
         <a href="http://geolytix.co.uk/downloads/OpenSupermarkets.zip">Supermarket
         locations &copy; GeoLytix</a> copyright and database right 2014.
       </p>
-    <div class="example_section" id="try">
-      <h2><a href="#try" name="try">How to use Gurobi</a></h2>
-      <p> Here is a link to Gurobi.  I kept it here because I forked this project from Emilien Dupont (on <a href="https://github.com/EmilienDupont/facilityLocation">github</a> and hosted as <a href="http://examples.gurobi.com/facility-location/"> a featured example on Gurobi's website</a>)
-      </p>
-      <p>
-      I suggest using conda to install it.  And then there is a license to download, so you have to make an account on the gurobi website.  I used Python 2.
-      </p>
-      <div class="col_5 column">
-        <a href="http://www.gurobi.com/downloads/evaluation-request">
-          <button class="red stack-button">
-            <i class="fa fa-lg fa-line-chart"></i>
-            Commercial Users: Free Evaluation Version
-          </button>
-        </a>
-      </div>
-      <div class="col_5 column">
-        <a href="http://www.gurobi.com/downloads/download-center">
-          <button class="red stack-button">
-            <i class="fa fa-lg fa-line-chart"></i>
-            Academic Users: Free Academic Version
-          </button>
-        </a>
-      </div>
+
       
       <div class="example_section" id="thoughts">
       <h2>Here's my thoughts.</h2>
