@@ -26,13 +26,14 @@ def mycallback(model, where):
         print >>model.__output, model.cbGet(GRB.callback.MSG_STRING),
 
 def optimize(voters, reps, options, output=False):
-
+    
     nWinners = options['numberOfWinners']
     m = Model()
     if not output:
         m.params.OutputFlag = 0
     m.setParam('TimeLimit', 100)
     options_str = '\n'.join(["%s - %s" % (options[i],i) for i in options])
+    g_log = "" # for logging
     
     numReps = len(reps)
     numVoters = len(voters)
@@ -71,28 +72,268 @@ def optimize(voters, reps, options, output=False):
             for j in range(numReps):
                 b[i,j] *= normalizer
             
-    # there are a few different computations, depending on the option
-    if options['computeClustering']:
-        y = {}
-        for i in range(numVoters):
-            for j in range(numReps):
-                y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
-        m.update()
-
-        # Add constraints
-        for i in range(numVoters):
-            for j in range(numReps):
-                m.addConstr(y[(i,j)] <= x[j])
-
-        for i in range(numVoters):
-            m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1)
+    #
+    # We're all set up to do the computations.
+    # This next section will get s and t, which are for computing just the BQP problem.  s and t are also needed for a nice election result output table.
+    # 
     
-        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+    if options['seatsPlusOne']:
+        keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
+        #keep = options['keepsmultiplier'] * sum(b) / (1 + 5) # might not work
+    elif options['seatsPlusHalf']:
+        keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (.5+nWinners)
+    else:
+        keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
+    
+    def cosine_similarity(a,b):
+        return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
+    def l1_similarity(a,b): # well sorensen-dice coefficient
+        return 2*numpy.sum(numpy.minimum(a,b)) / (numpy.sum(a) + numpy.sum(b))
+    def multiply_support_not_min(a,b): # instead of finding the amount of support shared by two candidates, multiply their support ... maybe
+        return numpy.dot(a,b) / (numpy.sum(a) * numpy.max(b))
+    def jaccard_similarity(a,b):
+        return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
+    def both_out_of_one(a,b):
+        return numpy.sum(numpy.minimum(a,b)) / numpy.sum(a)
+    def oneFromBoth(a,b):
+        return numpy.sum(a) / numpy.sum(numpy.maximum(a,b))
+    def simultaneous(a,b):
+        return both_out_of_one(a,b)-.5*keep*numpy.sum(numpy.minimum(a,b)) / (numpy.sum(a) * numpy.sum(b))
+    def integrateKeeps(a,b):
+        av = numpy.sum(a)
+        bv = numpy.sum(b)
+        cv = numpy.sum(numpy.minimum(a,b))
+        if 0:
+            return cv * (1-numpy.exp(-(1/av+1/bv)*keep)) / (2 * keep)
+        elif 0:
+            if keep>=cv:
+                return 1000000  # don't allow this to happen
+            keep_star = -cv/2*numpy.log(1-keep/cv)
+            return cv * (1-numpy.exp(-(1/av+1/bv)*keep_star)) / (2 * keep)
+        elif 0:
+            if (cv/av+cv/bv)*keep >cv:
+                return 100000 # don't allow the pair if they don't have enough votes (if the venn diagram would go negative)
+            else:
+                return cv/av;
+        elif 0:
+            if (cv/av+cv/bv)*keep >cv:
+                extra = (cv/av+cv/bv)*keep - cv
+                return cv/av + extra/(2*keep) # double cost for borrowing to meet the keep
+            else:
+                return cv/av;
+        elif 0:
+            return .5 * cv * min(1/av+1/bv,1/keep) # no negatives in the venn diagram
+        elif 0:
+            return min(cv/(2*keep),1)  # separate voter groups
+        elif 1:
+            return cv/av * (numVoters-av-bv+cv)/numVoters  # reduce number of total voters
+        else:
+            jg = 1/2*cv/(2*(av+bv-cv)-numVoters) #hmm doesn't work
+            kg = 1+jg
+            return jg
             
-        m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
+    if options['l1Similarity']:
+        similarity = l1_similarity
+    elif options['cosineSimilarity']:
+        similarity = cosine_similarity
+    elif options["bothOutOfOne"]: 
+        similarity = both_out_of_one
+    elif options["oneFromBoth"]: 
+        similarity = oneFromBoth
+    elif options["multiplySupport"]: 
+        similarity = multiply_support_not_min
+    elif options["simultaneous"]: 
+        similarity = simultaneous
+    elif options["integrateKeeps"]: 
+        similarity = integrateKeeps
+    else: #options["jaccardSimilarity"]:
+        similarity = jaccard_similarity
+            
+    for j in range(numReps):
+        for k in range(numReps):
+            s[j,k] = similarity(b[:,j],b[:,k])
+        t[j] = sum(b[:,j])
+    
+    
+    #
+    # there are a few different computations, depending on the option
+    #
+    
+    if options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
+    
+        if options['computeClustering']:
+            y = {}
+            for i in range(numVoters):
+                for j in range(numReps):
+                    y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            m.update()
+
+            # Add constraints
+            for i in range(numVoters):
+                for j in range(numReps):
+                    m.addConstr(y[(i,j)] <= x[j])
+
+            for i in range(numVoters):
+                m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1)
+        
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+                
+            m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
+            
+        
+        elif options['computeBQP']:
+            
+            m.update()
+            
+            # Add constraints
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+                
+            d_obj = LinExpr()
+            for j in range(numReps):
+                d_obj += t[j]*x[j]
+                for k in range(numReps):
+                    if k != j:
+                        d_obj += -.5*keep*s[j,k]*x[j]*x[k]
+
+            m.setObjective( d_obj , GRB.MAXIMIZE)
+            
 
 
-    elif options['computeSTV'] or options["computePluralityMultiwinner"] or options["computeSchulzeSTV"] or options["MeeksSTV"] or options["openstv"]:
+        elif 0: # piggyback on computeMaxRRV when it is selected
+        
+        
+            # this is actually an iterative process and we only stop when we reach a particular condition.  Let's just do one iteration
+            
+            # initialization
+            
+            xx = numpy.zeros(numVoters)
+            xx[0] = nWinners
+            
+            
+            #
+            y = {}
+            for i in range(numVoters):
+                for j in range(numReps):
+                    y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+                    m.addConstr( y[(i,j)] <= 1) # constraint 1
+                    m.addConstr(y[(i,j)] <= x[j]) # y is zero if the rep is not selected. constraint 2
+            
+            m.addConstr(quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ) == nWinners) # constraint 3
+            
+            for i in range(numVoters):
+                m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1) # constraint 4 but with additional constraint that doesn't change things.
+                
+            # add variables
+            e = {}
+            s = {}
+            t = {}
+            for i in range(numVoters):
+                for j in range(numVoters):
+                    e[(i,j)] = m.addVar(vtype=GRB.BINARY, name="t%d,%d" % (i,j)) # constraint 7
+                s[i] = m.addVar(vtype=GRB.BINARY, name="s%d" % i) # constraint 8
+                t[i] = m.addVar(vtype=GRB.BINARY, name="t%d" % i) # constraint 9
+            e_epsilon = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="e_epsilon")
+            
+            # constrain
+            for i in range(numVoters):
+                m.addConstr( s[i] + quicksum( e[(i,j)] for j in range(numVoters) ) == 1 ) # constraint 10
+            for j in range(numVoters):
+                m.addConstr( t[j] + quicksum( e[(i,j)] for i in range(numVoters) ) <= 1 ) # constraint 11
+            m.addConstr( quicksum( t[j] for j in range(numVoters) ) == 1 ) # constraint 12
+            
+            for i in range(numVoters):
+                for j in range(numVoters):
+                    m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 1 - e[(i,j)] ) <= xx[j] ) # constraint 13
+                    m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 2 - s[i] - t[j] ) <= xx[j] - e_epsilon ) #  constraint 14
+
+            # ok now maximize e_epsilon.
+            m.setObjective( e_epsilon, GRB.MAXIMIZE)   
+                 
+
+            m.update()
+            
+        
+        elif options['computeMaxRRV']:
+            
+            # still to do
+            
+            m = Model("qcp")
+            if not output:
+                m.params.OutputFlag = 0
+            m.setParam('TimeLimit', 100)
+            
+
+            # Add variables
+            x = {}
+            for j in range(numReps):
+                x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+                
+            # Add variables
+            f = {}
+            for i in range(numVoters):
+                f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
+                
+            # Add constraints
+                
+            if 0:
+                for i in range(numVoters):
+                    m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
+                    m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
+                    # I know it should be == 1 but gurobi won't allow it.
+                    # still gurobi doesn't work with <= 1 because it says the problem is not positive semidefinite.
+                    # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f, where the equality holds. 
+            
+            elif 0:  # try this
+                won1 = {}
+                for i in range(numVoters):
+                    m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
+                    won1[i] = m.addVar(vtype=GRB.BINARY, name="won1%d" % i)
+                    m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == won1[i] )
+                    # it looks like equality is allowed if there is a constraint on f.  f <= 1 or even f <= 1000.          
+            
+            elif 0:
+                for i in range(numVoters):
+                    m.addConstr(f[i] <= 1000)
+                    m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == 1 )
+                    
+            elif 0: 
+                for i in range(numVoters):
+                    m.addConstr(f[i] <= 1)
+                    m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 )      
+            elif 0: 
+                for i in range(numVoters):
+                    m.addConstr(f[i] <= 1)
+                    m.addQConstr( quicksum( f[i] * (b[i,j]+1) * x[j] for j in range(numReps) ) <= 1 ) # just trying out this b+1
+            elif 0:  # try this
+                for i in range(numVoters):
+                    # hey I don't need the extra f <= 1 constraints.
+                    m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] + 1) for j in range(numReps) ) <= 1 ) # this is a better place for the + 1.  Maybe we should subtract the average score.
+            else:  # try this
+                for i in range(numVoters):
+                    # hey I don't need the extra f <= 1 constraints.
+                    nw0 = (nWinners-1) / nWinners # for some reason, computations go a lot faster with this factor.
+                    m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] * nw0 + 1) for j in range(numReps) ) <= 1 ) # Let's also subtract the average score to try to match RRV better.
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            
+            
+            m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
+            
+        # optimize and wrap up output and x[j]
+        output = StringIO.StringIO()
+        m.__output = output
+        m.optimize(mycallback)
+        if (m.status != 2):
+            return ["error"]   
+        g_log += output.getvalue()     
+        xo = numpy.zeros(numReps)
+        for j in range(numReps):
+            if (x[j].X > .5):
+                xo[j] = 1
+
+            
+
+
+    elif options['computeSTV'] or options["computePluralityMultiwinner"] or options["computeSchulzeSTV"] or options["MeeksSTV"] or options["openstv"]:  # uses openstv or pyvotecore
         
         # convert ballot format
         bSTV = []
@@ -110,109 +351,38 @@ def optimize(voters, reps, options, output=False):
             b_text += a_line + "\n"
         b_text = b_text[:-1] # remove last newline
         
-        if options['computeSTV']:
-            outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+        if options['computeSTV'] or options["computePluralityMultiwinner"] or options["computeSchulzeSTV"]:
+            if options['computeSTV']:
+                outputSTV = STV(bSTV, required_winners=nWinners).as_dict()
+            elif options["computePluralityMultiwinner"]:
+                outputSTV = PluralityAtLarge(bPlur, required_winners=nWinners).as_dict()
+            elif options["computeSchulzeSTV"]:
+                outputSTV = SchulzeSTV(bSTV, required_winners=nWinners, ballot_notation=SchulzeSTV.BALLOT_NOTATION_GROUPING).as_dict()
             winSet = outputSTV['winners'] # set of winners
-        elif options["computePluralityMultiwinner"]:
-            outputSTV = PluralityAtLarge(bPlur, required_winners=nWinners).as_dict()
-            winSet = outputSTV['winners'] # set of winners
-        elif options["computeSchulzeSTV"]:
-            outputSTV = SchulzeSTV(bSTV, required_winners=nWinners, ballot_notation=SchulzeSTV.BALLOT_NOTATION_GROUPING).as_dict()
-            winSet = outputSTV['winners'] # set of winners
-        elif options["MeeksSTV"]:
-            methods = getMethodPlugins("byName", exclude0=False)
-            name="MeekSTV"
-            dirtyBallots = Ballots()
-            dirtyBallots.loadText(b_text)
-            dirtyBallots.numSeats = nWinners
-            cleanBallots = dirtyBallots.getCleanBallots()
-            e = methods[name](cleanBallots)
-            e.runElection()
-            winSet = e.getWinnerList()
-        elif options["openstv"]:
-            methods = getMethodPlugins("byName", exclude0=False)
-            name=options["stvtype"]
-            dirtyBallots = Ballots()
-            dirtyBallots.loadText(b_text)
-            dirtyBallots.numSeats = nWinners
-            cleanBallots = dirtyBallots.getCleanBallots()
-            e = methods[name](cleanBallots)
-            e.runElection()
-            winSet = e.getWinnerList()
+            g_log += "PyVoteCore (not Gurobi) \n\n"
             
+        elif options["MeeksSTV"] or options["openstv"]:
+            if options["MeeksSTV"]:
+                name="MeekSTV"
+            elif options["openstv"]:
+                name=options["stvtype"]
+            methods = getMethodPlugins("byName", exclude0=False)
+            dirtyBallots = Ballots()
+            dirtyBallots.loadText(b_text)
+            dirtyBallots.numSeats = nWinners
+            cleanBallots = dirtyBallots.getCleanBallots()
+            e = methods[name](cleanBallots)
+            e.runElection()
+            winSet = e.getWinnerList()
+            g_log += "OpenSTV (not Gurobi) \n\n"
         
-                
-        solution1 = []
-        solution2 = []
         
+        xo = numpy.zeros(numReps)
         for j in range(numReps):
             if "%d" % j in winSet:
-                solution1.append(j)
-        
-        for i in range(numVoters):
-            maxj = 0
-            maxb = 0
-            for j in solution1:
-                if b[i,j] > maxb:
-                    maxj = j
-                    maxb = b[i,j]
-            solution2.append((i,maxj))
+                xo[j] = 1
+                
 
-        return [solution1, solution2, "STV" + options_str] 
-
-    elif 0:
-    
-    
-        # this is actually an iterative process and we only stop when we reach a particular condition.  Let's just do one iteration
-        
-        # initialization
-        
-        xx = numpy.zeros(numVoters)
-        xx[0] = nWinners
-        
-        
-        #
-        y = {}
-        for i in range(numVoters):
-            for j in range(numReps):
-                y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
-                m.addConstr( y[(i,j)] <= 1) # constraint 1
-                m.addConstr(y[(i,j)] <= x[j]) # y is zero if the rep is not selected. constraint 2
-        
-        m.addConstr(quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ) == nWinners) # constraint 3
-        
-        for i in range(numVoters):
-            m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1) # constraint 4 but with additional constraint that doesn't change things.
-            
-        # add variables
-        e = {}
-        s = {}
-        t = {}
-        for i in range(numVoters):
-            for j in range(numVoters):
-                e[(i,j)] = m.addVar(vtype=GRB.BINARY, name="t%d,%d" % (i,j)) # constraint 7
-            s[i] = m.addVar(vtype=GRB.BINARY, name="s%d" % i) # constraint 8
-            t[i] = m.addVar(vtype=GRB.BINARY, name="t%d" % i) # constraint 9
-        e_epsilon = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="e_epsilon")
-        
-        # constrain
-        for i in range(numVoters):
-            m.addConstr( s[i] + quicksum( e[(i,j)] for j in range(numVoters) ) == 1 ) # constraint 10
-        for j in range(numVoters):
-            m.addConstr( t[j] + quicksum( e[(i,j)] for i in range(numVoters) ) <= 1 ) # constraint 11
-        m.addConstr( quicksum( t[j] for j in range(numVoters) ) == 1 ) # constraint 12
-        
-        for i in range(numVoters):
-            for j in range(numVoters):
-                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 1 - e[(i,j)] ) <= xx[j] ) # constraint 13
-                m.addConstr( quicksum( y[(i,cc)] for cc in range(numReps) ) - nWinners * ( 2 - s[i] - t[j] ) <= xx[j] - e_epsilon ) #  constraint 14
-
-        # ok now maximize e_epsilon.
-        m.setObjective( e_epsilon, GRB.MAXIMIZE)   
-             
-
-        m.update()
-        
     elif options['computeRRV']:
         
         winBool = numpy.zeros(numReps)
@@ -220,231 +390,61 @@ def optimize(voters, reps, options, output=False):
         voterWeight = numpy.ones(numVoters)
         voterWinSum = numpy.zeros(numVoters)
         voterMax = numpy.max(b,1)
+        runt = t # running tally is updated
         for i in range(nWinners):
-            t = numpy.matmul(voterWeight,b)
-            t[winList]=0
-            winner = numpy.argmax(t)
+            runt = numpy.matmul(voterWeight,b)
+            runt[winList]=0
+            winner = numpy.argmax(runt)
             winBool[winner]=1
             winList += [winner]
             voterWinSum += b[:,winner]
             voterWeight = 1/(1+voterWinSum/voterMax)
         
-                
-        solution1 = []
-        solution2 = []
-        
+        g_log += "RRV (not Gurobi) \n\n"
+        xo = numpy.zeros(numReps)
         for j in range(numReps):
             if j in winList:
-                solution1.append(j)
-        
-        for i in range(numVoters):
-            maxj = 0
-            maxb = 0
-            for j in solution1:
-                if b[i,j] > maxb:
-                    maxj = j
-                    maxb = b[i,j]
-            solution2.append((i,maxj))
-
-        return [solution1, solution2, "STV" + options_str] 
+                xo[j] = 1
+                
     
-    elif options['computeMaxRRV']:
-        
-        # still to do
-        
-        m = Model("qcp")
-        if not output:
-            m.params.OutputFlag = 0
-        m.setParam('TimeLimit', 100)
-        
-
-        # Add variables
-        x = {}
-        for j in range(numReps):
-            x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
-            
-        # Add variables
-        f = {}
-        for i in range(numVoters):
-            f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
-            
-        # Add constraints
-            
-        if 0:
-            for i in range(numVoters):
-                m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
-                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) 
-                # I know it should be == 1 but gurobi won't allow it.
-                # still gurobi doesn't work with <= 1 because it says the problem is not positive semidefinite.
-                # maybe the <=1 is okay because we are maximizing, and there is no reason to make f smaller than the optimal f, where the equality holds. 
-        
-        elif 0:  # try this
-            won1 = {}
-            for i in range(numVoters):
-                m.addConstr(f[i] <= 1000) # maybe not needed ... turns out we needed it.
-                won1[i] = m.addVar(vtype=GRB.BINARY, name="won1%d" % i)
-                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == won1[i] )
-                # it looks like equality is allowed if there is a constraint on f.  f <= 1 or even f <= 1000.          
-        
-        elif 0:
-            for i in range(numVoters):
-                m.addConstr(f[i] <= 1000)
-                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) == 1 )
-                
-        elif 0: 
-            for i in range(numVoters):
-                m.addConstr(f[i] <= 1)
-                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 )      
-        elif 0: 
-            for i in range(numVoters):
-                m.addConstr(f[i] <= 1)
-                m.addQConstr( quicksum( f[i] * (b[i,j]+1) * x[j] for j in range(numReps) ) <= 1 ) # just trying out this b+1
-        elif 0:  # try this
-            for i in range(numVoters):
-                # hey I don't need the extra f <= 1 constraints.
-                m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] + 1) for j in range(numReps) ) <= 1 ) # this is a better place for the + 1.  Maybe we should subtract the average score.
-        else:  # try this
-            for i in range(numVoters):
-                # hey I don't need the extra f <= 1 constraints.
-                nw0 = (nWinners-1) / nWinners # for some reason, computations go a lot faster with this factor.
-                m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] * nw0 + 1) for j in range(numReps) ) <= 1 ) # Let's also subtract the average score to try to match RRV better.
-        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
-        
-        
-        m.setObjective( quicksum( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
-        
-
-    
-    else : # computeBQP
-        
-        if options['seatsPlusOne']:
-            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
-            #keep = options['keepsmultiplier'] * sum(b) / (1 + 5) # might not work
-        elif options['seatsPlusHalf']:
-            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (.5+nWinners)
-        else:
-            keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (nWinners)
-        
-        def cosine_similarity(a,b):
-            return numpy.dot(a,b) / numpy.sqrt(numpy.sum(a**2) * numpy.sum(b**2))
-        def l1_similarity(a,b): # well sorensen-dice coefficient
-            return 2*numpy.sum(numpy.minimum(a,b)) / (numpy.sum(a) + numpy.sum(b))
-        def multiply_support_not_min(a,b): # instead of finding the amount of support shared by two candidates, multiply their support ... maybe
-            return numpy.dot(a,b) / (numpy.sum(a) * numpy.max(b))
-        def jaccard_similarity(a,b):
-            return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
-        def both_out_of_one(a,b):
-            return numpy.sum(numpy.minimum(a,b)) / numpy.sum(a)
-        def oneFromBoth(a,b):
-            return numpy.sum(a) / numpy.sum(numpy.maximum(a,b))
-        def simultaneous(a,b):
-            return both_out_of_one(a,b)-.5*keep*numpy.sum(numpy.minimum(a,b)) / (numpy.sum(a) * numpy.sum(b))
-        def integrateKeeps(a,b):
-            av = numpy.sum(a)
-            bv = numpy.sum(b)
-            cv = numpy.sum(numpy.minimum(a,b))
-            if 0:
-                return cv * (1-numpy.exp(-(1/av+1/bv)*keep)) / (2 * keep)
-            elif 0:
-                if keep>=cv:
-                    return 1000000  # don't allow this to happen
-                keep_star = -cv/2*numpy.log(1-keep/cv)
-                return cv * (1-numpy.exp(-(1/av+1/bv)*keep_star)) / (2 * keep)
-            elif 0:
-                if (cv/av+cv/bv)*keep >cv:
-                    return 100000 # don't allow the pair if they don't have enough votes (if the venn diagram would go negative)
-                else:
-                    return cv/av;
-            elif 0:
-                if (cv/av+cv/bv)*keep >cv:
-                    extra = (cv/av+cv/bv)*keep - cv
-                    return cv/av + extra/(2*keep) # double cost for borrowing to meet the keep
-                else:
-                    return cv/av;
-            elif 0:
-                return .5 * cv * min(1/av+1/bv,1/keep) # no negatives in the venn diagram
-            elif 0:
-                return min(cv/(2*keep),1)  # separate voter groups
-            elif 1:
-                return cv/av * (numVoters-av-bv+cv)/numVoters  # reduce number of total voters
-            else:
-                jg = 1/2*cv/(2*(av+bv-cv)-numVoters) #hmm doesn't work
-                kg = 1+jg
-                return jg
-                
-        if options['l1Similarity']:
-            similarity = l1_similarity
-        elif options['cosineSimilarity']:
-            similarity = cosine_similarity
-        elif options["bothOutOfOne"]: 
-            similarity = both_out_of_one
-        elif options["oneFromBoth"]: 
-            similarity = oneFromBoth
-        elif options["multiplySupport"]: 
-            similarity = multiply_support_not_min
-        elif options["simultaneous"]: 
-            similarity = simultaneous
-        elif options["integrateKeeps"]: 
-            similarity = integrateKeeps
-        else: #options["jaccardSimilarity"]:
-            similarity = jaccard_similarity
-                
-        for j in range(numReps):
-            for k in range(numReps):
-                s[j,k] = similarity(b[:,j],b[:,k])
-            t[j] = sum(b[:,j])
-
-        m.update()
-        
-        # Add constraints
-        m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
-            
-        d_obj = LinExpr()
-        for j in range(numReps):
-            d_obj += t[j]*x[j]
-            for k in range(numReps):
-                if k != j:
-                    d_obj += -.5*keep*s[j,k]*x[j]*x[k]
-
-        m.setObjective( d_obj , GRB.MAXIMIZE)
-        
-    output = StringIO.StringIO()
-    m.__output = output
-
-    m.optimize(mycallback)
-
-    if (m.status != 2):
-        return ["error"]
-
-        
     solution1 = []
     solution2 = []
-
-    solutionb = numpy.zeros(numReps)
+    
     solutionfid = numpy.zeros(numReps)
     i=0
     for j in range(numReps):
-        if (x[j].X > .5):
+        if (xo[j]):
             solution1.append(j)
-            solutionb[j] = 1
             solutionfid[j] = i
             i+=1
     
+    votercolor = numpy.zeros(numVoters)
+    for i in range(numVoters):
+        maxj = 0
+        maxb = 0
+        for j in solution1:
+            if b[i,j] > maxb:
+                maxj = j
+                maxb = b[i,j]
+        solution2.append((i,maxj))
+        votercolor[i] = solutionfid[maxj]
+        
+        
     wholetable = -.5*keep*s
     for j in range(numReps):
         wholetable[j,j] = t[j]
     solutiontable = wholetable[solution1][:,solution1]
     
-    out3 = "\n\nProblem:\n"
+    tableslog = "\n\nProblem:\n"
     for i in wholetable:
         for j in i:
-            out3 += "%6i" % j
-        out3 += '\n'
-    out3 += '\nSolution:\n'
+            tableslog += "%6i" % j
+        tableslog += '\n'
+    tableslog += '\nSolution:\n'
     for i in solutiontable:
         for j in i:
-            out3 += "%6i" % j
-        out3 += '\n'
+            tableslog += "%6i" % j
+        tableslog += '\n'
     
     sudoku = numpy.zeros([numReps,numReps])
     runsum = 0
@@ -488,32 +488,20 @@ def optimize(voters, reps, options, output=False):
     nordsudoku = nsudoku[nodes_louvain_ordered][:,nodes_louvain_ordered]
     ords = s[nodes_louvain_ordered][:,nodes_louvain_ordered]
     ordt = t[nodes_louvain_ordered]
-    orderedsolutionb = solutionb[nodes_louvain_ordered]
+    orderedxo = xo[nodes_louvain_ordered]
     orderedsolutionfid = solutionfid[nodes_louvain_ordered]
     
     # add a table of numbers to solve, like a sudoku
-    out3 += "\nOrdered Table:\n"
+    tableslog += "\nOrdered Table:\n"
     for i in range(numReps):
         for j in range(numReps):
-            out3 += "%6i" % orderedtable[i,j]
-            if orderedsolutionb[i] and orderedsolutionb[j]:
-                out3 += "*"
+            tableslog += "%6i" % orderedtable[i,j]
+            if orderedxo[i] and orderedxo[j]:
+                tableslog += "*"
             else:
-                out3 += " "
-        out3 += '\n'
-        
-    options_str += out3
+                tableslog += " "
+        tableslog += '\n'
     
-    votercolor = numpy.zeros(numVoters)
-    for i in range(numVoters):
-        maxj = 0
-        maxb = 0
-        for j in solution1:
-            if b[i,j] > maxb:
-                maxj = j
-                maxb = b[i,j]
-        solution2.append((i,maxj))
-        votercolor[i] = solutionfid[maxj]
         
     # see what a similarity measure would look like for voters - if there are communities
     if options["Calculate Voter Communities"]:
@@ -567,7 +555,6 @@ def optimize(voters, reps, options, output=False):
             vorder = rv[nvorder].tolist()
             votercomcolor = votercolor[vorder]
             
-            
     else:
         votercommunities = numpy.zeros(2)
         votercomcolor = numpy.zeros(2)
@@ -586,7 +573,7 @@ def optimize(voters, reps, options, output=False):
         f.write("]")
         f.close()
         
-    return [solution1, solution2, output.getvalue() + options_str,ords.tolist(),orderedsolutionb.tolist(),ordt.tolist(),nordsudoku.tolist(),nodes_louvain_ordered,orderedsolutionfid.tolist(),keep,options["Calculate Voter Communities"],votercommunities.tolist(),votercomcolor.tolist(),votercolor.tolist(),vorder]
+    return [solution1, solution2, g_log + tableslog + options_str,ords.tolist(),orderedxo.tolist(),ordt.tolist(),nordsudoku.tolist(),nodes_louvain_ordered,orderedsolutionfid.tolist(),keep,options["Calculate Voter Communities"],votercommunities.tolist(),votercomcolor.tolist(),votercolor.tolist(),vorder]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:

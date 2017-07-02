@@ -731,9 +731,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
 		<input class="op" type="radio" name="compute"> RRV  <br />
-		<input class="op" type="radio" name="compute" id="openstv"> OpenSTV (todo)
+		<input class="op" type="radio" name="compute" id="openstv"> OpenSTV
 		<select id="stvtype" name="stvtype" onclick="selectOpenstv()">
-			<option value="Approval">Approval</option>
+			<option value="Approval">Approval (bug?)</option>
 			<option value="Borda">Borda</option>
 			<option value="Bucklin">Bucklin</option>
 			<option value="CambridgeSTV">CambridgeSTV</option>
@@ -749,13 +749,13 @@ print(["%d" % x[j1].X for j1 in range(9)])
 			<option value="QPQ">QPQ</option>
 			<option value="RTSTV">RTSTV</option>
 			<option value="SNTV">SNTV</option>
-			<option value="ScottishSTV">ScottishSTV</option>
+			<option selected="selected" value="ScottishSTV">ScottishSTV</option>
 			<option value="SuppVote">SuppVote</option>
 			<option value="WarrenQXSTV">WarrenQXSTV</option>
 			<option value="WarrenSTV">WarrenSTV</option>
 		</select> <br />
 		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
-		<input class="op" type="radio" name="compute"> Schulze STV (bug)<br />
+		<input class="op" id="schulzestv" type="radio" name="compute"> Schulze STV (bug)<br />
 		<input class="op" type="radio" name="compute"> Clustering like original<br />
 		<input class="op" type="radio" name="compute"> A new formulation (working on it) 
 	    </fieldset>
@@ -1279,8 +1279,14 @@ function compute() {
   numberOfWinners = parseFloat(document.getElementById("numberOfWinners").value);
   stvtype = document.getElementById("stvtype").value;
   calcVoterCom = document.getElementById("calcVoterCom").checked;
+  schulzestv = document.getElementById("schulzestv").checked
   charge = [];
-  charge.push(numberOfWinners);
+  
+  if (schulzestv) { // need a faster implementation of schulze stv
+	charge.push(Math.min(2,numberOfWinners));
+  } else {
+	charge.push(numberOfWinners);
+  }
   charge.push(cost);
   charge.push(stvtype);
   
