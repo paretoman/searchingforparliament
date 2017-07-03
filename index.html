@@ -1889,7 +1889,7 @@ function dodraw(idtoget,dn,showit) {
 	}
 	sp = 4
 	drawit_a = function(){
-		if (! (showmix==1 || showoverlap==1 || firstdraw)) {
+		if (! (window[showit] || firstdraw)) { // showit is passed by reference, so this will get the passed variable name in the global context
 			dummy=1;
 		} else if (dn==1) {
 			setTimeout(function(){ trantime =   0*sp; both = 30; keep = -20;  go(); }, 0*sp);
@@ -1973,7 +1973,7 @@ function dodraw(idtoget,dn,showit) {
 			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
 		} else if (dn=="7ab") { // this shows what happens when there are enough votes for the pair.
 			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; total=80;  figheight = 70; go(); }, 0*sp);
-			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=25; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=17; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
 			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
@@ -1995,10 +1995,10 @@ function dodraw(idtoget,dn,showit) {
 	drawit_a()
 	i_draw = setInterval( drawit_a, 3000*sp);
 }
-dodraw("#overlap","1c")
-dodraw("#clone","7b")
-dodraw("#clone2","7b")
-dodraw("#animatemixture","1b")
-dodraw("#jaccard","7ab")
+dodraw("#overlap","1c",showoverlap)
+dodraw("#clone","7b",showoverlap)
+dodraw("#clone2","7b",showmix)
+dodraw("#animatemixture","1b",showmix)
+dodraw("#jaccard","7ab",showmix)
 
   </script>
