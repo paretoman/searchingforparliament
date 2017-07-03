@@ -200,6 +200,8 @@ a:hover.screenshot {
 		STV subtracts this for each pair of reps when one of the pair wins and they are supported by the same group of voters.  We want to subtract this for each similar pair, and we want to show why it selects the correct number of reps for a group of voters.
       </p>
       <h3> Mini example to show proportionality</h3>
+	  
+		<div class="spacer" id="triggeroverlaptop"></div>
       <p>
         Ok, we'll show an example.  We can actually see the method at work.
 
@@ -283,6 +285,13 @@ a:hover.screenshot {
 		<img src="venndiagram.png"  style="text-align: center" />
 		</p>
 		</div>
+		<p>
+		This animation show two reps that share the same group of voters.  On the right, it shows how setting a keep level takes voters from supporting both to supporting just one.
+		</p>
+		<p align="center">
+		<span id="overlap"></span> &nbsp; &nbsp; &nbsp; &nbsp; <span id="clone"></span>
+		</p>
+		
 		</p>
 		<p>
 		2 from A is not as good because there are a disproportionate number from A:
@@ -365,6 +374,8 @@ a:hover.screenshot {
         \]
 		So we know we have a proportional system.
       </p>
+	  
+	  <div class="spacer" id="triggeroverlapbottom"></div>
       <h3> Finishing the Model: Similarity </h3>
       <p>
         What if the voters don't fall into parties?
@@ -420,7 +431,10 @@ a:hover.screenshot {
 s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} \text{ } \text{ } \text{ } \text{ (Similarity between rep j and rep k)}\nonumber \\
 		\end{align}
         \]
+		</p>
 		<h4> Mixture Example</h4>
+		<div class="spacer" id="triggermixtop"></div>
+		<p>
 		Let's try to justify this more and build an intuition by working through an example:
 		\[
 		\text{mixture example: } \
@@ -474,8 +488,24 @@ s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} ma
 		B:  & 3 & 2 & 0 \\
 		\end{bmatrix}
 		\]
-		A test with Jaccard similarity would show that maximizing the table sum gives the same composition of winners.  Let's now see how we would write up this test.
+		To visualize what is happening, we draw a Venn diagram.  Area is proportional to votes.  Even if we change the proportion of shared votes, we are still representing the same voters and they should get the same number of reps:
+		</p>
+		<p align="center"><span id="animatemixture"></span>
+		</p>
+		<p>
+		When we use Jaccard similarity to figure the number of keeps, we get the same composition of winners no matter how much the voters split their support.  We can include this similarity in our venn diagram from before, which only applied to identical reps (clones).
+		</p>
+		<p align="center" >
+		Identical Reps &nbsp; &nbsp; &nbsp;  Similar Reps &nbsp;&nbsp; &nbsp; &nbsp; 
+		</p>
+		<p align="center" >
+		<span id="clone2"></span>  <span id="jaccard"></span>
+		</p>
+		<p>
+		Next we will see how to include Jaccard similarity into our calculation.
+		</p>
 		<h4> Add Similarity to Model </h4>
+		<p>
 		Let's include this similarity measure in our model.  We need to adjust the number of votes that are kept when a pair of candidates share the same voter support:
 		\[
 		keeps_{jk} = keep * s_{jk} \nonumber
@@ -492,6 +522,7 @@ s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} ma
         \]
          This expression is just the sum of the table, so it's basically just letting us add up the tally and subtract the keeps for the winning reps. The 1/2 factor is in there because there are 2 entries $x_{jk}$ and $x_{kj}$ for each pair.  So! <b>We have a new and better table to add up and maximize!  It is better because now we don't need parties!  It's the voters that matter, not the parties.</b>
       </p>
+	  <div class="spacer" id="triggermixbottom"></div>
 	  <h3> The model is actually like a sudoku </h3>
       <p>
         There is a really easy way to visualize what the model is trying to do.  We reduced the problem to crossing out the rows and columns in a table.  Cross out the row and column for each rep that lost. Add the remaining tallies and keeps.  Try to find the 4 winners by crossing out the losing rep's row and column.
@@ -1649,3 +1680,325 @@ function restart() {
 </script>
 
 
+
+  
+  <!-- scroll triggers -->
+  
+<script type="text/javascript" src="http://scrollmagic.io/scrollmagic/uncompressed/ScrollMagic.js"></script>
+<script>
+console.log("ScrollMagic v%s loaded", ScrollMagic.version);
+
+// init
+var ctrl = new ScrollMagic.Controller();
+
+function dos (divname,f) {
+	// create scene
+	var scene = new ScrollMagic.Scene({
+		triggerElement: divname
+	  })
+	  .on('start', f)
+	  .addTo(ctrl);
+}
+var showmix = 0;
+var showoverlap = 0;
+dos("#triggermixtop",function() {showmix = 1-showmix; })
+dos("#triggermixbottom",function() {showmix = 1-showmix; })
+dos("#triggeroverlaptop",function() {showoverlap = 1-showoverlap;})
+dos("#triggeroverlapbottom",function() {showoverlap = 1-showoverlap; })
+// Open console to see output!
+</script>
+
+
+<!-- Animations -->
+
+
+<style type="text/css">
+  button {
+    margin: 20px 0 0 20px;
+  }
+  
+  .barchart{
+  fill:orange
+  }
+	
+	rect{
+  stroke:#000;
+  stroke-width:1px;
+  opacity:.3;
+  /*stroke-opacity:0;*/
+  border-radius:10;
+  rx:6
+}
+/*
+  .rightsquare{
+	fill:#ff4232
+}
+  .leftsquare{
+	fill:#2342ff
+}
+*/
+  .topsquare{
+
+}
+  .bottomsquare{
+
+}
+
+  .keepsline{
+  stroke:#000;
+  stroke-width:1px;
+    
+  }
+
+  .negativesquare{
+	fill:#000000
+}
+​</style>
+  <script type="text/javascript">
+		var color_fill = ["#add8e6","#90ee90","#ff6347","#ffff00","#ffa500","#65C1A5","#8D9EC9","#E68AC2","#D4BDDC","#DDCFAF","#6EA0C8","#D90015","#DE9B13","#6EA0C8","#A4D959","#198E64","#DD0076","#936219","#525252","#615AA2"];
+function dodraw(idtoget,dn,showit) {
+
+	var firstdraw = 1; // lets at least draw the initial figure
+	var figheight = 100; //bounds on the drawing
+	var figwidth = 110;
+	var h = figheight;
+	var w = figwidth;
+	var svg = d3.select(idtoget)
+		.append("svg")
+		.attr("id", "visualization")
+		.attr("xmlns", "http://www.w3.org/2000/svg");
+
+	//animation options
+	var bottomoverlap = false;
+	var thinlinenegative = false;
+	
+	var both = 30;
+	var border = 10;
+	var height = 50;
+	var total = 90; // union of tallys
+	var keep = 80; // desired keep
+	var sep = 0; // separation between rectanges 
+	var barheight = 0;
+	var b=svg.append("rect")
+	var c=svg.append("rect")
+	var d=svg.append("rect")
+	var e=svg.append("rect")
+	var f=svg.append("rect")
+	var g=svg.append("line")
+	var g2=svg.append("rect")
+	var trantime = 500;
+	var tease = "in";
+	var color_left = 0;
+	var color_right = 3;
+	
+	
+	function go() {
+		firstdraw = 0;
+		
+		h = figheight
+		svg
+		  .attr("width", figwidth)
+		  .attr("height", figheight)
+		  
+		var tally = (total+both)/2
+		var drop = figheight-border*2-height;
+		var keepin = Math.max(0,Math.min(height,keep)); // keep that is within the total.
+		var negative = Math.min(drop,Math.max(keep-height,0));
+		
+		
+		// left top
+		b
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","leftsquare topsquare")
+		.attr("x",border-sep/2)
+		.attr("y",border+drop)
+		.attr("width",tally)
+		.attr("height",height-keepin)
+		.attr("fill",color_fill[color_left]);
+		
+		// right top
+		c
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","rightsquare topsquare")
+		.attr("x",border+total-tally+sep/2)
+		.attr("y",border+drop)
+		.attr("width",tally)
+		.attr("height",height-keepin)
+		.attr("fill",color_fill[color_right]);
+		
+		// left bottom
+		d
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","leftsquare bottomsquare")
+		.attr("x",border-sep/2)
+		.attr("y",border+drop+height-keepin)
+		.attr("width",(bottomoverlap) ? tally : total/2)
+		.attr("height",keepin)
+		.attr("fill",color_fill[color_left]);
+		
+		// right bottom
+		e
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","rightsquare bottomsquare")
+		.attr("x",(bottomoverlap) ? border+total-tally+sep/2 : border+total/2+sep/2)
+		.attr("y",border+drop+height-keepin)
+		.attr("width",(bottomoverlap) ? tally : total/2)
+		.attr("height",keepin)
+		.attr("fill",color_fill[color_right]);
+		
+		// negative
+		f
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","negativesquare")
+		.attr("x",(thinlinenegative) ? border+total/2 : border+total-tally)
+		.attr("y",Math.min(border+drop-negative,border+drop))
+		.attr("width",(thinlinenegative) ? 0 : both)
+		.attr("height",negative);
+		
+		g
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("x1",border)
+		.attr("y1",figheight-border-keep)
+		.attr("x2",border+total)
+		.attr("y2",figheight-border-keep)
+		.attr("class","keepsline")
+		.style("stroke-dasharray","3,3");
+		
+		g2
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","barchart")
+		.attr("x",total+border+20)
+		.attr("y",figheight-border-barheight)
+		.attr("width",10)
+		.attr("height",barheight);
+		
+	}
+	sp = 4
+	drawit_a = function(){
+		if (! (showmix==1 || showoverlap==1 || firstdraw)) {
+			dummy=1;
+		} else if (dn==1) {
+			setTimeout(function(){ trantime =   0*sp; both = 30; keep = -20;  go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; both = total; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; both = 0; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 300*sp; sep = 10; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 200*sp; sep = 0; go(); }, 2300*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 0; both = 30; go(); }, 2500*sp);
+		} else if (dn=="1a") {
+			setTimeout(function(){ trantime = 0*sp; sep = 0; keep = -20; both = 30; total=80;go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; both = 0;tease="quad"; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 200*sp; sep = 10;tease="elastic"; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 200*sp; sep = 0; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 250*sp; both = total; tease="bounce";go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; both = 30;  go(); }, 2500*sp);
+		} else if (dn=="1b") {
+			setTimeout(function(){ trantime = 0*sp; sep = 0; keep = -20; both = 30; total=80; figheight = 70; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 900*sp; both = 0;tease="sin"; go(); }, 100*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 10;tease="sin"; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 0; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 500*sp; both = total; tease="sin";go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; both = 30;  go(); }, 2500*sp);
+		} else if (dn=="1c") {
+			setTimeout(function(){ trantime = 0*sp; sep = 20; both = 0; keep = -20; total=100; figheight = 70; figwidth = 140; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 900*sp; sep = 0; both=50; total=50; tease="sin"; go(); }, 100*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 20; both = 0; total=100; go(); }, 2500*sp);
+			
+		} else if (dn==2) {
+			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = 30; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = height; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 500*sp; keep = 0; go(); }, 2500*sp);
+		} else if (dn=="2a") {
+			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = 30; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = height; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 500*sp; keep = 0; go(); }, 2500*sp);
+		} else if (dn==3) {
+			setTimeout(function(){ trantime =   0*sp; keep = 20; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="back";keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = 80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = height; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = 20; go(); }, 2500*sp);
+		} else if (dn==4) {
+			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = 80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = height; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = 0; go(); }, 2500*sp);
+		} else if (dn==5) { // interesting cycle
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true;thinlinenegative=true; keep = 80; go(); }, 0*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; bottomoverlap=false;thinlinenegative=false;	keep = 80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";	keep = height; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";	keep = 0; go(); }, 2500*sp);
+		} else if (dn==6) { // this shows what happens when there are not enough votes between the two to justify keeping 
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0;barheight = 60; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; bottomoverlap=true; keep = height; go(); }, 500*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	barheight= 50; keep=80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false; barheight= 30;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 barheight = 60;go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 100*sp; bottomoverlap=true; keep = height; go(); }, 2700*sp);
+			setTimeout(function(){ trantime = 200*sp; bottomoverlap=true; keep = 0; go(); }, 2800*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="linear";	bottomoverlap=true;	go(); }, 2500*sp);
+		} else if (dn=="6a") { // this shows what happens when there are not enough votes between the two to justify keeping 
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0;barheight = 60; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; bottomoverlap=true; keep = height; go(); }, 500*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	 keep=80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;  go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 100*sp; bottomoverlap=true; keep = height; go(); }, 2700*sp);
+			setTimeout(function(){ trantime = 200*sp; bottomoverlap=true; keep = 0; go(); }, 2800*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="linear";	bottomoverlap=true;	go(); }, 2500*sp);
+		} else if (dn==7) { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; total=80; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;barheight= 60;	keep=25; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;barheight= 51;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;barheight= 60;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+		} else if (dn=="7ab") { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; total=80;  figheight = 70; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=25; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+		} else if (dn=="7a") { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	keep=30; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+		} else if (dn=="7b") { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; total=50;both=total; bottomoverlap=true; keep = 0; barheight=0;  figheight = 70; go(); }, 0*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=25; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+			
+		}
+	}
+	drawit_a()
+	i_draw = setInterval( drawit_a, 3000*sp);
+}
+dodraw("#overlap","1c")
+dodraw("#clone","7b")
+dodraw("#clone2","7b")
+dodraw("#animatemixture","1b")
+dodraw("#jaccard","7ab")
+
+  </script>
