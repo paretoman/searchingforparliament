@@ -81,7 +81,7 @@ a:hover.screenshot {
     </h3>
     <p>
       <a href="#demo" class="screenshot">
-        <img src="screenshot.png" alt="Live Demo" ; vertical-align: middle;">
+        <img src="screenshot.png" alt="Live Demo" style="vertical-align: middle;">
       </a>
     </p>
 
@@ -787,7 +787,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</select> <br />
 		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
 		<input class="op" id="schulzestv" type="radio" name="compute"> Schulze STV (bug)<br />
-		<input class="op" type="radio" name="compute"> Clustering like original<br />
+		<input class="op" type="radio" name="compute"> Load Balancing<br />
 		<input class="op" type="radio" name="compute"> A new formulation (working on it) 
 	    </fieldset>
 		<fieldset>
@@ -921,7 +921,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		The output is worth explaining.  The similarity measures can be put into a table so that more similar pairs of reps are indicated by light grey and distant pairs are dark grey.  Similarity is a measure from 0 (dark) to 1 (light).  Each pair is a square on the table (technically 2 squares).  Also, to the left of the election results table is a bar chart showing the vote totals for each rep.  The scale at the bottom has tick marks that indicate 1 keep (votes/seats).  The great thing about this kind of table of election results is that it shows communities of similar reps.  Each community of reps looks like a big bright square along the diagonal.  You can really see this effect if you add about 20 reps.  Even better is to use the 200 voters to show communities.  This kind of data would not be available in an election.  It is kind of cheating to know where the voters are.  You can see how big each community of voters is and which reps (colors) are serving each community.
 	</p>
      <p>
-		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> of several voting methods are there.  Another method is a clustering method where the total distance between voters and reps is minimized.  This is similar to the project that this project was forked from.  Also, I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  There is normal reweighted range voting (RRV) as an option as well.  In addition to computations, there are also different ballot types, an option for disabling normalization, an option for adding a +1 to the seats, different similarity measures, etc. .  Also, you can change the amount of keeps to test how proportional a different level would be.
+		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> of several voting methods are there.  Another method is a load balancing method where the weight of each part of a ballot is optimized to give the most support to the winners.  In other words, the total distance between voters and reps is minimized.  This is similar to the project that this project was forked from.  Also, I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  There is normal reweighted range voting (RRV) as an option as well.  In addition to computations, there are also different ballot types, an option for disabling normalization, an option for adding a +1 to the seats, different similarity measures, etc. .  Also, you can change the amount of keeps to test how proportional a different level would be.
       </p>
 	  <p style="font-size:8px">
         <a name="geolytix">Location data:</a>
@@ -1713,9 +1713,6 @@ dos("#triggeroverlapbottom",function() {showoverlap = 1-showoverlap; })
 
 
 <style type="text/css">
-  button {
-    margin: 20px 0 0 20px;
-  }
   
   .barchart{
   fill:orange

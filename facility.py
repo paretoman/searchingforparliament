@@ -173,12 +173,18 @@ def optimize(voters, reps, options, output=False):
                 for j in range(numReps):
                     m.addConstr(y[(i,j)] <= x[j])
 
-            for i in range(numVoters):
-                m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1)
-        
+            if 1:
+                for i in range(numVoters):
+                    m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1)
+            else:
+                for i in range(numVoters):
+                    m.addConstr(quicksum(y[(i,j)]*b[i,j] for j in range(numReps)) == 1)
             m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
                 
-            m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
+            if 0:
+                m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
+            else:
+                m.setObjective( quicksum( quicksum(b[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
             
         
         elif options['computeBQP']:
@@ -252,6 +258,55 @@ def optimize(voters, reps, options, output=False):
 
             m.update()
             
+        elif 0:
+            # apportionment method
+            m = Model("qcp")
+            if not output:
+                m.params.OutputFlag = 0
+            m.setParam('TimeLimit', 100)
+            
+            # Add variables
+            x = {}
+            for j in range(numReps):
+                x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+            f = {}
+            for i in range(numVoters):
+                f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            # Add constraints
+            for j in range(numReps):
+                m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters) ) >= Z * x[j] ) # the winning candidates's scores are bound from below by Z
+            for i in range(numVoters):
+                m.addQConstr( quicksum( f[i] * (b[i,j] * x[j]) for j in range(numReps) ) <= 1 )
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            m.update()
+            if 1: # jefferson
+                m.setObjective( Z, GRB.MAXIMIZE)
+            else: # webster
+                Y = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="y")
+                m.update()
+                for j in range(numReps):
+                    m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters) ) <= Y * x[j] ) # the winning candidates's scores are bound from above by Y
+                m.setObjective( Y-Z, GRB.MINIMIZE)
+            
+            m.update()
+            # Gurobi can't do this because, as it says, "the q matrix is not positive semidefinite".
+        
+        elif 0:
+            y = {}
+            for i in range(numVoters):
+                for j in range(numReps):
+                    y[(i,j)] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            m.update()
+
+            # Add constraints
+            for i in range(numVoters):
+                for j in range(numReps):
+                    m.addConstr(y[(i,j)] <= x[j])
+
+            for i in range(numVoters):
+                m.addConstr(quicksum(y[(i,j)] for j in range(numReps)) == 1)
         
         elif options['computeMaxRRV']:
             
@@ -304,7 +359,7 @@ def optimize(voters, reps, options, output=False):
                 for i in range(numVoters):
                     m.addConstr(f[i] <= 1)
                     m.addQConstr( quicksum( f[i] * (b[i,j]+1) * x[j] for j in range(numReps) ) <= 1 ) # just trying out this b+1
-            elif 0:  # try this
+            elif 1:  # try this
                 for i in range(numVoters):
                     # hey I don't need the extra f <= 1 constraints.
                     m.addQConstr( quicksum( f[i] * (b[i,j] * x[j] + 1) for j in range(numReps) ) <= 1 ) # this is a better place for the + 1.  Maybe we should subtract the average score.
