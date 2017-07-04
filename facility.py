@@ -183,9 +183,45 @@ def optimize(voters, reps, options, output=False):
                 
             if 0:
                 m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
-            else:
+            elif 0:
                 m.setObjective( quicksum( quicksum(b[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
-            
+            else:
+                Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+                m.update()
+                # Add constraints
+                for j in range(numReps):
+                
+                    # oops had i and j in the sum below
+                    if 0:
+                        m.addConstr( Z >= quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ) ) # the winning candidates's distances are bound from above by Z
+                    elif 0:
+                        m.addConstr( Z >= quicksum( quicksum(1/b[i,j]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ) ) 
+                        # this actually worked.  London had 2 reps.
+                    elif 0:
+                        m.addConstr( Z >= quicksum( quicksum((1-b[i,j])*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ) ) 
+                        # this worked too. London gets 2 reps.
+                        
+                    # fix
+                    elif 0:
+                        m.addConstr( Z >= quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters))  ) # eh, London only gets 2 when it has 3/5.
+                    elif 0:
+                        m.addConstr( Z >= quicksum(1/b[i,j]*y[(i,j)] for i in range(numVoters))  ) 
+                        # eh, same
+                    else:
+                        m.addConstr( Z >= quicksum((1-b[i,j])*y[(i,j)] for i in range(numVoters))  ) 
+                        # oh cool, london actually gets 4, and this is unnormalized ballots.  This is really good.
+                
+                # both seem to work
+                if 0: # jefferson
+                    m.setObjective( Z, GRB.MINIMIZE)
+                else: # webster
+                    Y = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="y")
+                    m.update()
+                    for j in range(numReps):
+                        m.addConstr(  Y>= quicksum((b[i,j])*y[(i,j)] for i in range(numVoters))  ) # 
+                    m.setObjective( Z+Y, GRB.MINIMIZE)
+                
+                
         
         elif options['computeBQP']:
             
@@ -283,6 +319,51 @@ def optimize(voters, reps, options, output=False):
             m.update()
             if 1: # jefferson
                 m.setObjective( Z, GRB.MAXIMIZE)
+            else: # webster
+                Y = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="y")
+                m.update()
+                for j in range(numReps):
+                    m.addQConstr( quicksum( f[i] * b[i,j] * x[j] for i in range(numVoters) ) <= Y * x[j] ) # the winning candidates's scores are bound from above by Y
+                m.setObjective( Y-Z, GRB.MINIMIZE)
+            
+            m.update()
+            # Gurobi can't do this because, as it says, "the q matrix is not positive semidefinite".
+        
+        elif 0:
+            # 1/b attampt at apportionment
+            m = Model("qcp")
+            if not output:
+                m.params.OutputFlag = 0
+            m.setParam('TimeLimit', 100)
+            
+            # Add variables
+            x = {}
+            for j in range(numReps):
+                x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+            f = {}
+            for i in range(numVoters):
+                f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % i)
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            # Add constraints
+            for j in range(numReps):
+                if 0:
+                    m.addQConstr( quicksum( f[i] * 1/b[i,j] * x[j] for i in range(numVoters) ) <= Z  ) # the winning candidates's scores are bound from below by Z
+                elif 0:
+                    m.addQConstr( quicksum( f[i] * (1-b[i,j]) * x[j] for i in range(numVoters) ) <= Z  ) # the winning candidates's scores are bound from below by Z
+                else:
+                    m.addQConstr( quicksum( f[i] * (d[i,j]) * x[j]+1 for i in range(numVoters) ) <= Z  ) # the winning candidates's scores are bound from below by Z
+            for i in range(numVoters):
+                if 0:
+                    m.addQConstr( quicksum( f[i] * (1/b[i,j] * x[j]) for j in range(numReps) ) >= 1 )
+                elif 0:
+                    m.addQConstr( quicksum( f[i] * ((1-b[i,j]) * x[j]) for j in range(numReps) ) >= 1 )
+                else:
+                    m.addQConstr( quicksum( f[i] * ((d[i,j]) * x[j]-1) for j in range(numReps) ) >= 1 )
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            m.update()
+            if 1: # jefferson
+                m.setObjective( Z, GRB.MINIMIZE)
             else: # webster
                 Y = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="y")
                 m.update()
