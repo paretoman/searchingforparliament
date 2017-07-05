@@ -1712,12 +1712,13 @@ function dos (divname,f) {
 	  .on('start', f)
 	  .addTo(ctrl);
 }
-var showmix = 0;
-var showoverlap = 0;
-dos("#triggermixtop",function() {showmix = 1-showmix; })
-dos("#triggermixbottom",function() {showmix = 1-showmix; })
-dos("#triggeroverlaptop",function() {showoverlap = 1-showoverlap;})
-dos("#triggeroverlapbottom",function() {showoverlap = 1-showoverlap; })
+    
+var showmix = {"show":0};
+var showoverlap = {"show":0};
+dos("#triggermixtop",function() {showmix.show = 1-showmix.show; })
+dos("#triggermixbottom",function() {showmix.show = 1-showmix.show; })
+dos("#triggeroverlaptop",function() {showoverlap.show = 1-showoverlap.show;})
+dos("#triggeroverlapbottom",function() {showoverlap.show = 1-showoverlap.show; })
 // Open console to see output!
 </script>
 
@@ -1773,8 +1774,8 @@ function dodraw(idtoget,dn,showit) {
 	var figwidth = 110;
 	var h = figheight;
 	var w = figwidth;
-	var svg2 = d3.select(idtoget)
-		.append("svg2")
+	var svg = d3.select(idtoget)
+		.append("svg")
 		.attr("id", "visualization")
 		.attr("xmlns", "http://www.w3.org/2000/svg");
 
@@ -1789,13 +1790,13 @@ function dodraw(idtoget,dn,showit) {
 	var keep = 80; // desired keep
 	var sep = 0; // separation between rectanges 
 	var barheight = 0;
-	var b=svg2.append("rect")
-	var c=svg2.append("rect")
-	var d=svg2.append("rect")
-	var e=svg2.append("rect")
-	var f=svg2.append("rect")
-	var g=svg2.append("line")
-	var g2=svg2.append("rect")
+	var b=svg.append("rect")
+	var c=svg.append("rect")
+	var d=svg.append("rect")
+	var e=svg.append("rect")
+	var f=svg.append("rect")
+	var g=svg.append("line")
+	var g2=svg.append("rect")
 	var trantime = 500;
 	var tease = "in";
 	var color_left = 0;
@@ -1806,7 +1807,7 @@ function dodraw(idtoget,dn,showit) {
 		firstdraw = 0;
 		
 		h = figheight
-		svg2
+		svg
 		  .attr("width", figwidth)
 		  .attr("height", figheight)
 		  
@@ -1821,7 +1822,7 @@ function dodraw(idtoget,dn,showit) {
 		.transition()
 		.duration(trantime)
 		.ease(tease)
-		.attr("class","leftsquare topsquare")
+		.attr("class","anim leftsquare topsquare")
 		.attr("x",border-sep/2)
 		.attr("y",border+drop)
 		.attr("width",tally)
@@ -1900,7 +1901,7 @@ function dodraw(idtoget,dn,showit) {
 	sp = 4
 	drawit_a = function(){
 		var drawonlyone = (! window[showit]) && firstdraw
-		if (  (! window[showit]) && ( ! firstdraw )   ) { // showit is passed by reference, so this will get the passed variable name in the global context
+		if (  (! (showit.show)) && ( ! firstdraw )   ) { // showit is passed by reference, so this will get the passed variable name in the global context
 			dummy=1;
 		} else if (dn==1) {
 			setTimeout(function(){ trantime =   0*sp; both = 30; keep = -20;  go(); }, 0*sp);
