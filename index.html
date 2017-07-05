@@ -762,6 +762,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
 		<input class="op" type="radio" name="compute"> RRV  <br />
+		<input class="op" type="radio" name="compute"> RRV-TDON  <br />
 		<input class="op" type="radio" name="compute" id="openstv"> OpenSTV
 		<select id="stvtype" name="stvtype" onclick="selectOpenstv()">
 			<option value="Approval">Approval (bug?)</option>
@@ -787,7 +788,14 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</select> <br />
 		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
 		<input class="op" id="schulzestv" type="radio" name="compute"> Schulze STV (bug)<br />
-		<input class="op" type="radio" name="compute"> Load Balancing<br />
+		<input class="op" type="radio" name="compute"> Phragmen<br />
+		<input class="op" id="cluster" type="radio" name="compute"> Load Balancing<br />
+		<select id="loadType" onclick="selectCluster()">
+			<option value="min total distance">min total dist</option>
+			<option value="max total ballot">max total ballot</option>
+			<option value="max min-total-ballot (jefferson)">jefferson</option>
+			<option value="min diff-total-ballot (webster)">webster</option>
+		</select> <br />
 		<input class="op" type="radio" name="compute"> A new formulation (working on it) 
 	    </fieldset>
 		<fieldset>
@@ -862,6 +870,9 @@ print(["%d" % x[j1].X for j1 in range(9)])
 			}
 			function selectOpenstv() {
 			document.querySelector('#openstv').checked = true;
+			}
+			function selectCluster() {
+			document.querySelector('#cluster').checked = true;
 			}
 		  </script>  
 		  
@@ -1309,6 +1320,7 @@ function compute() {
   cost = parseFloat(document.getElementById("cost").value)/alpha;
   numberOfWinners = parseFloat(document.getElementById("numberOfWinners").value);
   stvtype = document.getElementById("stvtype").value;
+  loadType = document.getElementById("loadType").value;
   calcVoterCom = document.getElementById("calcVoterCom").checked;
   schulzestv = document.getElementById("schulzestv").checked
   charge = [];
@@ -1320,6 +1332,7 @@ function compute() {
   }
   charge.push(cost);
   charge.push(stvtype);
+  charge.push(loadType);
   
   // option "calculate voter community"
   if (calcVoterCom+0 == 1) {
@@ -1718,7 +1731,7 @@ dos("#triggeroverlapbottom",function() {showoverlap = 1-showoverlap; })
   fill:orange
   }
 	
-	rect{
+	rect.anim{
   stroke:#000;
   stroke-width:1px;
   opacity:.3;
@@ -1760,8 +1773,8 @@ function dodraw(idtoget,dn,showit) {
 	var figwidth = 110;
 	var h = figheight;
 	var w = figwidth;
-	var svg = d3.select(idtoget)
-		.append("svg")
+	var svg2 = d3.select(idtoget)
+		.append("svg2")
 		.attr("id", "visualization")
 		.attr("xmlns", "http://www.w3.org/2000/svg");
 
@@ -1776,13 +1789,13 @@ function dodraw(idtoget,dn,showit) {
 	var keep = 80; // desired keep
 	var sep = 0; // separation between rectanges 
 	var barheight = 0;
-	var b=svg.append("rect")
-	var c=svg.append("rect")
-	var d=svg.append("rect")
-	var e=svg.append("rect")
-	var f=svg.append("rect")
-	var g=svg.append("line")
-	var g2=svg.append("rect")
+	var b=svg2.append("rect")
+	var c=svg2.append("rect")
+	var d=svg2.append("rect")
+	var e=svg2.append("rect")
+	var f=svg2.append("rect")
+	var g=svg2.append("line")
+	var g2=svg2.append("rect")
 	var trantime = 500;
 	var tease = "in";
 	var color_left = 0;
@@ -1793,7 +1806,7 @@ function dodraw(idtoget,dn,showit) {
 		firstdraw = 0;
 		
 		h = figheight
-		svg
+		svg2
 		  .attr("width", figwidth)
 		  .attr("height", figheight)
 		  
@@ -1820,7 +1833,7 @@ function dodraw(idtoget,dn,showit) {
 		.transition()
 		.duration(trantime)
 		.ease(tease)
-		.attr("class","rightsquare topsquare")
+		.attr("class","anim rightsquare topsquare")
 		.attr("x",border+total-tally+sep/2)
 		.attr("y",border+drop)
 		.attr("width",tally)
@@ -1832,7 +1845,7 @@ function dodraw(idtoget,dn,showit) {
 		.transition()
 		.duration(trantime)
 		.ease(tease)
-		.attr("class","leftsquare bottomsquare")
+		.attr("class","anim leftsquare bottomsquare")
 		.attr("x",border-sep/2)
 		.attr("y",border+drop+height-keepin)
 		.attr("width",(bottomoverlap) ? tally : total/2)
@@ -1844,7 +1857,7 @@ function dodraw(idtoget,dn,showit) {
 		.transition()
 		.duration(trantime)
 		.ease(tease)
-		.attr("class","rightsquare bottomsquare")
+		.attr("class","anim rightsquare bottomsquare")
 		.attr("x",(bottomoverlap) ? border+total-tally+sep/2 : border+total/2+sep/2)
 		.attr("y",border+drop+height-keepin)
 		.attr("width",(bottomoverlap) ? tally : total/2)
@@ -1856,7 +1869,7 @@ function dodraw(idtoget,dn,showit) {
 		.transition()
 		.duration(trantime)
 		.ease(tease)
-		.attr("class","negativesquare")
+		.attr("class","anim negativesquare")
 		.attr("x",(thinlinenegative) ? border+total/2 : border+total-tally)
 		.attr("y",Math.min(border+drop-negative,border+drop))
 		.attr("width",(thinlinenegative) ? 0 : both)
@@ -1877,7 +1890,7 @@ function dodraw(idtoget,dn,showit) {
 		.transition()
 		.duration(trantime)
 		.ease(tease)
-		.attr("class","barchart")
+		.attr("class","anim barchart")
 		.attr("x",total+border+20)
 		.attr("y",figheight-border-barheight)
 		.attr("width",10)
@@ -1886,10 +1899,12 @@ function dodraw(idtoget,dn,showit) {
 	}
 	sp = 4
 	drawit_a = function(){
-		if (! (window[showit] || firstdraw)) { // showit is passed by reference, so this will get the passed variable name in the global context
+		var drawonlyone = (! window[showit]) && firstdraw
+		if (  (! window[showit]) && ( ! firstdraw )   ) { // showit is passed by reference, so this will get the passed variable name in the global context
 			dummy=1;
 		} else if (dn==1) {
 			setTimeout(function(){ trantime =   0*sp; both = 30; keep = -20;  go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; both = total; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; both = 0; go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 300*sp; sep = 10; go(); }, 2000*sp);
@@ -1897,6 +1912,7 @@ function dodraw(idtoget,dn,showit) {
 			setTimeout(function(){ trantime = 500*sp; sep = 0; both = 30; go(); }, 2500*sp);
 		} else if (dn=="1a") {
 			setTimeout(function(){ trantime = 0*sp; sep = 0; keep = -20; both = 30; total=80;go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; both = 0;tease="quad"; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 200*sp; sep = 10;tease="elastic"; go(); }, 1000*sp);
 			setTimeout(function(){ trantime = 200*sp; sep = 0; go(); }, 1500*sp);
@@ -1904,6 +1920,7 @@ function dodraw(idtoget,dn,showit) {
 			setTimeout(function(){ trantime = 500*sp; both = 30;  go(); }, 2500*sp);
 		} else if (dn=="1b") {
 			setTimeout(function(){ trantime = 0*sp; sep = 0; keep = -20; both = 30; total=80; figheight = 70; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 900*sp; both = 0;tease="sin"; go(); }, 100*sp);
 			setTimeout(function(){ trantime = 500*sp; sep = 10;tease="sin"; go(); }, 1000*sp);
 			setTimeout(function(){ trantime = 500*sp; sep = 0; go(); }, 1500*sp);
@@ -1911,39 +1928,46 @@ function dodraw(idtoget,dn,showit) {
 			setTimeout(function(){ trantime = 500*sp; both = 30;  go(); }, 2500*sp);
 		} else if (dn=="1c") {
 			setTimeout(function(){ trantime = 0*sp; sep = 20; both = 0; keep = -20; total=100; figheight = 70; figwidth = 140; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 900*sp; sep = 0; both=50; total=50; tease="sin"; go(); }, 100*sp);
 			setTimeout(function(){ trantime = 500*sp; sep = 20; both = 0; total=100; go(); }, 2500*sp);
 			
 		} else if (dn==2) {
 			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = 30; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = height; go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 500*sp; keep = 0; go(); }, 2500*sp);
 		} else if (dn=="2a") {
 			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = 30; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = height; go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 500*sp; keep = 0; go(); }, 2500*sp);
 		} else if (dn==3) {
 			setTimeout(function(){ trantime =   0*sp; keep = 20; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="back";keep = height; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = 80; go(); }, 1000*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = height; go(); }, 2000*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = 20; go(); }, 2500*sp);
 		} else if (dn==4) {
 			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = height; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = 80; go(); }, 1000*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = height; go(); }, 2000*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = 0; go(); }, 2500*sp);
 		} else if (dn==5) { // interesting cycle
 			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true;thinlinenegative=true; keep = 80; go(); }, 0*sp);
+			if (drawonlyone) return;
 			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="bounce"; bottomoverlap=false;thinlinenegative=false;	keep = 80; go(); }, 1000*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="linear";	keep = height; go(); }, 2000*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="linear";	keep = 0; go(); }, 2500*sp);
 		} else if (dn==6) { // this shows what happens when there are not enough votes between the two to justify keeping 
 			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0;barheight = 60; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; bottomoverlap=true; keep = height; go(); }, 500*sp);
 			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	barheight= 50; keep=80; go(); }, 1000*sp);
@@ -1954,6 +1978,7 @@ function dodraw(idtoget,dn,showit) {
 			//setTimeout(function(){ trantime = 500*sp; tease="linear";	bottomoverlap=true;	go(); }, 2500*sp);
 		} else if (dn=="6a") { // this shows what happens when there are not enough votes between the two to justify keeping 
 			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0;barheight = 60; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; bottomoverlap=true; keep = height; go(); }, 500*sp);
 			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	 keep=80; go(); }, 1000*sp);
@@ -1964,30 +1989,35 @@ function dodraw(idtoget,dn,showit) {
 			//setTimeout(function(){ trantime = 500*sp; tease="linear";	bottomoverlap=true;	go(); }, 2500*sp);
 		} else if (dn==7) { // this shows what happens when there are enough votes for the pair.
 			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; total=80; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;barheight= 60;	keep=25; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;barheight= 51;	 go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;barheight= 60;	 go(); }, 2500*sp);
 			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
 		} else if (dn=="7ab") { // this shows what happens when there are enough votes for the pair.
 			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; total=80;  figheight = 70; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=17; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
 			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
 		} else if (dn=="7a") { // this shows what happens when there are enough votes for the pair.
 			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	keep=30; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
 			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
 		} else if (dn=="7b") { // this shows what happens when there are enough votes for the pair.
 			setTimeout(function(){ trantime =   0*sp; total=50;both=total; bottomoverlap=true; keep = 0; barheight=0;  figheight = 70; go(); }, 0*sp);
+			if (drawonlyone) return;
 			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=25; go(); }, 500*sp);
 			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
 			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
 			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
 			
 		}
+		return;
 	}
 	drawit_a()
 	i_draw = setInterval( drawit_a, 3000*sp);
@@ -1999,3 +2029,4 @@ dodraw("#animatemixture","1b",showmix)
 dodraw("#jaccard","7ab",showmix)
 
   </script>
+</html>

@@ -28,21 +28,23 @@ def mycallback(model, where):
 def optimize(voters, reps, options, output=False):
     
     nWinners = options['numberOfWinners']
-    m = Model()
-    if not output:
-        m.params.OutputFlag = 0
-    m.setParam('TimeLimit', 100)
+    
     options_str = '\n'.join(["%s - %s" % (options[i],i) for i in options])
     g_log = "" # for logging
     
     numReps = len(reps)
     numVoters = len(voters)
 
-    # Add variables
-    x = {}
-    for j in range(numReps):
-        x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
-
+    if 0:
+        # make a random sample of voters
+        numVoters0 = numVoters
+        voters0 = voters
+        if numVoters > 140 and options['phragmen']:
+            rv = numpy.array(random.sample(range(numVoters),140))
+            rv.sort() # there is actually a good ordering to the data already. neat.
+            numVoters = 140
+            voters = numpy.array(voters)[rv,:].tolist()
+            print(voters)
     
     # Add constants
     d = numpy.zeros((numVoters,numReps))
@@ -155,13 +157,45 @@ def optimize(voters, reps, options, output=False):
         t[j] = sum(b[:,j])
     
     
+    
+
+    
     #
     # there are a few different computations, depending on the option
     #
     
-    if options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
+    if options['phragmen'] or options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
     
+        m = Model()
+        if not output:
+            m.params.OutputFlag = 0
+        m.setParam('TimeLimit', 100)
+        
+        # Add variables
+        x = {}
+        for j in range(numReps):
+            x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+            
+        if options['phragmen']:
+        
+            y = {}
+            for i in range(numVoters):
+                for j in range(numReps):
+                    y[(i,j)] = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            #m.addConstr(nWinners == quicksum(quicksum( y[(i,j)] for j in range(numReps) ) for i in range(numVoters) ) )
+            #m.addConstr(nWinners == quicksum(quicksum( b[i,j] * y[(i,j)] for j in range(numReps) ) for i in range(numVoters) ) )
+            for j in range(numReps):
+                m.addConstr( x[j] == quicksum(b[i,j]*y[(i,j)] for i in range(numVoters)) ) 
+            for i in range(numVoters):
+                m.addConstr( Z >= quicksum( y[(i,j)] for j in range(numReps) ) ) 
+            m.update()
+            m.setObjective(Z,GRB.MINIMIZE)
+        
         if options['computeClustering']:
+                
             y = {}
             for i in range(numVoters):
                 for j in range(numReps):
@@ -181,11 +215,11 @@ def optimize(voters, reps, options, output=False):
                     m.addConstr(quicksum(y[(i,j)]*b[i,j] for j in range(numReps)) == 1)
             m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
                 
-            if 0:
+            if "min total distance" == options['loadType']:
                 m.setObjective( quicksum( quicksum(d[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MINIMIZE)
-            elif 0:
+            elif "max total ballot" == options['loadType']:
                 m.setObjective( quicksum( quicksum(b[(i,j)]*y[(i,j)] for i in range(numVoters)) for j in range(numReps) ), GRB.MAXIMIZE)
-            else:
+            else: 
                 Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
                 m.update()
                 # Add constraints
@@ -207,14 +241,16 @@ def optimize(voters, reps, options, output=False):
                     elif 0:
                         m.addConstr( Z >= quicksum(1/b[i,j]*y[(i,j)] for i in range(numVoters))  ) 
                         # eh, same
-                    else:
+                    elif "minimax 1-b" == options['loadType']:
                         m.addConstr( Z >= quicksum((1-b[i,j])*y[(i,j)] for i in range(numVoters))  ) 
                         # oh cool, london actually gets 4, and this is unnormalized ballots.  This is really good.
+                    
+                    # fix again because ... forgot
                 
                 # both seem to work
-                if 0: # jefferson
+                if "max min-total-ballot (jefferson)" == options['loadType']: # jefferson
                     m.setObjective( Z, GRB.MINIMIZE)
-                else: # webster
+                else: # "min diff-total-ballot (webster)" == options['loadType']:
                     Y = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="y")
                     m.update()
                     for j in range(numReps):
@@ -374,7 +410,7 @@ def optimize(voters, reps, options, output=False):
             m.update()
             # Gurobi can't do this because, as it says, "the q matrix is not positive semidefinite".
         
-        elif 0:
+        elif 0:  # working
             y = {}
             for i in range(numVoters):
                 for j in range(numReps):
@@ -519,7 +555,7 @@ def optimize(voters, reps, options, output=False):
                 xo[j] = 1
                 
 
-    elif options['computeRRV']:
+    elif options['computeRRV'] or options['computeRRV-TDON']:
         
         winBool = numpy.zeros(numReps)
         winList = []
@@ -534,7 +570,10 @@ def optimize(voters, reps, options, output=False):
             winBool[winner]=1
             winList += [winner]
             voterWinSum += b[:,winner]
-            voterWeight = 1/(1+voterWinSum/voterMax)
+            if options['computeRRV']:
+                voterWeight = 1/(1+voterWinSum/voterMax)
+            else: #method from TDON
+                voterWeight = 1+i-voterWinSum # or 1-voterWinSum/(i+1) or 1-voterWinSum/(maximum possible voterWinSum)
         
         g_log += "RRV (not Gurobi) \n\n"
         xo = numpy.zeros(numReps)
@@ -714,7 +753,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","Calculate Voter Communities","stateInitialMap","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","stateInitialMap","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","phragmen","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
