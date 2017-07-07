@@ -65,14 +65,11 @@ a:hover.screenshot {
         <subtitle>(the computer science kind of search)</subtitle>
     </div>
     <p>
-      Selecting a group of people to represent a nation is an example of what computer science calls a search problem, an assignment problem, and a load balancing problem.  Distributing goods in an economy is a problem of supply and demand.  These problems have something in common.  We would like to sell to the highest bidder.  Representatives should be the candidates who got the most votes.
-	</p>
-	<p>
-	  That is the computer science problem.  Also, there is a moral problem.  There is demand for representatives that is not being met.  Because we have single winner districts, the winner doesn't even need 50% of the vote to win the right to represent all the voters. Some voters are able to get a great deal on their politicians, while other voters could have pooled their votes across districts and elected a more valuable representative.  Valuable resources are being wasted.
+      Selecting a group of people to represent a nation is an example of what computer science calls an assignment search problem.  Which reps (candidates) are the most representative of the voters?
     </p>
 
     <p>
-      Let's get started on the computer science.  We'll construct a mathematical model of the load balancing problem, implement this model in the Python programming language with an optimization package called Gurobi, and compute and visualize an optimal solution.
+      We'll construct a mathematical model of the assignment search problem, implement this model in the Python programming language with an optimization package called Gurobi, and compute and visualize an optimal solution.
     </p>
 
     <p>
@@ -144,7 +141,6 @@ a:hover.screenshot {
         \sum_{j \in Reps} x_j = \text{number of seats}
         \]
       </p>
-	  <h3> Map Data </h3>
       <p>
         We need to say how close a voter is to a rep.  Let's list all the voters as voter #1, voter #2, etc, and let's make measurements for each voter and rep combination.  If the distance between voter #1 and rep #3 is 100 km, then $d_{13}=100$.
         \[
@@ -173,149 +169,405 @@ a:hover.screenshot {
         tally_j = \sum_{i \in Voters} b_{ij} 
         \]
       </p>
-	  <h3> Motivation </h3>
-	  <div class="spacer" id="triggerjefftop"></div>
       <p>
         If we stop here then we just end up picking the reps in the middle because they have the highest tallies.
       </p>
       <p>
-        We want to avoid overrepresenting the middle voters because they would be getting representatives for cheap.  Think of the value of a representative as the number of voters divided by the number of representatives they get.  We want to keep the value of our parliament as high as possible.  We don't let a someone get in if there is someone else that has a higher value.
-		
-		</p>
+        We want to avoid overrepresenting the middle voters.  Our solution is to let the winning reps keep a fraction of their voters' ballots.  Basically, these voters have the reps, so the reps get to keep the voters.  Each winning rep keeps the same amount of support.
+        \[
+        keep = 
+			\left[
+            \begin{array}{ll}
+				& \text{an amount of score,} \\
+				& \text{same units as ballots} \\
+				& \text{same for each pair of reps} \\
+            \end{array}
+			\right]
+        \]
+      </p>
       <p>
-		
-		Our solution is to let the winning reps keep a fraction of their voters' ballots.  Basically, these voters have the reps, so the reps get to keep the voters.  Each winning rep keeps the same amount of support. The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  When a rep is declared a winner, he keeps a quota of votes and the extra go to other reps similar to him if the voters have both on their ballot.
+        The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  When a rep is declared a winner, he keeps a quota of votes and the extra go to other reps similar to him if the voters have both on their ballot.
         \[
         \text{STV quota} = \frac{\text{voters}}{\text{seats} + 1}
         \]
-        The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).  How STV works is the reps with the most votes win and keep that quota amount of voters.  The rest of the voters get to have a second choice as well when there are enough voters to make another rep worthwhile (the value of the rep is high enough to get into parliament).  So this quota is basically the price of a seat in parliament, and only those reps with enough value can pay this price.
+        The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).
       </p>
-	  <h3> Jefferson's method, Phragmen's method, and Load Balancing</h3>
       <p>
-        Something similar also happens when deciding how many seats each state gets in the US House of Representatives.  Think of it like an auction.  The price starts off low and there are too many bidders and not enough seats.  In an auction the price goes up until there are exactly the number of bidders left to buy all the items.  It's basically the same with seats except the seats are "paid" for by population numbers.
+        Let's try something similar:
+        \[
+        keep = \frac{\text{voters}}{\text{seats}}
+        \]
+		STV subtracts this for each pair of reps when one of the pair wins and they are supported by the same group of voters.  We want to subtract this for each similar pair, and we want to show why it selects the correct number of reps for a group of voters.
+      </p>
+      <h3> Mini example to show proportionality</h3>
+	  
+		<div class="spacer" id="triggeroverlaptop"></div>
+      <p>
+        Ok, we'll show an example.  We can actually see the method at work.
 
-		We can flip that around so that the auction house gets a higher price.  We can start at a high price and then lower it until we have enough buyers.  Likewise, for the House, we can start at a high number of voters required for a seat and then lower the requirement until all the seats are filled.  It's easy to grasp because we are filling the seats one by one.  Note that a state can have more than one seat, and a state will have twice as many seats if the population requirement is cut in half:
-		</p>
-		<p style="text-align:center">
-		<span id="bid"></span>
-		</p>
+	    \[
+        \begin{align}
+        3& \text{ seats} \nonumber \\
+        6& \text{ voters} \nonumber \\
+        2& \text{ voters for party A: A1,A2,A3,...} \nonumber \\
+        4& \text{ voters for party B: B1,B2,B3,...} \nonumber \\
+        \end{align}
+        \]
 		
-		<p>		
-		Also, instead of price or voters-per-seat, think of the amount of representation a voter gets.  Representation starts low and is increased one representative at a time until we fill all 435 seats.
-		</p>
-		<p style="text-align:center">
-		<span id="jeff"></span>
-		</p>
-		<p>
-		This is Jefferson's method, and it was the first method used by the US House of Representatives.  It lasted for 50 years until being replaced by Webster's method, a slight variation.  Jefferson's method ensured that no state got a special deal on representation when another state would have deserved it more.  In this way, the states each had representation in proportion to their population.  
-		</p>
-		
-	  <div class="spacer" id="triggerliquidtop"></div>
-      <p>
-		This method can be represented as an election.  Instead of candidates, there are seats, each state gets as many ballots as there are people in the state, and the ballots of each state would approve of all the seats $b_{ij} = 1$.  When a seat is bought, some of the ballots have to pay for that seat.  So we introduce another variable for each entry on every ballot, $y_{ij}$.  This indicates which voters the candidate represents.  In other words, it is which voters paid for that seat.  
-		\[
-		\begin{array}{rll}
-		& y_{ij} & \text{Voter i is represented by representative j by this amount.} \\
-		0 \leq & y_{ij} \leq 1 \\
-		& y_{ij} \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
-		\end{array}
+		Here are the ballots for just the parties:
+				\[
+		\begin{bmatrix}
+		A: & 1 & 1 & 0 & 0 & 0 & 0 \\
+		B: & 0 & 0 & 1 & 1 & 1 & 1 
+		\end{bmatrix}
 		\]
-		</p>
-      <p>
-		You could also say that the price of each seat 
+		
+		Here are the tallies for each of the reps:
 		\[
-		\sum_{i \in Voters}y_{ij}=1 \ \forall j \in Reps
+		\begin{bmatrix}
+		A_1: & 2 \\
+		A_2: & 2 \\
+		B_1: & 4 \\
+		B_2: & 4 \\
+		\end{bmatrix}
 		\]
-		is the same and the representation of each voter is fair:
+		
+		We can also write the tallies along the diagonals of this table
+		
 		\[
-		\text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}
-		\]
-		This is a load balancing problem.  The idea of elections as a load balancing problem was developed by Lars Edvard Phragmén, a Swedish professor of mathematics and editor of Acta Mathematica feared for his ability to point out flaws in other people's work.
-		</p>
-      <p>
-		Now we have a different way to look at Jefferson's method of apportionment.
+            \begin{bmatrix}
+				      &A_1 &A_2 &B_1 &B_2  \\
+                 A_1: &  2 &    &    &     \\
+                 A_2: &    &  2 &    &     \\
+                 B_1: &    &    &  4 &     \\
+                 B_2: &    &    &    &  4  \\
+            \end{bmatrix}
+        \]
 		
-		We can make a graphical representation of these y terms.  Each will be represented with a rectangle of height y.  The width of the rectangle is the number of voters.  Actually, this rectangle is composed of many smaller rectangles, one for each voter:
+		Keeps happen when two reps from the same party get elected.  For every pair, there is a table entry, so lets fill in those entries with keeps.  
 		
-		</p>
-		<p style="text-align:center">
-		<span id="splitrectangle"></span>
-		</p>
-		<p>
-		When we add up the area inside each candidate's rectangles, we get 1.  That's what the constraint above means.  It says each representative has the same amount of representation.  So a thinner rectangle will need to be taller.  Let's apply this to the apportionment example above.
-		
-		</p>
-		<p style="text-align:center">
-		<span id="liquidjeff"></span>
-		</p>
-		<p>
-		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The total amount of representation of green voters is the total height of the green rectangles.  Because we have to have whole numbers of representatives, we can't represent each kind of voter equally.  The best we can get is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.
-		</p>
-      <p>
-		My point is that Jefferson's method is a specific example of a general problem of load balancing.
-		</p>
-		
-	  <h3> Pooled Votes </h3>
-      <p>
-		How can we adopt Jefferson's method with individual voters' ballots?  Using parties to replace states is not a good idea because voters don't exactly fall into parties and not all party candidates are equal.  Also, this gives too much power to political parties.  We have a set of ballots with important information about who a voter would feel represented by, so let's try to use it.
+        \[
+        keep = \frac{\text{voters}}{\text{seats}} = \frac{\text{6}}{\text{3}} = 2
+        \]
+		There are two table entries for each pair, so we divide this $keep$ between them.
 		\[
-		\begin{array}{ll}
-		{\displaystyle \sum_{i \in Voters}y_{ij}*b_{ij}=1 \ \forall j \in Reps} & \text{The value of each seat is the same.} \\
-		\\
-		{\displaystyle \text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} & \text{The representation of each voter is fair.}
-		\end{array}
-		\]
-		</p>
-      <p>
-		Basically, what this y term tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation.  Here is an animation that shows an initial guess at the y term and the flow caused by the minimization.  
-		</p>
-		<p style="text-align:center">
-		<span id="liquid"></span>
-		</p>
-		<p>
-		What is happening in this flow?  There are 2 voters, left and right.  They both like the green and blue candidates.  At the start, both green and blue reps represent both voters an equal amount.  Representation is the vertical part of the rectangle, the y term.  The b term is how much a voter liked each candidate.  It is the horizontal part of each rectangle.  A supporting liquid flows between the rectangles.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's area is constant.  As it flows from thinner containers into wider containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
-		</p>
-		<p>
-		Here is another animation.  It shows a single candidate's support being spread over many voters by the action of minimization:
-		</p>
-		<p style="text-align:center">
-		<span id="liquid2"></span>
-		</p>
-		<p>
-		In addition to adjusting the distribution of the "representation liquid", we can also change which candidates are selected.  Broader candidates will have an easier time minimizing the height of their portion of "representation liquid" because they have more and bigger containers to put it in.
-		</p>
-      <p>
-		Also it is a very important point that the amount of representation is not changing as we minimize.  The representation liquid has to go somewhere.  So how is it that some choices of representatives are better than others if there is the same amount of representation going around?  A better choice of representatives might have wider containers, which means the liquid doesn't have to be as tall.  This is good for everyone.  These are the candidates with the highest ratings.  Also, a larger number of containers would also make the liquid shorter.  These would be candidates with broad appeal.  They don't have to be too broad, though.  A best-combination of candidates could include a set of candidates that are very local, but each have very high ratings among a community of a size at least as big as the number of voters divided by the number of seats.  This is the same basic rule that was found in STV.
-		</p>
-      <p>
-		Proportionality is important because if a party decides to split, then its voters should still get represented just the same.
-		</p>
-      <p>
-		By enforcing Jefferson's method's principle of "no special deals", the representation is spread out in proportion to population.  In the same way, by enforcing the same "no special deals" principle to our pool approach, we can reach a proportional outcome.
+			\left[
+            \begin{array}{rr}
+				      &A_1 &A_2 &B_1 &B_2  \\
+                 A_1: &  2 & -1 &    &     \\
+                 A_2: & -1 &  2 &    &     \\
+                 B_1: &    &    &  4 & -1  \\
+                 B_2: &    &    & -1 &  4  \\
+            \end{array}
+			\right]
+        \]
 		
+		We want to choose the 3 reps with the most votes.  So we try each combination, and for each we add the tallies and subtract the keeps.
+		</p>
+		<p>
+		1 from A and 2 from B is the best combination:
+		\[
+			\left[
+            \begin{array}{rr}
+				      &A_1 &  \text{   }  &B_1 &B_2  \\
+                 A_1: &  2 &    &    &     \\
+                      &    &    &    &     \\
+                 B_1: &    &    &  4 & -1  \\
+                 B_2: &    &    & -1 &  4  \\
+            \end{array}
+			\right] = 2+4+4-1-1=8
+        \]
+		The keeps can be drawn on a Venn diagram.  There are 4 voters here.  First take 1 from the shared voter pool for one rep.  Then take 1 for the other.
+		</p>
+		<p>
+		<div style="text-align: center">
+		<p>
+		<img src="venndiagram.png"  style="text-align: center" />
+		</p>
+		</div>
+		<p>
+		This animation show two reps that share the same group of voters.  On the right, it shows how setting a keep level takes voters from supporting both to supporting just one.
+		</p>
+		<p align="center">
+		<span id="overlap"></span> &nbsp; &nbsp; &nbsp; &nbsp; <span id="clone"></span>
+		</p>
+		
+		</p>
+		<p>
+		2 from A is not as good because there are a disproportionate number from A:
+		\[
+			\left[
+            \begin{array}{rr}
+				      &A_1 &A_2 &B_1 & \text{   }  \\
+                 A_1: &  2 & -1 &    &     \\
+                 A_2: & -1 &  2 &    &     \\
+                 B_1: &    &    &  4 &     \\
+                      &    &    &    &     \\
+            \end{array}
+			\right] =2+2+4-1-1=6
+        \]
+		If there were 3 winners from B, the total votes would be even less.  
+		\[
+			\left[
+            \begin{array}{rr}
+				      &    &  \text{   }  &B_1 &B_2& B_3  \\
+                      &    &    &    &    &     \\
+                      &    &    &    &    &     \\
+                 B_1: &    &    &  4 & -1 & -1  \\
+                 B_2: &    &    & -1 &  4 & -1  \\
+                 B_3: &    &    & -1 & -1 & 4  \\
+            \end{array}
+			\right] = 4+4+4-1-1-1-1-1-1=6
+        \]
+		The best combination was when there the proportion of votes matched the proportion of seats.  <b>That means the way we count votes is proportional.</b>  Also notice we lost 2 points whether we went forward or back, so we're right on the maximum.  We can get proportionality by just maxmizing the sum of this table.  We also gained a nice table graphic for counting votes.
+		</p>
+	  <h3> Proportionality </h3>
+	  <p>
+	    Lets do some maximization to show that this is the right number of keeps.  It might seem that each rep should hold on to the keeps rather than splitting them.  So we will find out if the amount of keeps should be some other number.
+		
+	    \[
+        \begin{align}
+        C_t& \text{ seats} \nonumber \\
+        N_t& \text{ voters} \nonumber \\
+        N_A& \text{ voters for party A: A1,A2,A3,...} \nonumber \\
+        N_B& \text{ voters for party B: B1,B2,B3,...} \nonumber \\
+		C_A& \text{ number of winners for party A} \nonumber \\
+        C_B& \text{ number of winners for party B} \nonumber \\
+        \end{align}
+        \]
+		
+		For each party, let's look at the winners add the tallies and subtract the keeps:
+		
+				\[
+			\left[
+            \begin{array}{rr}
+				      & A_1 & A_2 & \text{...} & A_{C_A}  \\
+                 A_1: & N_A &  -K/2 &     &   -K/2   \\
+                 A_2: &  -K/2 & N_A &     &   -K/2   \\
+                 \text{...} &     &     &     &        \\
+                 A_{C_A}:  &  -K/2 &  -K/2 &     & N_A    \\
+            \end{array}
+			\right] = N_A*C_A-\frac{1}{2}K*C_A*(C_A-1)
+			\]
+		For both parties, 
+			\[
+				Obj = N_A*C_A-\frac{1}{2}K*C_A*(C_A-1) + N_B*C_B-\frac{1}{2}K*C_B*(C_B-1) 
+			\]
+		Let's maximize this objective function on $C_A$ by setting its derivative to $0$ and solving for $K$:
+		\[
+			\begin{align}
+			\frac{d \ Obj}{d \ C_A} &= 0 \nonumber \\ \nonumber \\
+			0 &= N_A-N_B-K*C_A+K*C_B \nonumber \\ \nonumber \\
+			K &= \frac{N_A-N_B}{C_A-C_B} \nonumber
+			\end{align}
+		\]
+		Now lets enforce proportionality. Proportionality means every party has the same number of voters per rep:
+		\[
+		\frac{N_A}{C_A}=\frac{N_B}{C_B}=\frac{N_t}{C_t}
+		\]
+		So we substitute and do algebra to get a confirmation of what we already guessed.
+		\[
+			K  =\frac{N_A-N_B}{C_A-C_B}=\frac{N_t}{C_t}=\frac{\text{voters}}{\text{seats}} \nonumber \\
+		\]
+		\[
+			keep =\frac{\text{voters}}{\text{seats}} \nonumber
+        \]
+		So we know we have a proportional system.
       </p>
-	  <div class="spacer" id="triggerjeffbottom"></div>
-	  	  <h3>Formal Model</h3>
+	  
+	  <div class="spacer" id="triggeroverlapbottom"></div>
+      <h3> Finishing the Model: Similarity </h3>
       <p>
-        To sum up, the model minimizes the maximum of a sum of linear terms involving continuous variables $y_{ij}$ and a table of measurements $b_{ij}$.  There is a binary variable $x_j$ that indicates wins with a constraint that there are a specified number of winners.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).
+        What if the voters don't fall into parties?
       </p>
       <p>
-        The problem is defined by the following model in the variables $x_j$ and $y_{ij}$ :
+	  A party is just a group of people who vote the same.  Take an example.  Say rep A and B say they are from different parties.  What if a voter votes for both?  How do we account for proportionality?
+		</p>
+        <p>
+		Take an example of 3 voters.  One for A, one for B, and one for both:
+		\[
+		\text{A partisan voter for A: } \
+		\begin{bmatrix}
+		A: & 1 \\
+		B: & 0 
+		\end{bmatrix}
+		\]
+		\[
+		\text{A partisan voter for B: } \
+		\begin{bmatrix}
+		A: & 0 \\
+		B: & 1 
+		\end{bmatrix}
+		\]
+		\[
+		\text{A voter for A and B: } \
+		\begin{bmatrix}
+		A: & 1 \\
+		B: & 1 
+		\end{bmatrix}
+		\]
+		Let's look at all the ballots together.  We have 3 kinds of voter.  1 out of 3 treats A and B as a single party.  It is like A and B are part of the same party, the AB party:
+		\[
+		\text{Three voter pools: } \
+		\begin{bmatrix}
+		A: & 1 & 1 & 0 \\
+		B: & 0 & 1 & 1 
+		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 1 \\
+		A:  & 1 \\
+		B:  & 1 \\
+		\end{bmatrix}
+		\]
+		How do we account for this in our bookkeeping about kept votes?  1/3 of the votes for A or B were for both A and B.  So we reduce the number of kept votes to 1/3 of the usual.
+		\[
+		\frac{1}{3} = \frac{0 + 1 + 0}{1 + 1 + 1}
+		\]
+		This measure is actually common.  It is called the Jaccard similarity.  Stated mathematically,
+        \[
+		\begin{align}
+		 \nonumber \\
+s_{jk} & = \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} \text{ } \text{ } \text{ } \text{ (Similarity between rep j and rep k)}\nonumber \\
+		\end{align}
+        \]
+		</p>
+		<h4> Mixture Example</h4>
+		<div class="spacer" id="triggermixtop"></div>
+		<p>
+		Let's try to justify this more and build an intuition by working through an example:
+		\[
+		\text{mixture example: } \
+		\begin{bmatrix}
+		A: & 1 & 1 & 1 & 1 & 0 & 0 \\
+		B: & 0 & 0 & 1 & 1 & 1 & 1 
+		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 2 \\
+		A:  & 2 \\
+		B:  & 2 \\
+		\end{bmatrix}
+		\]
+		This is actually a mixture of two extremes.  A 1-party extreme where A and B are actually from the same party, and a 2 party extreme where A and B are from different parties:
+		
+		\[
+		\text{1-party extreme: } \
+		\begin{bmatrix}
+		A: & 1 & 1 & 1 & 1 & 1 & 1 \\
+		B: & 1 & 1 & 1 & 1 & 1 & 1 
+		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 6 \\
+		A:  & 0 \\
+		B:  & 0 \\
+		\end{bmatrix}
+		\]
+		
+		\[
+		\text{2-party extreme: } \
+		\begin{bmatrix}
+		A: & 1 & 1 & 1 & 0 & 0 & 0 \\
+		B: & 0 & 0 & 0 & 1 & 1 & 1 
+		\end{bmatrix}
+		\quad \rightarrow
+		\begin{bmatrix}
+		AB: & 0 \\
+		A:  & 3 \\
+		B:  & 3 \\
+		\end{bmatrix}
+		\]
+		Across both extreme examples, the same number of candidates win from each party.  So the middle example should have the same result. 
+		\[
+		\text{different examples, same result: } \
+		\begin{bmatrix}
+		    & \text{2P:} & \text{M:} & \text{1P:}\\
+		AB: & 0 & 2 & 6 \\
+		A:  & 3 & 2 & 0 \\
+		B:  & 3 & 2 & 0 \\
+		\end{bmatrix}
+		\]
+		To visualize what is happening, we draw a Venn diagram.  Area is proportional to votes.  Even if we change the proportion of shared votes, we are still representing the same voters and they should get the same number of reps:
+		</p>
+		<p align="center"><span id="animatemixture"></span>
+		</p>
+		<p>
+		When we use Jaccard similarity to figure the number of keeps, we get the same composition of winners no matter how much the voters split their support.  We can include this similarity in our venn diagram from before, which only applied to identical reps (clones).
+		</p>
+		<p align="center" >
+		Identical Reps &nbsp; &nbsp; &nbsp;  Similar Reps &nbsp;&nbsp; &nbsp; &nbsp; 
+		</p>
+		<p align="center" >
+		<span id="clone2"></span>  <span id="jaccard"></span>
+		</p>
+		<p>
+		Next we will see how to include Jaccard similarity into our calculation.
+		</p>
+		<h4> Add Similarity to Model </h4>
+		<p>
+		Let's include this similarity measure in our model.  We need to adjust the number of votes that are kept when a pair of candidates share the same voter support:
+		\[
+		keeps_{jk} = keep * s_{jk} \nonumber
+		\]
+		We only do this when both reps win.  We want to make an indicator for when both reps win.  Remember the $x$ is binary and it indicates the winners.
+		\[
+		\begin{array}{l}
+			x_j * x_k & \text{Indicates when both reps have won}
+			\end{array}
+			\]
+        We can now refine our model to maximize the following, called an objective function:
+		\[
+        \text{Maximize} \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} \frac{1}{2} keeps_{jk} * x_j * x_k
+        \]
+         This expression is just the sum of the table, so it's basically just letting us add up the tally and subtract the keeps for the winning reps. The 1/2 factor is in there because there are 2 entries $x_{jk}$ and $x_{kj}$ for each pair.  So! <b>We have a new and better table to add up and maximize!  It is better because now we don't need parties!  It's the voters that matter, not the parties.</b>
+      </p>
+	  <div class="spacer" id="triggermixbottom"></div>
+	  <h3> The model is actually like a sudoku </h3>
+      <p>
+        There is a really easy way to visualize what the model is trying to do.  We reduced the problem to crossing out the rows and columns in a table.  Cross out the row and column for each rep that lost. Add the remaining tallies and keeps.  Try to find the 4 winners by crossing out the losing rep's row and column.
+        \[
+          \begin{bmatrix}
+        10 & -4 & -3 &  0 & -1 \\
+        -4 & 10 & -3 &  0 & -1 \\
+        -3 & -3 &  8 & -2 &  0 \\
+         0 &  0 & -2 & 11 &  0 \\
+        -1 & -1 &  0 &  0 & 17 \\
+          \end{bmatrix}
+        \]
+      The solution is to cross out the 3rd rep's row and column.  He had the lowest tally overall and he also overlapped in similarity with most of the other reps, so basically his territory was covered better by the other reps.
+      </p>
+      <p>
+	  <div style="text-align: center">
+	  <p>
+      <img src="./crossout.png"  style="text-align: center" />
+	  </p>
+	  </div>
+      </p>
+	  <h3>Formal Model</h3>
+      <p>
+        To sum up, the model maximizes a sum of linear and quadratic terms involving binary variables $x_j$ and a table of measurements.  There is a constraint that there are a specified number of winners.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).
+      </p>
+      <p>
+        The problem is defined by the following model in the variable $x_j$ :
 
         \[
-        \begin{array}{lll}
-        \text{Minimize}   & {\displaystyle \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} &  \text{The representation of each voter is fair.} \\
+        \begin{array}{ll}
+        \text{Maximize}   & {\displaystyle \sum_{j \in Reps} tally_j * x_j - \sum_{j \in Reps,k \neq j} \frac{1}{2} keeps_{jk} * x_j * x_k } \\
 		\\
-        \text{Subject to} & {\displaystyle \sum_{i \in Voters} y_{ij} * b_{ij} =x_j \ \ \ \forall \  j \in Reps} & \text{The value of each winning seat is the same.} \\ \\
-                          & 0 \leq y_{ij} \leq 1  & \text{Voter i is represented by representative j by this amount.} \\ \\
-						  & y_{ij} \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.} \\ \\
-						  & x_j \in \{ 0, 1 \} & \text{Candidates either win or lose.} \\ \\
-						  & {\displaystyle \sum_j x_j = N} & \text{Only N candidates win.} \\
+        \text{Subject to} & {\displaystyle \sum_{j \in Reps} x_j} = \text{number of seats} \\
+                          & x_j \in \{ 0, 1 \} \\
 						  \\
-        \\
-        \text{Constants } & b_{ij} = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Voters score the closest rep a 1.} \\ \\
-						  & a_{ij} = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{The further away a rep from a voter, the lower the score.}\\ \\
-                          & d_{ij}  & \text{Distance between voter i and rep j on the map}
+        \end{array}
+		\\
+        \begin{array}{lrll}
+        \text{Constants } & keeps_{jk} & = keep * s_{jk}& \text{Rep j keeps these votes from rep k}\\ \\
+                          & s_{jk} & = {\displaystyle \frac{\sum_{i \in Voters} min(b_{ij}, b_{ik})}{\sum_{i \in Voters} max(b_{ij}, b_{ik})} }& \text{Similarity between reps j and k} \nonumber \\ \\
+                          & keep & = {\displaystyle \frac{\text{voters}}{\text{seats}} } & \text{Amount of ballots kept (if s=1, e.g. for clones)}\\ \\
+                          & tally_j & = {\displaystyle \sum_{i \in Voters} b_{ij} } & \text{Add up the ballots}\\ \\
+						  & b_{ij} & = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Ballot} \\ \\
+						  & a_{ij} & = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{Inverting distance}\\ \\
+                          & d_{ij} &  & \text{Distance between voter i and rep j on the map}
         \end{array}
         \]
 
@@ -351,7 +603,6 @@ a:hover.screenshot {
 	  <p>
       I suggest using conda to install it.  And then there is a license to download, so you have to make an account on the gurobi website.  I used Python 2.
       </p>
-	  <div class="spacer" id="triggerliquidbottom"></div>
       
 <examplecode>
 from gurobipy import *
@@ -369,17 +620,14 @@ m = Model()
 x = {}
 for j in range(numReps):
     x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
-y = {}
-for i in range(numVoters):
-	for j in range(numReps):
-		y[(i,j)] = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
-Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
 
 # Add constants
 numWinners = 5
 d = numpy.zeros((numVoters,numReps))
 a = numpy.zeros((numVoters,numReps))
 b = numpy.zeros((numVoters,numReps))
+s = numpy.zeros((numReps,numReps))
+t = numpy.zeros(numReps)
 
 def distance(a,b):
     dx = a[0] - b[0]
@@ -395,17 +643,30 @@ a = 1 /( d/10 + 1 )
 for i in range(numVoters):
 	b[i,:] = a[i,:] / max(a[i,:])
 
+keep = numVoters / numWinners
+
+def jaccard_similarity(a,b):
+    return numpy.sum(numpy.minimum(a,b)) / numpy.sum(numpy.maximum(a,b))
+			
+for j in range(numReps):
+    t[j] = sum(b[:,j])
+    for k in range(numReps):
+        s[j,k] = jaccard_similarity(b[:,j],b[:,k])
+
 m.update()
 
 # Add constraints
-m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
-for j in range(numReps):
-	m.addConstr( x[j] == quicksum(b[i,j]*y[(i,j)] for i in range(numVoters)) ) 
-for i in range(numVoters):
-	m.addConstr( Z >= quicksum( y[(i,j)] for j in range(numReps) ) ) 
+m.addConstr(quicksum(x[j] for j in range(numReps)) == numWinners)
 
-# Set objective and optimize
-m.setObjective(Z,GRB.MINIMIZE)
+d_obj = LinExpr()
+for j in range(numReps):
+    d_obj += t[j]*x[j]
+    for k in range(numReps):
+        if k != j:
+            d_obj += -.5*keep*s[j,k]*x[j]*x[k]
+
+m.setObjective( d_obj , GRB.MAXIMIZE)
+
 m.optimize()
 
 # Output
@@ -497,8 +758,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</fieldset>
 		<fieldset>
 		<legend>Computation:</legend>
-		<input class="op" type="radio" name="compute" checked="true"> Phragmen<br />
-		<input class="op" type="radio" name="compute"> Binary Quadratic Problem <br />
+		<input class="op" checked="true" type="radio" name="compute"> Our Binary Quadratic Problem as described above. <br />
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
 		<input class="op" type="radio" name="compute"> RRV  <br />
@@ -528,6 +788,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</select> <br />
 		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
 		<input class="op" id="schulzestv" type="radio" name="compute"> Schulze STV (bug)<br />
+		<input class="op" type="radio" name="compute"> Phragmen<br />
 		<input class="op" id="cluster" type="radio" name="compute"> Load Balancing<br />
 		<select id="loadType" onclick="selectCluster()">
 			<option value="min total distance">min total dist</option>
@@ -668,10 +929,10 @@ print(["%d" % x[j1].X for j1 in range(9)])
 	</div>
 	<div id="readmore" style="display:none; float:left">
 	<p>
-		The output is worth explaining.  The similarity measures can be put into a table so that more similar pairs of reps are indicated by light grey and distant pairs are dark grey.  Similarity is a measure from 0 (dark) to 1 (light).  Each pair is a square on the table (technically 2 squares).  Also, to the left of the election results table is a bar chart showing the vote totals for each rep.  The scale at the bottom has tick marks that indicate a votes/seats.  The great thing about this kind of table of election results is that it shows communities of similar reps.  Each community of reps looks like a big bright square along the diagonal.  You can really see this effect if you add about 20 reps.  Even better is to use the 200 voters to show communities.  This kind of data would not be available in an election.  It is kind of cheating to know where the voters are.  You can see how big each community of voters is and which reps (colors) are serving each community.
+		The output is worth explaining.  The similarity measures can be put into a table so that more similar pairs of reps are indicated by light grey and distant pairs are dark grey.  Similarity is a measure from 0 (dark) to 1 (light).  Each pair is a square on the table (technically 2 squares).  Also, to the left of the election results table is a bar chart showing the vote totals for each rep.  The scale at the bottom has tick marks that indicate 1 keep (votes/seats).  The great thing about this kind of table of election results is that it shows communities of similar reps.  Each community of reps looks like a big bright square along the diagonal.  You can really see this effect if you add about 20 reps.  Even better is to use the 200 voters to show communities.  This kind of data would not be available in an election.  It is kind of cheating to know where the voters are.  You can see how big each community of voters is and which reps (colors) are serving each community.
 	</p>
      <p>
-		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> of several voting methods are there.  There are other load balancing methods where the weight of each part of a ballot is optimized to give the most support to the winners.  In other words, the total distance between voters and reps is minimized.  This is similar to the project that this project was forked from.  There is a reweighted range voting (RRV) as an option as well.  In addition to computations, there are also different ballot types, an option for disabling normalization, an option for adding a +1 to the seats, different similarity measures, etc. .
+		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> of several voting methods are there.  Another method is a load balancing method where the weight of each part of a ballot is optimized to give the most support to the winners.  In other words, the total distance between voters and reps is minimized.  This is similar to the project that this project was forked from.  Also, I am working on a new optimization based on a form of reweighted range voting (as of now it takes too long, maybe about a minute to run).  There is normal reweighted range voting (RRV) as an option as well.  In addition to computations, there are also different ballot types, an option for disabling normalization, an option for adding a +1 to the seats, different similarity measures, etc. .  Also, you can change the amount of keeps to test how proportional a different level would be.
       </p>
 	  <p style="font-size:8px">
         <a name="geolytix">Location data:</a>
@@ -681,42 +942,69 @@ print(["%d" % x[j1].X for j1 in range(9)])
 
       
       <div class="example_section" id="thoughts">
-	  <h3> Thoughts </h3>
-	  <p>
-	  The first incarnation of this page is <a href="./bqpr.html">here</a>.  It is an approximation to proportionality, and it explains more of what the output charts mean.  It has a drawback because it overcounts in the case of a 3-way party split where the split is not complete.
-	  </p>
-	  <h3> Re-weighted Range Voting </h3>
-	  <p>
-	  By the way, we can still think about another way to state this problem that better corresponds to a picture of price:
-		\[
-		\begin{array}{lll}
-		\text{Maximize} & \min_{j \in Reps} \sum_{i \in Voters} y_{ij}*b_{ij} & \text{The price of each seat is fair.} \\
-		\text{Subject to} & \forall \ i \in Voters  \ \  \sum_{j \in Reps} y_{ij}=1 & \text{The representation of each voter is the same.} \\
-		\end{array}
-		\]
-	</p>
-		<p style="text-align:center">
-		<span id="price"></span>
+      <h2>Here's my thoughts.</h2>
+      <p>
+      It turns out I finally invented a good voting system.  So, how did I come up with it?  Well, I had thought of it before but couldn't work out the math.  It is the same as STV because it has a quota.  It is different than STV because it searches for the best combination of reps that would maximize voter support for the winners.  
+        </p>
+        <p>
+        I didn't think it would work.  I thought I was over-penalizing.  However, I realized that I could set the quota so that it optimized the number of reps coming from a voter base.  The optimization is for proportionality.  I tried to use the same quota as STV's droop quota: number of voters over number-of-seats-plus-1.  
+        </p>
+        <p>
+        Some things to change:  I'm not sure exactly what the quota should be because I'm not sure how they'll actually vote.  Right now, I have put them as all voting depending on their distance from a rep.  Maybe I would choose a different function.  Maybe voters would want to maximize the range of their vote.  Maybe they would have just two levels of support, high and low, and they would change their threshold depending on who is running and who other people are voting for.
+        </p>
+        <p>
+        Things to do.
+        </p>
+        <p>
+          <ul><li>compare to clustering (done)
+        </li><li>normalize votes (done)
+        </li><li>try exponential choice function (done)
+        </li><li>try linear choice function (done)
+        </li><li>try threshold choice function
+        </li><li>add STV comparison (done)
+        </li><li>add CPO-STV comparison
+        </li><li>far future: put this into ncase's better ballot.
+        </li><li>far future: yee diagram in background
+        </li><li>explanation: what is the incentive of the voters to vote honestly?  Couldn't they find a way to avoid penalties by only supporting one rep?  Isn't that strategy also applicable to STV?
+        </li></ul>
+          </p>
+        <p>
+        So basically what I was thinking was to write out a matrix of the penalties.  Then show that the penalties lead to a correct number of representatives for this voter-base.  
+        </p>
+        <p>
+        In clustering, voters dont have influence outside their cluster.  In this penalty system, they can have negative influence if they get too many representatives... maybe.. but they would never get too many
+        </p>
+        <p>
+        I need to motivate this with the idea of search.  There is depth-first, which is greedy and assigns the single reps with the highest vote counts first.  Standard STV does this kind of depth-first search.  In STV, if more people like a rep than the quota, then those people can get their second choices as well.  This is like at-large voting, except after your rep gets a seat, part of your vote stays with them and only part of it gets to go to a second rep.  This kind of division of the vote can be accomplished by subtracting the "kept" votes from the total vote count.  This avoids overcounting.
+        </p>
+        <p>
+        The algorithm searches through all the possible combinations of seat assignments for the reps.  It tries to maximize the number of voters who support the winning reps.  It avoids double-counting in the same way as STV.  It keeps some of the votes for similar reps.
+        </p>
+        <p>
+        Basically, this cosine similarity is a measure of an angle.  It is not a typical angle.  It is not in 2 dimensions.  It is actually in many more dimensions, as many dimensions as there are reps.  Still, the same idea holds in 2 dimensions that the more aligned 2 reps are, the bigger the cosine similarity.  It ranges from 0 for reps that have nothing in common to 1 for identical "clone" reps.
+        </p>
+        <p>
+        This information gets put into the problem definition table by simply multiplying each entry by cosine similarity.  Even the diagonals work! It's actually pretty easy.
+        </p>
+        <p>
+
+        Now we just tell the optimization software to pick the 5 best rows and columns that have the biggest sum.  Those are the best winners.
+        </p>
+        <p>
+        You can see that some areas have 2 reps close together.  Sometimes a cluster of voters is big enough and supportive enough (close to the reps), to elect 2 reps.
+        </p>
+        <p>
+        Of course there are details I left out.
+        </p>
+        <p>
+        These are just my thoughts.
+        </p>
+		<p>
+		So What?
 		</p>
 		<p>
-		Compare this to our formulation above which correspons to a picture of representation:
-		\[
-        \begin{array}{lll}
-        \text{Minimize}   & { \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} &  \text{The representation of each voter is fair.} \\
-        \text{Subject to} & {\forall \  j \in Reps} \ \  \sum_{i \in Voters} y_{ij} * b_{ij} =x_j \ \ \  & \text{The value of each winning seat is the same.} 
-        \end{array}
-        \]
+		Distance is good, 2D is great.  Let's think about the 3rd Dimension.  What would it be?  It doesn't have to be distance.  It can be political affiliation.  Now, the 4th.  It can be a particular issue.  And we can have as many dimensions as their are issues  and there won't be any more wedge issues that keep you stuck in a 1-dimensional partisan left-right line.
 		</p>
-		<p style="text-align:center">
-		<span id="rep"></span>
-		</p>
-		<p>
-		
-		These are equivalent statements when voters are partisan.  If voters are not partisan, then these statements can be different. 
-		</p>
-		<p>
-		This can be modified so that $y_{ij} = f_i * x_j$, which would give us something like reweighted-range voting, but I have to think about this more.
-	  </p>
 		</div>
 	  
 	  
@@ -1425,12 +1713,12 @@ function dos (divname,f) {
 	  .addTo(ctrl);
 }
     
-var showjeff = {"show":0};
-var showliquid = {"show":0};
-dos("#triggerjefftop",function() {showjeff.show = 1-showjeff.show;})
-dos("#triggerjeffbottom",function() {showjeff.show = 1-showjeff.show; })
-dos("#triggerliquidtop",function() {showliquid.show = 1-showliquid.show;})
-dos("#triggerliquidbottom",function() {showliquid.show = 1-showliquid.show; })
+var showmix = {"show":0};
+var showoverlap = {"show":0};
+dos("#triggermixtop",function() {showmix.show = 1-showmix.show; })
+dos("#triggermixbottom",function() {showmix.show = 1-showmix.show; })
+dos("#triggeroverlaptop",function() {showoverlap.show = 1-showoverlap.show;})
+dos("#triggeroverlapbottom",function() {showoverlap.show = 1-showoverlap.show; })
 // Open console to see output!
 </script>
 
@@ -1438,396 +1726,308 @@ dos("#triggerliquidbottom",function() {showliquid.show = 1-showliquid.show; })
 <!-- Animations -->
 
 
-  
-  
 <style type="text/css">
+  
+  .barchart{
+  fill:orange
+  }
 	
-	line{
+	rect.anim{
   stroke:#000;
+  stroke-width:1px;
+  opacity:.3;
+  /*stroke-opacity:0;*/
+  border-radius:10;
+  rx:6
 }
-</style>
-<script>
-function drawjeff(svg,dn) {
-	
-	var w = 480;
-    var h = 300;
+/*
+  .rightsquare{
+	fill:#ff4232
+}
+  .leftsquare{
+	fill:#2342ff
+}
+*/
+  .topsquare{
 
-	svg
-	.attr("width", w)
-	.attr("height", h)
-	.attr("id", "visualization")
-	.attr("xmlns", "http://www.w3.org/2000/svg");
+}
+  .bottomsquare{
 
-	//animation options
-	
-	var votes = [40,30,20];
-	var votes = [12,19,15];
-	//var votes = [12,19,15,13,22,11,14,28,31,23,32];
-	var border = 10;
-	var representation = .5;
-	var slow = 3;
-	
-	function tx(x) { return ((dn==1)?1:.1)*x*(w-2*border)+border;}
-	function ty(y) { return h-(y*(h-2*border)+border);}
-	
-	
-	// put axes
-	
-	svg.append("line")
-	.attr("x1",tx(0))
-	.attr("x2",tx(0))
-	.attr("y1",ty(0))
-	.attr("y2",ty(1))
-	
-	
-	var r = svg.append("line")
-	.attr("y1",ty(-.1))
-	.attr("y2",ty(1.1))
-	.style("stroke-dasharray","3,3")
-	
-	if (dn==1) {
-		r
-		.attr("x1",tx(0))
-		.attr("x2",tx(0))
-		.transition()
-		.ease("linear")
-		.delay(50*slow)
-		.duration(1000*representation*slow)
-		.attr("x1",tx(representation))
-		.attr("x2",tx(representation))
-	} else {
-		r
-		.attr("x1",tx(10))
-		.attr("x2",tx(10))
-		.transition()
-		.ease("linear")
-		.delay(50*slow)
-		.duration(1000*representation*slow)
-		.attr("x1",tx(1/representation))
-		.attr("x2",tx(1/representation))
-	}
-	
-	var dots = []
-	var dashes = []
-	if (dn == 1) {
-		for (var id=0;id<votes.length;id++) {
-			for (var i=1;i*votes[id]<100;i++) {
-				var d1 = [ty((id+1-.5)/(votes.length)),tx(i*votes[id]/100),id,i*votes[id]/100]
-				dashes.push(d1)
-				if (representation >= i*votes[id]/100) dots.push(d1)
-				
-			}
-		}
-	} else {
-		var last_mark = []
-		for (var id=0;id<votes.length;id++) {
-			for (var i=1;i*votes[id]<300;i++) {
-				var d1 = [ty((id+1-.5)/(votes.length)),tx(1/(i*votes[id]/100)),id,1/(i*votes[id]/100)]
-				dashes.push(d1)
-				if (1/representation <= 1/(i*votes[id]/100)) dots.push(d1)
-			}
-			last_mark.push(d1[3])
-		}
-	}
-	
-	if (!(dn==1)) {
-		for (var id=0;id<votes.length;id++) {
-			svg.append("rect")
-				.attr("x", tx(0))
-				.attr("width", tx(last_mark[id])-tx(0))
-				.attr("height", 8)
-				.attr("y", ty((id+1-.5)/(votes.length)) -4)
-				console.log('hi')
-		}
-	}	
-	console.log(dn)
-	var sdashes = svg
-	.selectAll('rect')
-	.data(dashes)
-	.enter()
-	.append("rect")
-	.attr("x", function(d) { return d[1]; })
-	.attr("y", function(d) { return d[0]-4; })
-	.attr("width", 1)
-	.attr("height", 8)
-
-	
-	var sdots = svg
-	.selectAll('circle')
-	.data(dots)
-	.enter()
-	.append("circle")
-	.attr("cx", function(d) { return d[1]; })
-	.attr("cy", function(d) { return d[0]; })
-	.attr("class","repclass")
-	.attr("fill", function(d) { return color_fill[d[2] % color_fill.length]; })
-	.attr("stroke", function(d) { return color_stroke[d[2] % color_stroke.length]; })
-	.attr("r",5)
-	.attr("stroke-width", 2)
-	
-	sdots
-	.style("opacity", 0)
-	.style("stroke-opacity", 0)
-	.attr("r",60)
-	.transition()
-	.style("opacity", 1)
-	.style("stroke-opacity", 1)
-	.attr("r", 6)
-	.duration(500)
-	.delay(function(d, i) { return ((dn==1)?d[3]*1000:(10-d[3])*70)*slow })
-			  
-			  
 }
 
-function drawliquid(svg,dn) {
+  .keepsline{
+  stroke:#000;
+  stroke-width:1px;
+    
+  }
 
-
-	var colkey = Array.apply(null, Array(100)).map(function(d,i){return i})
-	var w = 480/2;
-    var h = 300/2;
-	
-	if (dn==1) {
-		var y = [[1/1.2,1,1/1.2],[1/1.2,1,1/1.2]]
-		var y1 = [[0,1,1],[1,1,0]]
-		var b = [[.2,.5,1],[1,.5,.2]]
-		var y = [[1/1.2,1/1.2],[1/1.2,1/1.2]]
-		var y1 = [[0,1],[1,0]]
-		var b = [[.2,1],[1,.2]]
-		var y = [[1/1.8,1/1.8],[1/1.8,1/1.8]]
-		var y1 = [[0,1],[1,0]]
-		var b = [[.8,1],[1,.8]]
-		var ymax = 1.5
-	} else if (dn==2) {
-		var y = [[.6],[.1],[.1],[.1],[.1]]
-		var y1 = [[.2],[.2],[.2],[.2],[.2]]
-		var b = [[1],[1],[1],[1],[1]]
-		var ymax = .8
-	} else if (dn==3) {
-		fillit = function(n,w) { return Array.apply(null, Array(n)).map(function(){return w}) }
-		var y = fillit(9,[1/3/1.6,1/3/1.6,1/3/1.6])
-		var y1 = fillit(3,[1/3/.8,0,0]).concat( fillit(3,[0,1/3/.8,0])).concat( fillit(3,[0,0,1/3/.8]))
-		var b = fillit(3,[.8,.4,.4]).concat( fillit(3,[.4,.8,.4])).concat( fillit(3,[.4,.4,.8]))
-		ymax = 1
-		
-	} else if (dn==4) {
-		fillit = function(n,w) { return Array.apply(null, Array(n)).map(function(){return w}) }
-		var votes = [12/10,19/10,15/10];
-		//var b = fillit(3,[fillit(12,0)]) // reference passing problem
-		var newb = []
-		var y = []
-		var numwin = [4,2,3]
-		for (var i=0;i<3;i++) {
-			var rowb = []
-			var rowy = []
-			for (var ja=0;ja<3;ja++) {
-				for (var jb=0;jb<4;jb++) {
-					var j = jb+4*ja;
-					rowb.push((ja==i) ? 1/votes[i] : 0)
-					rowy.push((ja==i && jb<numwin[i]) ? votes[i] : 0)
-				}
-			}
-			newb.push(rowb)
-			y.push(rowy)
-		}
-		var b=newb
-		var colkey = [0,0,0,0,1,1,1,1,2,2,2,2]
-		var y1 = y
-		ymax=6
-		console.log(y)
-		var w = 480;
-		var h = 300;
-	}
-
-	svg
-	.attr("width", w)
-	.attr("height", h)
-	.attr("id", "visualization")
-	.attr("xmlns", "http://www.w3.org/2000/svg");
-	
-	var border = 10;
-	var slow = 3;
-	var xmax = y.length + 1
-	
-	function tx(x) { return x/xmax*(w-2*border)+border;}
-	function ty(y) { return h-(y/ymax*(h-2*border)+border);}
-	
-	var rectlist = []
-	for (var i=0; i<y.length;i++) {
-		rectlist.push([])
-		for (var j=0; j<y[0].length;j++) {
-			rectlist[i].push(svg.append("rect"))
-		}
-	}
-	
-	
-	r = svg.append("line")
-	.attr("x1",tx(0-.1))
-	.attr("x2",tx(xmax+.1))
-	.style("stroke-dasharray","3,3")
-	
-	var r0 = svg.append("line")
-	.attr("x1",tx(0-.1))
-	.attr("x2",tx(xmax+.1))
-	.style("stroke-dasharray","3,3")
-	
-	svg.append("line")
-	.attr("x1",tx(0-.1))
-	.attr("x2",tx(xmax+.1))
-	.attr("y1",ty(0))
-	.attr("y2",ty(0))
-	
-	function draw1(y,del,dur,setr0) {
-		var ymax = 0;
-		for (var i=0; i<y.length;i++) {
-			var ystack = 0;
-			for (var j=0; j<y[0].length;j++) {
-				ystack += y[i][j]
-				var rect1 = rectlist[i][j]
-				var t = rect1.transition()
-				.delay(del)
-				.duration(dur)
-				.attr("height", ty(0)-ty(y[i][j]))
-				.attr("fill", color_fill[colkey[j] % color_fill.length])
-				.attr("stroke", color_stroke[colkey[j] % color_stroke.length])
-				if (0) {
-					t
-					.transition()
-					.delay(del+dur+100)
-					.duration(dur)
-					.attr("y", ty(ystack))
-				} else {
-					t
-					.attr("y", ty(ystack))
-				}
-				if (dn==1 || dn==2 || dn==4) {
-					var xa = tx(i+1)
-					var wa = tx(b[i][j]*.9)-tx(0)
-					rect1
-					.attr("x", xa-wa/2)
-					.attr("width", wa)
-				}
-				if (dn==3) {
-					rect1
-					.attr("x", tx(i+.5))
-					.attr("width", tx(1)-tx(0))
-					.attr("opacity", b[i][j])
-					.attr("stroke-width", 0)
-				}
-			}
-			ymax = Math.max(ystack,ymax);
-		}
-		r
-		.transition()
-		.delay(del)
-		.duration(dur)
-		.attr("y1",ty(ymax))
-		.attr("y2",ty(ymax))
-		if (setr0) {
-			r0
-			.attr("y1",ty(ymax))
-			.attr("y2",ty(ymax))
-		}
-	}
-	draw1(y,0,0,1)
-	draw1(y1,2000,2000,0)
-	
+  .negativesquare{
+	fill:#000000
 }
+​</style>
+  <script type="text/javascript">
+		var color_fill = ["#add8e6","#90ee90","#ff6347","#ffff00","#ffa500","#65C1A5","#8D9EC9","#E68AC2","#D4BDDC","#DDCFAF","#6EA0C8","#D90015","#DE9B13","#6EA0C8","#A4D959","#198E64","#DD0076","#936219","#525252","#615AA2"];
+function dodraw(idtoget,dn,showit) {
 
-function splitrectangle(svg,dn) {
-	var w = 480/2;
-    var h = 300/2;
-	var ymax = 1;
-	var xmax = 1;
-	svg
-	.attr("width", w)
-	.attr("height", h)
-	.attr("id", "visualization")
-	.attr("xmlns", "http://www.w3.org/2000/svg");
-	
-	var border = 18;
-	var slow = 3;
-	
-	function tx(x) { return x/xmax*(w-2*border)+border;}
-	function ty(y) { return h-(y/ymax*(h-2*border)+border);}
-	
-	var n = 12;
-	var rectlist = []
-	for (var j=0; j<n;j++) {
-		rectlist.push(svg.append("rect"))
-	}
-	var rect0 = svg.append("rect")
-	svg.append("text")
-	.attr("x", 0)
-	.attr("y", h/2-10)
-	.attr("dy",".75em")
-	.text("y")
-	svg.append("text")
-	.attr("x", w/2-border)
-	.attr("y", h-border+6)
-	.attr("dy","10px")
-	.text("voters")
-	var colid = 0
-	function draw1(del,dur,op) {
-		for (var j=0; j<n;j++) {
-			var rect1 = rectlist[j]
-			var t = rect1.transition()
-			t
-			.delay(del)
-			.duration(dur)
-			.attr("height", ty(0)-ty(1))
-			.attr("fill", color_fill[colid % color_fill.length])
-			.attr("stroke", color_stroke[colid % color_stroke.length])
-			.attr("y", ty(1))
-			.attr("opacity", op)
-			.attr("stroke-width", op)
-			.attr("stroke-opacity", op)
-			rect1
-			.attr("x", tx(j/n))
-			.attr("width", tx(1/n)-tx(0))
-		}
-		rect0
-		.attr("x", tx(0))
-		.attr("width", tx(1)-tx(0))
-		rect0.transition()
-		.delay(del)
-		.duration(dur)
-		.attr("height", ty(0)-ty(1))
-		.attr("fill", color_fill[colid % color_fill.length])
-		.attr("stroke", color_stroke[colid % color_stroke.length])
-		.attr("y", ty(1))
-		.attr("opacity", 1-op)
-		.attr("stroke-width", 1-op)
-		.attr("stroke-opacity", 1-op)
-		
-	}
-	draw1(0,0,1)
-	draw1(2000,5000,0)
-}
-
-function startdraw(f,idtoget,dn,showit) {
-	var firstdraw = 1
+	var firstdraw = 1; // lets at least draw the initial figure
+	var figheight = 100; //bounds on the drawing
+	var figwidth = 110;
+	var h = figheight;
+	var w = figwidth;
 	var svg = d3.select(idtoget)
 		.append("svg")
-	draw_a = function() {
-		if (showit.show || firstdraw ) {
-			svg.selectAll("*").remove(); 
-			f(svg,dn);
-		}
-		firstdraw = 0
-	}
-	draw_a();
-	i_draw = setInterval( draw_a, 10000);
-}
+		.attr("id", "visualization")
+		.attr("xmlns", "http://www.w3.org/2000/svg");
 
-startdraw(drawjeff,"#jeff",1,showjeff)
-startdraw(drawjeff,"#bid",2,showjeff)
-startdraw(drawliquid,"#liquid",1,showliquid)
-startdraw(drawliquid,"#liquid2",2,showliquid)
-startdraw(drawjeff,"#liquidjeff",1,{"show":0})
-startdraw(drawliquid,"#liquidjeff",4,{"show":0})
-startdraw(drawjeff,"#rep",1,{"show":0})
-startdraw(drawjeff,"#price",2,{"show":0})
-startdraw(splitrectangle,"#splitrectangle",1,{"show":1})
-</script>
-  
+	//animation options
+	var bottomoverlap = false;
+	var thinlinenegative = false;
+	
+	var both = 30;
+	var border = 10;
+	var height = 50;
+	var total = 90; // union of tallys
+	var keep = 80; // desired keep
+	var sep = 0; // separation between rectanges 
+	var barheight = 0;
+	var b=svg.append("rect")
+	var c=svg.append("rect")
+	var d=svg.append("rect")
+	var e=svg.append("rect")
+	var f=svg.append("rect")
+	var g=svg.append("line")
+	var g2=svg.append("rect")
+	var trantime = 500;
+	var tease = "in";
+	var color_left = 0;
+	var color_right = 3;
+	
+	
+	function go() {
+		firstdraw = 0;
+		
+		h = figheight
+		svg
+		  .attr("width", figwidth)
+		  .attr("height", figheight)
+		  
+		var tally = (total+both)/2
+		var drop = figheight-border*2-height;
+		var keepin = Math.max(0,Math.min(height,keep)); // keep that is within the total.
+		var negative = Math.min(drop,Math.max(keep-height,0));
+		
+		
+		// left top
+		b
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","anim leftsquare topsquare")
+		.attr("x",border-sep/2)
+		.attr("y",border+drop)
+		.attr("width",tally)
+		.attr("height",height-keepin)
+		.attr("fill",color_fill[color_left]);
+		
+		// right top
+		c
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","anim rightsquare topsquare")
+		.attr("x",border+total-tally+sep/2)
+		.attr("y",border+drop)
+		.attr("width",tally)
+		.attr("height",height-keepin)
+		.attr("fill",color_fill[color_right]);
+		
+		// left bottom
+		d
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","anim leftsquare bottomsquare")
+		.attr("x",border-sep/2)
+		.attr("y",border+drop+height-keepin)
+		.attr("width",(bottomoverlap) ? tally : total/2)
+		.attr("height",keepin)
+		.attr("fill",color_fill[color_left]);
+		
+		// right bottom
+		e
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","anim rightsquare bottomsquare")
+		.attr("x",(bottomoverlap) ? border+total-tally+sep/2 : border+total/2+sep/2)
+		.attr("y",border+drop+height-keepin)
+		.attr("width",(bottomoverlap) ? tally : total/2)
+		.attr("height",keepin)
+		.attr("fill",color_fill[color_right]);
+		
+		// negative
+		f
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","anim negativesquare")
+		.attr("x",(thinlinenegative) ? border+total/2 : border+total-tally)
+		.attr("y",Math.min(border+drop-negative,border+drop))
+		.attr("width",(thinlinenegative) ? 0 : both)
+		.attr("height",negative);
+		
+		g
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("x1",border)
+		.attr("y1",figheight-border-keep)
+		.attr("x2",border+total)
+		.attr("y2",figheight-border-keep)
+		.attr("class","keepsline")
+		.style("stroke-dasharray","3,3");
+		
+		g2
+		.transition()
+		.duration(trantime)
+		.ease(tease)
+		.attr("class","anim barchart")
+		.attr("x",total+border+20)
+		.attr("y",figheight-border-barheight)
+		.attr("width",10)
+		.attr("height",barheight);
+		
+	}
+	sp = 4
+	drawit_a = function(){
+		var drawonlyone = (! window[showit]) && firstdraw
+		if (  (! (showit.show)) && ( ! firstdraw )   ) { // showit is passed by reference, so this will get the passed variable name in the global context
+			dummy=1;
+		} else if (dn==1) {
+			setTimeout(function(){ trantime =   0*sp; both = 30; keep = -20;  go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; both = total; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; both = 0; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 300*sp; sep = 10; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 200*sp; sep = 0; go(); }, 2300*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 0; both = 30; go(); }, 2500*sp);
+		} else if (dn=="1a") {
+			setTimeout(function(){ trantime = 0*sp; sep = 0; keep = -20; both = 30; total=80;go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; both = 0;tease="quad"; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 200*sp; sep = 10;tease="elastic"; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 200*sp; sep = 0; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 250*sp; both = total; tease="bounce";go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; both = 30;  go(); }, 2500*sp);
+		} else if (dn=="1b") {
+			setTimeout(function(){ trantime = 0*sp; sep = 0; keep = -20; both = 30; total=80; figheight = 70; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 900*sp; both = 0;tease="sin"; go(); }, 100*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 10;tease="sin"; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 0; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 500*sp; both = total; tease="sin";go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; both = 30;  go(); }, 2500*sp);
+		} else if (dn=="1c") {
+			setTimeout(function(){ trantime = 0*sp; sep = 20; both = 0; keep = -20; total=100; figheight = 70; figwidth = 140; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 900*sp; sep = 0; both=50; total=50; tease="sin"; go(); }, 100*sp);
+			setTimeout(function(){ trantime = 500*sp; sep = 20; both = 0; total=100; go(); }, 2500*sp);
+			
+		} else if (dn==2) {
+			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = 30; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = height; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 500*sp; keep = 0; go(); }, 2500*sp);
+		} else if (dn=="2a") {
+			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = 30; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = height; go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 500*sp; keep = 0; go(); }, 2500*sp);
+		} else if (dn==3) {
+			setTimeout(function(){ trantime =   0*sp; keep = 20; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="back";keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = 80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = height; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = 20; go(); }, 2500*sp);
+		} else if (dn==4) {
+			setTimeout(function(){ trantime =   0*sp; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="quad";keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; keep = 80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = height; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";keep = 0; go(); }, 2500*sp);
+		} else if (dn==5) { // interesting cycle
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true;thinlinenegative=true; keep = 80; go(); }, 0*sp);
+			if (drawonlyone) return;
+			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce"; bottomoverlap=false;thinlinenegative=false;	keep = 80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";	keep = height; go(); }, 2000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="linear";	keep = 0; go(); }, 2500*sp);
+		} else if (dn==6) { // this shows what happens when there are not enough votes between the two to justify keeping 
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0;barheight = 60; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; bottomoverlap=true; keep = height; go(); }, 500*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	barheight= 50; keep=80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false; barheight= 30;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 barheight = 60;go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 100*sp; bottomoverlap=true; keep = height; go(); }, 2700*sp);
+			setTimeout(function(){ trantime = 200*sp; bottomoverlap=true; keep = 0; go(); }, 2800*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="linear";	bottomoverlap=true;	go(); }, 2500*sp);
+		} else if (dn=="6a") { // this shows what happens when there are not enough votes between the two to justify keeping 
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0;barheight = 60; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; bottomoverlap=true; keep = height; go(); }, 500*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="quad";		keep = height; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	 keep=80; go(); }, 1000*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;  go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 100*sp; bottomoverlap=true; keep = height; go(); }, 2700*sp);
+			setTimeout(function(){ trantime = 200*sp; bottomoverlap=true; keep = 0; go(); }, 2800*sp);
+			//setTimeout(function(){ trantime = 500*sp; tease="linear";	bottomoverlap=true;	go(); }, 2500*sp);
+		} else if (dn==7) { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; total=80; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;barheight= 60;	keep=25; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;barheight= 51;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;barheight= 60;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+		} else if (dn=="7ab") { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; total=80;  figheight = 70; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=17; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+		} else if (dn=="7a") { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; bottomoverlap=true; keep = 0; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="bounce";	bottomoverlap=true;	keep=30; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+		} else if (dn=="7b") { // this shows what happens when there are enough votes for the pair.
+			setTimeout(function(){ trantime =   0*sp; total=50;both=total; bottomoverlap=true; keep = 0; barheight=0;  figheight = 70; go(); }, 0*sp);
+			if (drawonlyone) return;
+			setTimeout(function(){ trantime = 500*sp; tease="sin";	bottomoverlap=true;	keep=25; go(); }, 500*sp);
+			setTimeout(function(){ trantime = 500*sp; tease="elastic";	bottomoverlap=false;	 go(); }, 1500*sp);
+			setTimeout(function(){ trantime = 200*sp; tease="linear";	bottomoverlap=true;	 go(); }, 2500*sp);
+			setTimeout(function(){ trantime = 300*sp; bottomoverlap=true; keep = 0; go(); }, 2700*sp);
+			
+		}
+		return;
+	}
+	drawit_a()
+	i_draw = setInterval( drawit_a, 3000*sp);
+}
+dodraw("#overlap","1c",showoverlap)
+dodraw("#clone","7b",showoverlap)
+dodraw("#clone2","7b",showmix)
+dodraw("#animatemixture","1b",showmix)
+dodraw("#jaccard","7ab",showmix)
+
+  </script>
 </html>
