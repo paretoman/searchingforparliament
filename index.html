@@ -68,7 +68,7 @@ a:hover.screenshot {
       Selecting a group of people to represent a nation is an example of what computer science calls a search problem, an assignment problem, and a load balancing problem.  Distributing goods in an economy is a problem of supply and demand.  These problems have something in common.  We would like to sell to the highest bidder.  Representatives should be the candidates who got the most votes.
 	</p>
 	<p>
-	  That is the computer science problem.  Also, there is a moral problem.  There is demand for representatives that is not being met.  Because we have single winner districts, the winner doesn't even need 50% of the vote to win the right to represent all the voters. Some voters are able to get a great deal on their politicians, while other voters could have pooled their votes across districts and elected a more valuable representative.  Valuable resources are being wasted.
+	  Also, there is a moral problem.  There is demand for representation that is not being met.  Because we have single winner districts, the winner doesn't even need 50% of the vote to win the right to represent all the voters. Some voters are able to get a great deal on their politicians, while other voters could have pooled their votes across districts and elected a more valuable representative.
     </p>
 
     <p>
@@ -98,9 +98,9 @@ a:hover.screenshot {
       </a>
     </div>
 
-    <p>Northern England gets rid of district boundaries because there was too much debate about where the boundaries should go.  It wants to pick 5 reps.  And it wants to space them out instead of having them all from the middle.  It wants regional interests to be represented and it doesn't want all the seats to be taken by people from the same neighborhood in the middle of Northern England.</p>
+    <p>Northern England gets rid of district boundaries because there was too much debate about where the boundaries should go.  It wants to pick 5 reps (representatives).  And it wants to space them out instead of having them all from the middle.  It wants regional interests to be represented and it doesn't want all the seats to be taken by people from the same neighborhood in the middle of Northern England.</p>
 
-    <p>Several good reps (lets say "reps" instead of "potential representatives" or "candidates") have decided to run, but it remains to decide which of the reps should win.</p>
+    <p>Several good candidates have decided to run, but it remains to decide which should win.</p>
 
         <aside> A typical rep.<span style="font-size: 10px"></span>
     </aside>
@@ -111,7 +111,7 @@ a:hover.screenshot {
 
     <h3> Search Trees </h3>
       <p>
-        Our problem is related to a very famous problem in computer science called the knapsack problem.  It differs in many ways.  It is similar in how it can be solved.  Both are kinds of binary search.  A search problem tries to find a combination of variables that is in some way the best combination.  One way to approach such a problem is the branch and bound method.  Here is a video on the <a href="https://www.coursera.org/learn/discrete-optimization/lecture/66OlO/knapsack-5-relaxation-branch-and-bound">branch and bound method</a> from a fantastic Coursera course in the field of <a href="https://www.coursera.org/learn/discrete-optimization/">discrete optimization</a>.  From this video, just understand that <b>there is a large number of possible choices to make and that they can all be organized in a tree structure</b>.  (The actual algorithm for searching through the tree will be taken care of by Gurobi, and we don't talk about it below.)  We still haven't said what the score is for each choice (or path) in the tree, so let's do that.  Most of the writing below is about that.  Each choice in the tree represents whether a rep wins.  The first split is for the first rep, the second split is for the second rep, etc.
+        Our problem is related to a very famous problem in computer science called the knapsack problem.  It differs in many ways.  It is similar in how it can be solved.  Both are kinds of binary search.  A search problem tries to find a combination of variables that is in some way the best combination.  One way to approach such a problem is the branch and bound method.  Here is a video on the <a href="https://www.coursera.org/learn/discrete-optimization/lecture/66OlO/knapsack-5-relaxation-branch-and-bound">branch and bound method</a> from a fantastic Coursera course in the field of <a href="https://www.coursera.org/learn/discrete-optimization/">discrete optimization</a>.  From this video, just understand that <b>there is a large number of possible choices to make and that they can all be organized in a tree structure</b>.  (The actual algorithm for searching through the tree will be taken care of by Gurobi, and we don't talk about it below.)  We still haven't said what the score is for each choice (or path) in the tree, so let's do that.  Most of the writing below is about that.  Each choice in the tree represents whether a candidate wins.  The first split is for the first candidate, the second split is for the second candidate, etc.
       </p>
         <p> 
         <div style="text-align: center">
@@ -132,10 +132,10 @@ a:hover.screenshot {
       </p>
 	    
       <p>
-        We need to say when we choose a rep.  Let's list all the reps as rep #1, rep #2, rep #3, etc, and let's make variables for each one.  If we choose rep #1, then $x_1=1$ and if we don't choose rep #2, then $x_2=0$.  Basically, $x_j$ is binary.
+        We need to say when a candidate wins.  Let's list all the candidates as can #1, can #2, can #3, etc, and let's make variables for each one.  If can #1 wins, then $x_1=1$ and if can #2 loses, then $x_2=0$.  Basically, $x_j$ is binary.
         \[
         x_j = \left\{\begin{array}{ll}
-               1 & \text{if we choose rep #j, }\\
+               1 & \text{if we choose can #j, }\\
                0 & \mathrm{otherwise.}
               \end{array}\right.
         \]
@@ -146,14 +146,14 @@ a:hover.screenshot {
       </p>
 	  <h3> Map Data </h3>
       <p>
-        We need to say how close a voter is to a rep.  Let's list all the voters as voter #1, voter #2, etc, and let's make measurements for each voter and rep combination.  If the distance between voter #1 and rep #3 is 100 km, then $d_{13}=100$.
+        We need to say how close a voter is to a candidate.  Let's list all the voters as voter #1, voter #2, etc, and let's make measurements for each voter and candidate combination.  If the distance between voter #1 and can #3 is 100 km, then $d_{13}=100$.
         \[
         d_{ij} = \text{distance between voter i and rep j}
         \]
       </p>
 
       <p>
-        What does a ballot look like? We want to make this problem easy to show on a map so we're going to make a simplification of the problem.  We're going to let the voters give the reps scores.  This is actually nicer for the voters because they get to say what they think of every rep.  Also, we're going to make every voter use the same scoring scale, and they will base their score entirely on how far away the rep is.  Basically, the inverse of distance.
+        What does a ballot look like? We want to make this problem easy to show on a map so we're going to make a simplification of the problem.  We're going to let the voters give scores.  This is actually nicer for the voters because they get to say what they think of every candidate.  Also, voters will base their score entirely on how far away the candidate is.  Basically, the score will be the inverse of distance.
         \[
 		\begin{array}{ll}
         a_{ij} & = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{Inverting distance}\nonumber \\
@@ -162,13 +162,13 @@ a:hover.screenshot {
         \]
       </p>
       <p>
-        (The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to let voters who don't have a very close rep vote with their full vote for their closest rep.  This normalization is here because voters would give the rep closest to them the highest score possible even if they aren't actually all that close.)
+        The 10 is here for scaling distance.  The extra 1 is here to avoid dividing by 0.  Really, there are many choices for this function. One more modification we make is to allow voters who don't have a candidate nearby to vote with their full vote for their closest candidate.  This is normalization.
       </p>
         <div style="text-align: center">
 		<p><img src="./tally.png" style="text-align: center" /></p>
 		</div>
       <p>
-        We need a way to count the ballots.  The easiest way is to add them together to get the reps' tallies.
+        We need a way to count the ballots.  The easiest way is to add them together to get the tallies for each candidate.
         \[
         tally_j = \sum_{i \in Voters} b_{ij} 
         \]
@@ -176,32 +176,32 @@ a:hover.screenshot {
 	  <h3> Motivation </h3>
 	  <div class="spacer" id="triggerjefftop"></div>
       <p>
-        If we stop here then we just end up picking the reps in the middle because they have the highest tallies.
+        If we stop here then we just end up picking the candidates in the middle because they have the highest tallies.
       </p>
       <p>
-        We want to avoid overrepresenting the middle voters because they would be getting representatives for cheap.  Think of the value of a representative as the number of voters divided by the number of representatives they get.  We want to keep the value of our parliament as high as possible.  We don't let a someone get in if there is someone else that has a higher value.
+        We want to avoid overrepresenting the middle voters because they would be getting representation for cheap.  <b>Think of the value of a representative as the number of voters they represent</b>, and they can't share voters.  We want to keep the value of our parliament as high as possible.
 		
 		</p>
       <p>
 		
-		Our solution is to let the winning reps keep a fraction of their voters' ballots.  Basically, these voters have the reps, so the reps get to keep the voters.  Each winning rep keeps the same amount of support. The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  STV calls it a quota.  When a rep is declared a winner, he keeps a quota of votes and the extra go to other reps similar to him if the voters have both on their ballot.
+		Our solution is to let the reps keep a fraction of their voters' ballots.  Voters have reps, so the reps get to keep the voters.  Each rep must keep the same amount of support. The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  When a candidate is declared a winner, he keeps a "quota" of votes and the rest of the votes go to the voters' second choices.
         \[
         \text{STV quota} = \frac{\text{voters}}{\text{seats} + 1}
         \]
-        The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).  How STV works is the reps with the most votes win and keep that quota amount of voters.  The rest of the voters get to have a second choice as well when there are enough voters to make another rep worthwhile (the value of the rep is high enough to get into parliament).  So this quota is basically the price of a seat in parliament, and only those reps with enough value can pay this price.
+        The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).  This quota is basically the price of a seat in parliament, and only those candidates with enough cash (votes) can pay this price.
       </p>
 	  <h3> Jefferson's method, Phragmen's method, and Load Balancing</h3>
       <p>
         Something similar also happens when deciding how many seats each state gets in the US House of Representatives.  Think of it like an auction.  The price starts off low and there are too many bidders and not enough seats.  In an auction the price goes up until there are exactly the number of bidders left to buy all the items.  It's basically the same with seats except the seats are "paid" for by population numbers.
 
-		We can flip that around so that the auction house gets a higher price.  We can start at a high price and then lower it until we have enough buyers.  Likewise, for the House, we can start at a high number of voters required for a seat and then lower the requirement until all the seats are filled.  It's easy to grasp because we are filling the seats one by one.  Note that a state can have more than one seat, and a state will have twice as many seats if the population requirement is cut in half:
+		We can flip that around so that the auction house gets a higher price.  We can start at a high price and then lower it until we have enough buyers.  Likewise, for the House, we can start at a high number of voters required for a seat.  As we lower the requirement, we assign seats to the states that can pay until all the seats are filled.  It's easy to grasp because we are filling the seats one by one.  Note that this method assings the seats proportionally, so a state with twice the population will have twice as many seats:
 		</p>
 		<p style="text-align:center">
 		<span id="bid"></span>
 		</p>
 		
 		<p>		
-		Also, instead of price or voters-per-seat, think of the amount of representation a voter gets.  Representation starts low and is increased one representative at a time until we fill all 435 seats.
+		Also, instead of price or voters-per-seat, <b>think of the amount of representation a voter gets</b>.  Representation starts low and is increased one representative at a time until we fill all 435 seats.
 		</p>
 		<p style="text-align:center">
 		<span id="jeff"></span>
@@ -215,14 +215,14 @@ a:hover.screenshot {
 		This method can be represented as an election.  Instead of candidates, there are seats, each state gets as many ballots as there are people in the state, and the ballots of each state would approve of all the seats $b_{ij} = 1$.  When a seat is bought, some of the ballots have to pay for that seat.  So we introduce another variable for each entry on every ballot, $y_{ij}$.  This indicates which voters the candidate represents.  In other words, it is which voters paid for that seat.  
 		\[
 		\begin{array}{rll}
-		& y_{ij} & \text{Voter i is represented by representative j by this amount.} \\
-		0 \leq & y_{ij} \leq 1 \\
-		& y_{ij} \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
+		& y_{ij} & & \text{Voter i is represented by representative j by this amount.} \\
+		0 \leq & y_{ij} & \leq 1 \\
+		& y_{ij} & \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
 		\end{array}
 		\]
 		</p>
       <p>
-		You could also say that the price of each seat 
+		You could say that the price of each seat 
 		\[
 		\sum_{i \in Voters}y_{ij}=1 \ \forall j \in Reps
 		\]
@@ -242,14 +242,14 @@ a:hover.screenshot {
 		<span id="splitrectangle"></span>
 		</p>
 		<p>
-		When we add up the area inside each candidate's rectangles, we get the same number, 1.  That's what the constraint above means.  It says each representative has the same amount of representation.  So a thinner rectangle will need to be taller.  Let's apply this to the apportionment example above.
+		When we add up the area inside each candidate's rectangles, we get the same number, 1.  That's what the constraint above means.  It says each representative has the same amount of representation to give to his voters.  So a thinner rectangle (less voters) will need to be taller.  Let's apply this to the apportionment example above.
 		
 		</p>
 		<p style="text-align:center">
 		<span id="liquidjeff"></span>
 		</p>
 		<p>
-		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The total amount of representation of green voters is the total height of the green rectangles.  Because we have to have whole numbers of representatives, we can't represent each kind of voter equally.  The best we can get is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.
+		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The total amount of representation of green voters is the total height of the green rectangles.  Because we have to have whole numbers of representatives, we can't represent each kind of voter equally.  The best we can get is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.
 		</p>
       <p>
 		My point is that Jefferson's method is a specific example of a general problem of load balancing.
@@ -274,6 +274,12 @@ a:hover.screenshot {
 		</p>
 		<p>
 		What is happening in this flow?  There are 2 voters, left and right.  They both like the green and blue candidates.  At the start, both green and blue reps represent both voters an equal amount.  Representation is the vertical part of the rectangle, the y term.  The b term is how much a voter liked each candidate.  It is the horizontal part of each rectangle.  A supporting liquid flows between the rectangles.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's area is constant.  As it flows from thinner containers into wider containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
+		</p>
+		<p>
+		Another way to draw this is to spin the containers so that the thicker containers look more opaque. Let's look at 3 candidates:
+		</p>
+		<p style="text-align:center">
+		<span id="liquid3"></span>		
 		</p>
 		<p>
 		Here is another animation.  It shows a single candidate's support being spread over many voters by the action of minimization:
@@ -1914,6 +1920,7 @@ startdraw(drawjeff,"#jeff",1,showjeff)
 startdraw(drawjeff,"#bid",2,showjeff)
 startdraw(drawliquid,"#liquid",1,showliquid)
 startdraw(drawliquid,"#liquid2",2,showliquid)
+startdraw(drawliquid,"#liquid3",3,showliquid)
 startdraw(drawjeff,"#liquidjeff",1,{"show":0})
 startdraw(drawliquid,"#liquidjeff",4,{"show":0})
 startdraw(drawjeff,"#rep",1,{"show":0})
