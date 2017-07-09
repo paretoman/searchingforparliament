@@ -319,9 +319,9 @@ a:hover.screenshot {
 						  & {\displaystyle \sum_j x_j = N} & \text{Only N candidates win.} \\
 						  \\
         \\
-        \text{Constants } & b_{ij} = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Voters score the closest rep a 1.} \\ \\
-						  & a_{ij} = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{The further away a rep from a voter, the lower the score.}\\ \\
-                          & d_{ij}  & \text{Distance between voter i and rep j on the map}
+        \text{Constants } & b_{ij} = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Voters score the closest candidate a 1.} \\ \\
+						  & a_{ij} = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{The further away, the lower the score.}\\ \\
+                          & d_{ij}  & \text{Distance between voter i and candidate j on the map.}
         \end{array}
         \]
 
@@ -369,20 +369,9 @@ voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
 reps = [[f1*3+1.5,f2*3+1.7] for f1 in range(3) for f2 in range(3)]
 numReps = len(reps)
 numVoters = len(voters)
+nWinners = 5
 
-# Add variables
-m = Model()
-x = {}
-for j in range(numReps):
-    x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
-y = {}
-for i in range(numVoters):
-	for j in range(numReps):
-		y[(i,j)] = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
-Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
-
-# Add constants
-numWinners = 5
+# Calculate constants
 d = numpy.zeros((numVoters,numReps))
 a = numpy.zeros((numVoters,numReps))
 b = numpy.zeros((numVoters,numReps))
@@ -401,6 +390,16 @@ a = 1 /( d/10 + 1 )
 for i in range(numVoters):
 	b[i,:] = a[i,:] / max(a[i,:])
 
+# Add variables
+m = Model()
+x = {}
+for j in range(numReps):
+    x[j] = m.addVar(vtype=GRB.BINARY, name="x%d" % j)
+y = {}
+for i in range(numVoters):
+	for j in range(numReps):
+		y[(i,j)] = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
 m.update()
 
 # Add constraints
@@ -415,7 +414,7 @@ m.setObjective(Z,GRB.MINIMIZE)
 m.optimize()
 
 # Output
-print(["%d" % x[j1].X for j1 in range(9)])
+print(["%d" % x[j1].X for j1 in range(numReps)])
 
 </examplecode>
     </div>
