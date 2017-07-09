@@ -242,7 +242,7 @@ a:hover.screenshot {
 		<span id="splitrectangle"></span>
 		</p>
 		<p>
-		When we add up the area inside each candidate's rectangles, we get 1.  That's what the constraint above means.  It says each representative has the same amount of representation.  So a thinner rectangle will need to be taller.  Let's apply this to the apportionment example above.
+		When we add up the area inside each candidate's rectangles, we get the same number, 1.  That's what the constraint above means.  It says each representative has the same amount of representation.  So a thinner rectangle will need to be taller.  Let's apply this to the apportionment example above.
 		
 		</p>
 		<p style="text-align:center">
@@ -1066,7 +1066,6 @@ function compute() {
   for(var i = 0; i < ops.length; i++){
 	charge.push( 0 + ops[i].checked);
   }
-  
   d3.json('facility.py')
     .header('Content-Type', 'application/json')
     .post(JSON.stringify({'clients': vertices,

@@ -15,6 +15,11 @@ import community
 from collections import defaultdict
 import networkx
 import random
+import seaborn
+import pandas
+from scipy.cluster import hierarchy
+from sklearn.manifold import SpectralEmbedding,LocallyLinearEmbedding
+from sklearn import manifold
 
 # example of problem data
 # voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
@@ -73,7 +78,8 @@ def optimize(voters, reps, options, output=False):
             normalizer = 1 / max(b[i,:])
             for j in range(numReps):
                 b[i,j] *= normalizer
-            
+    
+    
     #
     # We're all set up to do the computations.
     # This next section will get s and t, which are for computing just the BQP problem.  s and t are also needed for a nice election result output table.
@@ -582,6 +588,9 @@ def optimize(voters, reps, options, output=False):
                 xo[j] = 1
                 
     
+    
+    ### dealing with output
+    
     solution1 = []
     solution2 = []
     
@@ -598,12 +607,59 @@ def optimize(voters, reps, options, output=False):
         maxj = 0
         maxb = 0
         for j in solution1:
-            if b[i,j] > maxb:
+            if options['phragmen']:
+                b_close = y[(i,j)].X
+            else:
+                b_close = b[i,j]
+            if b_close > maxb:
                 maxj = j
-                maxb = b[i,j]
-        solution2.append((i,maxj))
+                maxb = b_close
+        if 0:
+            if options['phragmen']:
+                if maxb > numReps/numVoters:
+                    solution2.append((i,maxj))
+                else:
+                    solution2.append((i,-1))
+            else:
+                solution2.append((i,maxj))
+        else:
+            solution2.append((i,maxj))
         votercolor[i] = solutionfid[maxj]
         
+    
+    # do a similarity cluster map
+    bp = pandas.DataFrame(b)
+    if 0:  # this is basically the easy way to do what is below, but we want the orderings
+        scm = seaborn.clustermap(bp)
+        scm.savefig("scm.png")
+    row_linkage = hierarchy.linkage(bp)
+    col_linkage = hierarchy.linkage(bp.transpose())
+    row_order = hierarchy.leaves_list(row_linkage)
+    col_order = hierarchy.leaves_list(col_linkage)
+    scm2 = seaborn.clustermap(bp, row_linkage=row_linkage, col_linkage=col_linkage)
+    scm2.savefig("scm2.png")
+    
+    def getspecorder(voters):
+        spec=SpectralEmbedding(n_components=1,affinity='rbf',gamma=30)
+        ordd = spec.fit_transform(numpy.array(voters))
+        specorder = numpy.argsort(ordd[:,0])
+        return specorder
+    def getspecorder2(aff):
+        spec=SpectralEmbedding(n_components=1,affinity='precomputed')
+        ordd = spec.fit_transform(aff)
+        specorder = numpy.argsort(ordd[:,0])
+        return specorder
+    def getspecorder3(voters):
+        spec=manifold.LocallyLinearEmbedding(int(min(numVoters2*.8,20*numVoters/numVoters2)),1)
+        ordd = spec.fit_transform(numpy.array(voters))
+        specorder = numpy.argsort(ordd[:,0])
+        return specorder
+    def getspecorder4(voters):
+        spec=manifold.MDS(1)
+        #spec=manifold.Isomap(int(numVoters2*.5),1)
+        ordd = spec.fit_transform(numpy.array(voters))
+        specorder = numpy.argsort(ordd[:,0])
+        return specorder
         
     wholetable = -.5*keep*s
     for j in range(numReps):
@@ -725,7 +781,30 @@ def optimize(voters, reps, options, output=False):
                 louvain_comms = louvain_comms.values()
                 nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
                 return nodes_louvain_ordered
-            nvorder = getcommunityorder(vs)
+            def gethierarchyorder(a):
+                bp = pandas.DataFrame(a)
+                if 0:  # this is basically the easy way to do what is below, but we want the orderings
+                    scm = seaborn.clustermap(bp)
+                    scm.savefig("scm.png")
+                row_linkage = hierarchy.linkage(bp)
+                col_linkage = hierarchy.linkage(bp.transpose())
+                row_order = hierarchy.leaves_list(row_linkage)
+                col_order = hierarchy.leaves_list(col_linkage)
+                scm2 = seaborn.clustermap(bp, row_linkage=row_linkage, col_linkage=col_linkage)
+                scm2.savefig("scm3.png")
+                return row_order
+            if 0:
+                nvorder = getcommunityorder(vs)
+            elif 0:
+                nvorder = gethierarchyorder(vs)
+            elif 0:
+                nvorder = getspecorder(numpy.array(voters)[rv])
+            elif 0:
+                nvorder = getspecorder2(vs)
+            elif 0:
+                nvorder = getspecorder3(numpy.array(voters)[rv])
+            else:
+                nvorder = getspecorder4(numpy.array(voters)[rv])
             votercommunities = vs[nvorder][:,nvorder]
             vorder = rv[nvorder].tolist()
             votercomcolor = votercolor[vorder]
