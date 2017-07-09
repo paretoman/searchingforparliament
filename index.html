@@ -570,18 +570,31 @@ print(["%d" % x[j1].X for j1 in range(9)])
       </p>
 	  </div>
 	  
-	  <div id="divtableshow" style="width: 50%; float: right; ">
-	  <p>
-	  Election Results:
-	  </p>
-	  <canvas id="tableshow" width="350" height="300"></canvas>
-	  </div>
-	  
-	  <div id="divvotertableshow" style="width: 49%; float: right;">
+	  <div id="divvotertableshow" style="width: 49%; float: left;">
 	  <p>
 	  Voter Communities:
 	  </p>
 	  <canvas id="votertableshow" width="350" height="350"></canvas>
+	  </div>
+
+	  <div id="divbtable" style="width: 24%; float: left;">
+	  <p>
+	  Ballots:
+	  </p>
+	  <canvas id="btable" width="155" height="350"></canvas>
+	  </div>
+	  <div id="divytable" style="width: 24%; float: left;">
+	  <p>
+	  Representation:
+	  </p>
+	  <canvas id="ytable" width="155" height="350"></canvas>
+	  </div>
+	  
+	  <div id="divtableshow" style="width: 50%; float: left; ">
+	  <p>
+	  Election Results:
+	  </p>
+	  <canvas id="tableshow" width="350" height="300"></canvas>
 	  </div>
 	  
 	  </div>
@@ -812,6 +825,8 @@ var stateVoterCom = "initial";
 var voterCom;
 var vorder;
 var stateInitialMap = 1;
+var orb;
+var ord_can;
 
 function draw_map() {
 
@@ -1049,12 +1064,18 @@ function compute() {
   // option "calculate voter community"
   if (calcVoterCom+0 == 1) {
 	if (stateVoterCom == "old still good"){
-		charge.push(0);
+		charge.push(0);  // don't recalculate
+		charge.push(vorder);  // use old vorder
+		charge.push(1) // use nearest neighbors to find rorder from vorder
 	} else { // e.g. "new map" or "option not selected"
-		charge.push(1); 
+		charge.push(1); // recalculate vorder
+		charge.push([0,0]);
+		charge.push(1);
 		stateVoterCom = "getting new";
 	}
   } else {
+	charge.push(0); // don't recalculate
+	charge.push([0,0]); // don't use any vorder
 	charge.push(0);
 	if (stateVoterCom == "new map"){
 		stateVoterCom = "option not selected"
@@ -1189,6 +1210,14 @@ function serverResponse(error, data) {
 		  var c3=document.getElementById("votertableshow");
 		  var ctx3=c3.getContext("2d");
 		  ctx3.clearRect(0, 0, c3.width, c3.height);
+		  
+		  var c4=document.getElementById("btable");
+		  var ctx4=c4.getContext("2d");
+		  ctx4.clearRect(0, 0, c4.width, c4.height);
+		  
+		  var c5=document.getElementById("ytable");
+		  var ctx5=c5.getContext("2d");
+		  ctx5.clearRect(0, 0, c5.width, c5.height);
 				
 		  if (solution.length > 3) {
 		  
@@ -1333,6 +1362,9 @@ function serverResponse(error, data) {
 						votercolor = solution[13];  // new colors
 						votercomcolor = vorder.map(function (i) { return votercolor[i] }); // vorder from last time
 						var v_id = votercomcolor;
+						
+						orb = solution[15]; // b, in order for display
+						ord_can = solution[16]; // color_fill[ord_can] gives the color of the candidate
 					} else { // if (stateVoterCom == "getting new"){ //never going to be "need new" since we pressed calculate
 					    // if (solution[10]) { // double check
 						stateVoterCom = "old still good";
@@ -1341,7 +1373,15 @@ function serverResponse(error, data) {
 						votercomcolor = solution[12];
 						var v_id = votercomcolor;
 						vorder = solution[14];
+						
+						orb = solution[15]; // b, in order for display
+						ord_can = solution[16]; // color_fill[ord_can] gives the color of the candidate
+						//c_id = ord_can.map(function (i) { return votercolor[i] });  // delete this
 					} 
+					showy = solution[17];
+					oryo = solution[18];
+					solutionfid = solution[19];
+					xo = solution[20];
 					var ld3 = voterCom.length;
 					var imgData3=ctx3.createImageData(ld3+10,ld3+10);
 					
@@ -1386,6 +1426,58 @@ function serverResponse(error, data) {
 					b_width = Math.min(c3.width,c3.height) - 10;
 					b_scale = Math.max(1,Math.floor(b_width/ld3));
 					ctx3.putImageData(scaleImageData(imgData3,b_scale),0,0);
+					
+					
+					// heat map
+					
+					// orb =  b, in order for display
+					// ord_can = color_fill[ord_can] gives the color of the candidate
+					
+					
+					drawby = function(ctx4,orb) {
+					
+						
+						
+						var ynum = orb.length;
+						var xnum = orb[0].length;
+						var x_scale = Math.floor((Math.min(xnum*10+10,150/2)-10)/xnum)
+						console.log(x_scale)
+						var imgData4=ctx4.createImageData(xnum*x_scale+10,ynum+10);
+						for ( var i = 10; i<ynum+10;i++) {
+							g_color = hexToRgb(color_fill[v_id[i-10] % color_fill.length])//ord_can[i-10] % color_fill.length
+							for (var j=0;j<10;j+=1) {
+								ind = (i*(xnum*x_scale+10)+j)*4
+								imgData4.data[ind+0]=g_color.r;
+								imgData4.data[ind+1]=g_color.g;
+								imgData4.data[ind+2]=g_color.b;
+								imgData4.data[ind+3]=255;
+							}
+							for (var j=0; j<xnum;j++) {
+								for(var k=0;k<x_scale;k++) {
+									ind = (i*(xnum*x_scale+10)+j*x_scale+10+k)*4
+									val = orb[i-10][j];
+									imgData4.data[ind+0]=255*val;
+									imgData4.data[ind+1]=255*val;
+									imgData4.data[ind+2]=255*val;
+									imgData4.data[ind+3]=255;
+								}
+							}
+						}
+						
+						ctx4.putImageData(scaleImageData(imgData4,2),0,0);
+						for (var i=0;i<xnum;i+=1) {
+							w_won = xo[ord_can[i]] == 1 ;
+							if (w_won) {
+								i_color = color_fill[solutionfid[ord_can[i]] % color_fill.length]
+								x = a_border+10 + i*x_scale*2
+								y = 0
+								ctx4.fillStyle = i_color;
+								ctx4.fillRect( x+1, y+1, x_scale*2-2,20-2 );
+							}
+						}
+					}
+					drawby(ctx4,orb)
+					if (showy) drawby(ctx5,oryo)
 				}
 			}
         }

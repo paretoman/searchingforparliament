@@ -20,6 +20,10 @@ import pandas
 from scipy.cluster import hierarchy
 from sklearn.manifold import SpectralEmbedding,LocallyLinearEmbedding
 from sklearn import manifold
+import csv
+from subprocess import Popen, PIPE, STDOUT
+from sklearn.neighbors import NearestNeighbors
+
 
 # example of problem data
 # voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
@@ -603,12 +607,14 @@ def optimize(voters, reps, options, output=False):
             i+=1
     
     votercolor = numpy.zeros(numVoters)
+    yo = numpy.zeros([numVoters,numReps])
     for i in range(numVoters):
         maxj = 0
         maxb = 0
         for j in solution1:
             if options['phragmen']:
                 b_close = y[(i,j)].X
+                yo[i,j] = b_close
             else:
                 b_close = b[i,j]
             if b_close > maxb:
@@ -660,6 +666,35 @@ def optimize(voters, reps, options, output=False):
         ordd = spec.fit_transform(numpy.array(voters))
         specorder = numpy.argsort(ordd[:,0])
         return specorder
+        
+    def getseriated(voters):
+        csvdata = voters.tolist()
+        a_command = 'K:\\install\\R\\R-3.1.0\\bin\\Rscript.exe'
+        path2script = 'seriate.R'
+
+        
+        stringarg = StringIO.StringIO()
+        writer = csv.writer(stringarg)
+        writer.writerows(csvdata)
+        onearg = stringarg.getvalue()
+
+        p = Popen([a_command ,path2script], stdout=PIPE, stdin=PIPE, stderr=STDOUT)    
+        grep_stdout = p.communicate(input=onearg)[0]
+        print(grep_stdout.decode())
+
+        f = StringIO.StringIO(grep_stdout)
+        reader = csv.reader(f, delimiter=',')
+        s_strings =  [row for row in reader]
+        for i_start in range(len(s_strings)):
+            if s_strings[i_start][0] == "this is the start of the data":
+                break
+                
+        print(i_start)
+        print(s_strings)
+        #g_data = [[float(x) for x in row] for row in s_strings]
+        g_ord = [int(row[0]) for row in s_strings[i_start+1:]]
+
+        return g_ord
         
     wholetable = -.5*keep*s
     for j in range(numReps):
@@ -733,12 +768,14 @@ def optimize(voters, reps, options, output=False):
                 tableslog += " "
         tableslog += '\n'
     
-        
+    
     # see what a similarity measure would look like for voters - if there are communities
+    do_setup = 0
     if options["Calculate Voter Communities"]:
-        if options["stateInitialMap"]:
+        if options["stateInitialMap"] and not do_setup:
             # don't need to do new calculations
             vorder = numpy.genfromtxt('vorder.txt', delimiter=',',dtype='int').tolist()
+            rv = numpy.genfromtxt('rv.txt', delimiter=',',dtype='int').tolist()
             votercomcolor = votercolor[vorder]
             votercommunities = numpy.genfromtxt('voterCom.txt', delimiter=',')
             votercommunities = votercommunities.reshape((len(vorder),len(vorder)))
@@ -803,36 +840,78 @@ def optimize(voters, reps, options, output=False):
                 nvorder = getspecorder2(vs)
             elif 0:
                 nvorder = getspecorder3(numpy.array(voters)[rv])
-            else:
+            elif 0:
                 nvorder = getspecorder4(numpy.array(voters)[rv])
+            else:
+                nvorder = getseriated(numpy.array(voters)[rv])
             votercommunities = vs[nvorder][:,nvorder]
             vorder = rv[nvorder].tolist()
             votercomcolor = votercolor[vorder]
-            
+        
     else:
         votercommunities = numpy.zeros(2)
         votercomcolor = numpy.zeros(2)
-        vorder = [0,0]
+        vorder = options['vorder']
+        
+    if options['findnearestneighborrorder']:
+        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(numpy.array(voters)[vorder])
+        a_distances, a_indices = nbrs.kneighbors(reps)
+        a_indices = [x[0] for x in a_indices]
+        print(a_indices)
+        ord_can = numpy.argsort(a_indices).tolist()
+        print(ord_can)
+        orb = b[vorder][:,ord_can] # b[vorder] same as b[rv][nvorder]
+    else:
+        orb = numpy.zeros(2)
+        ord_can = [0,0]
+    
+    showy=0
+    oryo = yo
+    if options['phragmen']:
+        showy = 1
+        oryo = yo[vorder][:,ord_can] / numpy.max(yo)
     
     # just once for set up.
-    if 0:
+    if do_setup:
         f = open('voterCom1.txt','w')
         votercommunities.tofile(f,",","%1.2f")
         #f.write( [["%1.3f" % a for a in b ] for b in votercommunities.tolist()] )
         f.close()
         f = open('vorder1.txt','w')
-        f.write("[")
         for a in vorder:
             f.write( "%i," % a )
-        f.write("]")
         f.close()
+        f = open('rv1.txt','w')
+        for a in rv:
+            f.write( "%i," % a )
+        f.close()
+        # if doing setup, remember to delete the extra commas and then change the filename to erase the 1.
         
-    return [solution1, solution2, g_log + tableslog + options_str,ords.tolist(),orderedxo.tolist(),ordt.tolist(),nordsudoku.tolist(),nodes_louvain_ordered,orderedsolutionfid.tolist(),keep,options["Calculate Voter Communities"],votercommunities.tolist(),votercomcolor.tolist(),votercolor.tolist(),vorder]
+    return [solution1, 
+    solution2, 
+    g_log + tableslog + options_str,
+    ords.tolist(),
+    orderedxo.tolist(),
+    ordt.tolist(),
+    nordsudoku.tolist(),
+    nodes_louvain_ordered,
+    orderedsolutionfid.tolist(),
+    keep,
+    options["Calculate Voter Communities"],
+    votercommunities.tolist(),
+    votercomcolor.tolist(),
+    votercolor.tolist(),
+    vorder,
+    orb.tolist(),
+    ord_can,showy,
+    oryo.tolist(),
+    solutionfid.tolist(),
+    xo.tolist()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","stateInitialMap","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","phragmen","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","phragmen","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }

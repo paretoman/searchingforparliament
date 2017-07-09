@@ -26,7 +26,9 @@
     python setup.py install
     ```
 
-5. Start Python's webserver from the command line
+5. Install R.  Also, there are a few standard python packages to install as well, like sci-kit learn.
+
+6. Start Python's webserver from the command line
 
 ```
 make
@@ -44,5 +46,5 @@ or on windows
 c:\Users\You\Miniconda2\python.exe SimpleServer.py
 ```
 
-6. Point your browser at http://localhost:8000
+7. Point your browser at http://localhost:8000
 

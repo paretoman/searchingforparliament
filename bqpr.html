@@ -722,6 +722,7 @@ print(["%d" % x[j1].X for j1 in range(9)])
       </p>
 	  
 	  
+	  
 	  		<aside style="width:150px">
 		<div id="options" style="display:none">
 		<form>
@@ -758,7 +759,8 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</fieldset>
 		<fieldset>
 		<legend>Computation:</legend>
-		<input class="op" checked="true" type="radio" name="compute"> Our Binary Quadratic Problem as described above. <br />
+		<input class="op" type="radio" name="compute"> Phragmen<br />
+		<input class="op" type="radio" name="compute" checked="true"> Binary Quadratic Problem <br />
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
 		<input class="op" type="radio" name="compute"> RRV  <br />
@@ -788,7 +790,6 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</select> <br />
 		<input class="op" type="radio" name="compute"> Plurality Multiwinner <br />
 		<input class="op" id="schulzestv" type="radio" name="compute"> Schulze STV (bug)<br />
-		<input class="op" type="radio" name="compute"> Phragmen<br />
 		<input class="op" id="cluster" type="radio" name="compute"> Load Balancing<br />
 		<select id="loadType" onclick="selectCluster()">
 			<option value="min total distance">min total dist</option>
@@ -807,7 +808,6 @@ print(["%d" % x[j1].X for j1 in range(9)])
 		</form>
 		</div>
 	    </aside>
-	  
       <div id="demoarea">
       </div>
 	  
@@ -1337,12 +1337,18 @@ function compute() {
   // option "calculate voter community"
   if (calcVoterCom+0 == 1) {
 	if (stateVoterCom == "old still good"){
-		charge.push(0);
+		charge.push(0);  // don't recalculate
+		charge.push(vorder);  // use old vorder
+		charge.push(1) // use nearest neighbors to find rorder from vorder
 	} else { // e.g. "new map" or "option not selected"
-		charge.push(1); 
+		charge.push(1); // recalculate vorder
+		charge.push([0,0]);
+		charge.push(1);
 		stateVoterCom = "getting new";
 	}
   } else {
+	charge.push(0); // don't recalculate
+	charge.push([0,0]); // don't use any vorder
 	charge.push(0);
 	if (stateVoterCom == "new map"){
 		stateVoterCom = "option not selected"
