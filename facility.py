@@ -632,18 +632,18 @@ def optimize(voters, reps, options, output=False):
             solution2.append((i,maxj))
         votercolor[i] = solutionfid[maxj]
         
-    
-    # do a similarity cluster map
-    bp = pandas.DataFrame(b)
-    if 0:  # this is basically the easy way to do what is below, but we want the orderings
-        scm = seaborn.clustermap(bp)
-        scm.savefig("scm.png")
-    row_linkage = hierarchy.linkage(bp)
-    col_linkage = hierarchy.linkage(bp.transpose())
-    row_order = hierarchy.leaves_list(row_linkage)
-    col_order = hierarchy.leaves_list(col_linkage)
-    scm2 = seaborn.clustermap(bp, row_linkage=row_linkage, col_linkage=col_linkage)
-    scm2.savefig("scm2.png")
+    if 0:
+        # do a similarity cluster map
+        bp = pandas.DataFrame(b)
+        if 0:  # this is basically the easy way to do what is below, but we want the orderings
+            scm = seaborn.clustermap(bp)
+            scm.savefig("scm.png")
+        row_linkage = hierarchy.linkage(bp)
+        col_linkage = hierarchy.linkage(bp.transpose())
+        row_order = hierarchy.leaves_list(row_linkage)
+        col_order = hierarchy.leaves_list(col_linkage)
+        scm2 = seaborn.clustermap(bp, row_linkage=row_linkage, col_linkage=col_linkage)
+        scm2.savefig("scm2.png")
     
     def getspecorder(voters):
         spec=SpectralEmbedding(n_components=1,affinity='rbf',gamma=30)
