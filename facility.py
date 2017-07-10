@@ -681,7 +681,7 @@ def optimize(voters, reps, options, output=False):
 
         p = Popen([a_command ,path2script], stdout=PIPE, stdin=PIPE, stderr=STDOUT)    
         grep_stdout = p.communicate(input=onearg)[0]
-        print(grep_stdout.decode())
+        #print(grep_stdout.decode())
 
         f = StringIO.StringIO(grep_stdout)
         reader = csv.reader(f, delimiter=',')
