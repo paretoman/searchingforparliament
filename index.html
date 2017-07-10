@@ -293,6 +293,9 @@ a:hover.screenshot {
 		<span id="liquid14"></span>
 		</p>
 		<p>
+		(This looks like Phragmen Tetris.)
+		</p>
+		<p>
 		Mathematically, we allow the blocks to smush together by removing some constraints on this vote value.
 		\[
 		y_{ij} \stackrel{?}{=} 1/v_j
@@ -303,33 +306,23 @@ a:hover.screenshot {
 		Since we are relaxing some constraints on y, we want to make sure it still is constrained in some ways that make sense.  Let's restate everything about our new liquid block model:
 		\[
 		\begin{array}{rll}
-		& y_{ij} & & \text{Vote value. Voter i bought this fraction of a seat for rep j.} \\
-		0 \leq & y_{ij} & \leq 1 \\
-		& y_{ij} & \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
-		\end{array}
-		\]
-		
-		
-		\[
-		\begin{array}{ll}
-		{\displaystyle \sum_{i \in Voters}y_{ij}*b_{ij}=1 \ \forall j \in Reps} & \text{The price of each seat is the same.} \\
+		0 \leq  y_{ij} \leq 1 & \text{Vote value. Voter i bought this fraction of a seat for rep j.} \\
+		 \\
+		 y_{ij} \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.} \\ \\
+		{\displaystyle \sum_{i \in Voters}y_{ij}*b_{ij}=1} \  & \text{The price of each seat is the same.} \ \ \ \forall j \in \text{Reps who win.} \\
 		\\
 		{\displaystyle \text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} & \text{The representation of each voter is fair.}
 		\end{array}
 		\]
 		</p>
       <p>
-		Basically, what this tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation. 
-		</p>
-		
-		The action of minimization is animated here as a smushing force:
+		Basically, what this tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation. The action of minimization is animated here as a smushing force:
 		</p>
 		<p style="text-align:center">
 		<span id="liquid2"></span>
 		</p>
 		<p>
 		In addition to adjusting the distribution of the "representation liquid", we can also change which candidates are selected.  Broader candidates will have an easier time smushing into other candidates.
-		 
 		</p>
 		<p style="text-align:center">
 		<span id="liquid8" ></span> &nbsp;  &nbsp;  &nbsp;  $ \rightarrow  $  &nbsp;  &nbsp;  &nbsp; <span id="liquid11"></span>  &nbsp;  &nbsp;  &nbsp; $ \approx $  &nbsp;  &nbsp;  &nbsp; <span id="liquid7"></span>
@@ -345,10 +338,7 @@ a:hover.screenshot {
 		</p>
       <p>
 		The big point is this: by enforcing Jefferson's method's principle of "no special deals", the representation is spread out in proportion to population.  In the same way, by enforcing the same "no special deals" principle to our pool approach, we can reach a proportional outcome.
-		
       </p>
-		
-		
 		<h3> Scores </h3>
       <p>
 		Now consider scores.  Voters will want to rate some candidates in between others.  One might be a 10 out of 10 while another is a 6 / 10 and another a 0. 
@@ -397,14 +387,14 @@ a:hover.screenshot {
         \begin{array}{lll}
         \text{Minimize}   & {\displaystyle \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} &  \text{The representation of each voter is fair.} \\
 		\\
-        \text{Subject to} & {\displaystyle \sum_{i \in Voters} y_{ij} * b_{ij} =x_j \ \ \ \forall \  j \in Reps} & \text{The price of each winning seat is the same.} \\ \\
+        \text{Subject to} & {\displaystyle \sum_{i \in Voters} y_{ij} * b_{ij} =x_j } & \text{The price of each winning seat is the same.} \ \ \ \forall \  j \in Reps \\ \\
                           & 0 \leq y_{ij} \leq 1  & \text{Vote value. Voter i bought this fraction of a seat for rep j.} \\ \\
 						  & y_{ij} \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.} \\ \\
 						  & x_j \in \{ 0, 1 \} & \text{Candidates either win or lose.} \\ \\
 						  & {\displaystyle \sum_j x_j = N} & \text{Only N candidates win.} \\
 						  \\
         \\
-        \text{Constants } & b_{ij} = {\displaystyle a_{ij} * \frac{1}{\max_{m \in Voters}{a_{mj}}}} &\text{Voters score the closest candidate a 1.} \\ \\
+        \text{Constants } & b_{ij} = {\displaystyle \frac{a_{ij}}{\max_{m \in Voters}{a_{mj}}}} &\text{Voters score the closest candidate a 1.} \\ \\
 						  & a_{ij} = {\displaystyle \frac{1}{d_{ij}/10 + 1} } & \text{The further away, the lower the score.}\\ \\
                           & d_{ij}  & \text{Distance between voter i and candidate j on the map.}
         \end{array}
@@ -1961,7 +1951,7 @@ function drawliquid(svg,dn) {
 		var b = [[.6,1],[1,.6]]
 		var ymax = 1.5
 	} else if (dn==2) {
-		var y = [[.6],[.1],[.1],[.1],[.1]]
+		var y = [[.1],[.1],[.6],[.1],[.1]]
 		var y1 = [[.2],[.2],[.2],[.2],[.2]]
 		var b = [[1],[1],[1],[1],[1]]
 		var ymax = .8
