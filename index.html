@@ -179,20 +179,26 @@ a:hover.screenshot {
         If we stop here then we just end up picking the candidates in the middle because they have the highest tallies.
       </p>
       <p>
-        We want to avoid overrepresenting the middle voters because they would be getting representation for cheap.  <b>Think of the value of a representative as the number of voters they represent</b>, and they can't share voters.  We want to keep the value of our parliament as high as possible.
+        We want to avoid overrepresenting the middle voters because they would be getting representation for cheap.  <b>Think of the price of a seat in parliament as the number of voters represented by it.</b>  We want as much representation as possible.  We also want to avoid overrepresentation.  Think of the value of a vote as a fraction of a seat in parliament.  We want to spread vote value evenly so that each voter has fair representation.
 		
 		</p>
       <p>
 		
-		Our solution is to let the reps keep a fraction of their voters' ballots.  Voters have reps, so the reps get to keep the voters.  Each rep must keep the same amount of support. The idea of the rep keeping some ballots is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  When a candidate is declared a winner, he keeps a "quota" of votes and the rest of the votes go to the voters' second choices.
+		Our solution is to let the reps keep a fraction of their voters' ballots.  Voters have reps, so it makes sense that the reps get to keep the voters, too.  Each rep must keep the same amount of votes. The idea of the rep keeping some votes is not new.  The election method called Single Transferable Vote (STV) does the same thing.  It is different because it doesn't use scores.  It uses ranking.  Still, it is very similar.  When a candidate is declared a winner, he keeps a "quota" of votes and the rest of the votes go to the voters' second choices.
         \[
         \text{STV quota} = \frac{\text{voters}}{\text{seats} + 1}
         \]
-        The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).  This quota is basically the price of a seat in parliament, and only those candidates with enough cash (votes) can pay this price.
+        The quota is set as the number of voters divided by the number of seats to fill with reps.  An additional 1 is added to the number of seats because of the iterative nature of STV (a longer explanation is needed).  Basically, this quota is the price of a seat in parliament, and only those candidates with enough cash (votes) can pay this price.
       </p>
 	  <h3> Jefferson's method, Phragmen's method, and Load Balancing</h3>
       <p>
         Something similar also happens when deciding how many seats each state gets in the US House of Representatives.  Think of it like an auction.  The price starts off low and there are too many bidders and not enough seats.  In an auction the price goes up until there are exactly the number of bidders left to buy all the items.  It's basically the same with seats except the seats are "paid" for by population numbers.
+		</p>
+		<p style="text-align:center">
+		<span id="bid3"></span>
+		</p>
+		
+		<p>		
 
 		We can flip that around so that the auction house gets a higher price.  We can start at a high price and then lower it until we have enough buyers.  Likewise, for the House, we can start at a high number of voters required for a seat.  As we lower the requirement, we assign seats to the states that can pay until all the seats are filled.  It's easy to grasp because we are filling the seats one by one.  Note that this method assings the seats proportionally, so a state with twice the population will have twice as many seats:
 		</p>
@@ -201,7 +207,7 @@ a:hover.screenshot {
 		</p>
 		
 		<p>		
-		Also, instead of price or voters-per-seat, <b>think of the amount of representation a voter gets</b>.  Representation starts low and is increased one representative at a time until we fill all 435 seats.
+		Also, instead of price or voters-per-seat, <b>think of the amount of representation a voter gets, the vote value</b>.  Vote value starts low and is increased until one representative can be bought.  The process goes one representative at a time until we fill all 435 seats.
 		</p>
 		<p style="text-align:center">
 		<span id="jeff"></span>
@@ -212,47 +218,47 @@ a:hover.screenshot {
 		
 	  <div class="spacer" id="triggerliquidtop"></div>
       <p>
-		This method can be represented as an election.  Instead of candidates, there are seats, each state gets as many ballots as there are people in the state, and the ballots of each state would approve of all the seats $b_{ij} = 1$.  When a seat is bought, some of the ballots have to pay for that seat.  So we introduce another variable for each entry on every ballot, $y_{ij}$.  This indicates which voters the candidate represents.  In other words, it is which voters paid for that seat.  
-		\[
-		\begin{array}{rll}
-		& y_{ij} & & \text{Voter i is represented by representative j by this amount.} \\
-		0 \leq & y_{ij} & \leq 1 \\
-		& y_{ij} & \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
-		\end{array}
-		\]
-		</p>
-      <p>
-		You could say that the price of each seat 
-		\[
-		\sum_{i \in Voters}y_{ij}=1 \ \forall j \in Reps
-		\]
-		is the same and the representation of each voter is fair:
-		\[
-		\text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}
-		\]
-		This is a load balancing problem.  The idea of elections as a load balancing problem was developed by Lars Edvard Phragmén, a Swedish professor of mathematics and editor of Acta Mathematica feared for his ability to point out flaws in other people's work.  This particular method is called max-Phragmen.  There is another method called var-Phragmen, and he advocated for a sequential method able to be calculated by hand, seq-Phragmen.
+		This method can be represented as an election.  In this election, the ballots are pretty simple since the seats are all the same identical kind of thing and a state just gets a number of seats instead of individual representatives.  The ballots would be pretty simple because the voters want any seat, so $b_{ij} = 1$.  When a seat is bought, some of the votes have to pay for that seat.
 		</p>
       <p>
 		Now we have a different way to look at Jefferson's method of apportionment.
 		
-		We can make a graphical representation of these y terms.  Each will be represented with a rectangle of height y.  The width of the rectangle is the number of voters.  Actually, this rectangle is composed of many smaller rectangles, one for each voter:
+		We can make a graphical representation of vote value.  Let's call it y.  Each vote will be represented with a box of height y and width 1.  We combine many boxes together into a bigger box.  The bigger box's width is the number of voters:
 		
 		</p>
 		<p style="text-align:center">
 		<span id="splitrectangle"></span>
 		</p>
 		<p>
-		When we add up the area inside each candidate's rectangles, we get the same number, 1.  That's what the constraint above means.  It says each representative has the same amount of representation to give to his voters.  So a thinner rectangle (less voters) will need to be taller.  Let's apply this to the apportionment example above.
+		The area is what you get when you multiply the vote value (seats per vote) by the number of voters.  So the area is 1 seat.  Every candidate's box has an area of 1.  We can write this mathematically as
+		\[
+		\sum_{i \in Voters}y_{ij}=1 \ \forall j \in Reps
+		\]
+		We let this vote value be a variable.  You might think every vote value should be the same.  We will add an optimizing force that will try to make that happen.  Right now, we allow y to be a variable:
+		\[
+		\begin{array}{rll}
+		& y_{ij} & & \text{Vote value: voter i is represented by representative j by this amount.} \\
+		0 \leq & y_{ij} & \leq 1 \\
+		& y_{ij} & \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
+		\end{array}
+		\]
+		</p>
+      <p>
+		The constraint above means each representative has the same amount of representation to give to his voters.  So a thinner box (less voters) will need to be taller (give more value to each vote).  Let's apply this to the apportionment example from above.
 		
 		</p>
 		<p style="text-align:center">
 		<span id="liquidjeff"></span>
 		</p>
 		<p>
-		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The total amount of representation of green voters is the total height of the green rectangles.  Because we have to have whole numbers of representatives, we can't represent each kind of voter equally.  The best we can get is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.
+		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The vote value of green voters is the total height of the green boxes (since they each get 2 reps).  Because we have to have whole numbers of representatives, we can't represent each kind of voter equally.  Blue voters get a higher vote value.  The best we can do is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.  There is no better way to stack the boxes.
 		</p>
       <p>
-		My point is that Jefferson's method is a specific example of a general problem of load balancing.
+		You can state in math terms that the price of each seat should be nearly the same:
+		\[
+		\text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}
+		\]
+	  This is a load balancing problem.  The idea of elections as a load balancing problem was developed by Lars Edvard Phragmén, a Swedish professor of mathematics and editor of Acta Mathematica feared for his ability to point out flaws in other people's work.  This particular method is called max-Phragmen.  There is another method called var-Phragmen, and he advocated for a sequential method able to be calculated by hand, seq-Phragmen.  My point, and Phragmen's point, is that Jefferson's method is a specific example of a general problem of load balancing.
 		</p>
 		
 	  <h3> Pooled Votes </h3>
@@ -279,7 +285,7 @@ a:hover.screenshot {
 		<span id="liquid"></span>
 		</p>
 		<p>
-		What is happening in this flow?  At the start, both green and blue reps represent both voters an equal amount.   A supporting liquid flows between the rectangles.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's volume is constant.  As it flows from thinner containers into thicker containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
+		What is happening in this flow?  At the start, both green and blue reps represent both voters an equal amount.   A supporting liquid flows between the boxes.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's volume is constant.  As it flows from thinner containers into thicker containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
 		</p>
 		<p>
 		Let's look at 3 candidates:
@@ -1645,10 +1651,11 @@ function drawjeff(svg,dn) {
 	var votes = [12,19,15];
 	//var votes = [12,19,15,13,22,11,14,28,31,23,32];
 	var border = 10;
+	var x_graph = 100
 	var representation = .5;
-	var slow = 3;
+	var slow = 6;
 	
-	function tx(x) { return ((dn==1)?1:.1)*x*(w-2*border)+border;}
+	function tx(x) { return ((dn==1)?1:.1)*x*(w-(2*border+x_graph))+border+x_graph;}
 	function ty(y) { return h-(y*(h-2*border)+border);}
 	
 	
@@ -1666,6 +1673,18 @@ function drawjeff(svg,dn) {
 	.attr("y2",ty(1.1))
 	.style("stroke-dasharray","3,3")
 	
+	b = [10/12,10/19,10/15] // state sizes
+	for (var id=0;id<b.length;id++) {
+		svg.append("rect")
+		.attr("x",2)
+		.attr("width",b[id]*90)
+		.attr("y",ty((id+1-.5)/(votes.length))-10)
+		.attr("height",20)
+		.attr("fill", function(d) { return color_fill[id % color_fill.length]; })
+		.attr("stroke", function(d) { return color_stroke[id % color_stroke.length]; })
+		.attr("stroke-width", 2)
+	}
+	
 	if (dn==1) {
 		r
 		.attr("x1",tx(0))
@@ -1676,7 +1695,7 @@ function drawjeff(svg,dn) {
 		.duration(1000*representation*slow)
 		.attr("x1",tx(representation))
 		.attr("x2",tx(representation))
-	} else {
+	} else if (dn==2) {
 		r
 		.attr("x1",tx(10))
 		.attr("x2",tx(10))
@@ -1686,10 +1705,21 @@ function drawjeff(svg,dn) {
 		.duration(1000*representation*slow)
 		.attr("x1",tx(1/representation))
 		.attr("x2",tx(1/representation))
+	} else if (dn==3) {
+		r
+		.attr("x1",tx(0))
+		.attr("x2",tx(0))
+		.transition()
+		.ease("linear")
+		.delay(50*slow)
+		.duration(1000*representation*slow)
+		.attr("x1",tx(representation*4*.94))
+		.attr("x2",tx(representation*4*.94))
 	}
 	
 	var dots = []
 	var dashes = []
+	var undots = []
 	if (dn == 1) {
 		for (var id=0;id<votes.length;id++) {
 			for (var i=1;i*votes[id]<100;i++) {
@@ -1699,13 +1729,27 @@ function drawjeff(svg,dn) {
 				
 			}
 		}
-	} else {
+	} else if (dn==2) {
 		var last_mark = []
 		for (var id=0;id<votes.length;id++) {
 			for (var i=1;i*votes[id]<300;i++) {
 				var d1 = [ty((id+1-.5)/(votes.length)),tx(1/(i*votes[id]/100)),id,1/(i*votes[id]/100)]
 				dashes.push(d1)
 				if (1/representation <= 1/(i*votes[id]/100)) dots.push(d1)
+			}
+			last_mark.push(d1[3])
+		}
+	} else if (dn==3) {
+		var last_mark = []
+		for (var id=0;id<votes.length;id++) {
+			for (var i=1;i*votes[id]<300;i++) {
+				var d1 = [ty((id+1-.5)/(votes.length)),tx(1/(i*votes[id]/100)),id,1/(i*votes[id]/100)]
+				dashes.push(d1)
+				if (1/representation > 1/(i*votes[id]/100)) {
+					undots.push(d1)
+				} else {
+					dots.push(d1)
+				}
 			}
 			last_mark.push(d1[3])
 		}
@@ -1723,7 +1767,7 @@ function drawjeff(svg,dn) {
 	}	
 	console.log(dn)
 	var sdashes = svg
-	.selectAll('rect')
+	.selectAll('rect.spacer')
 	.data(dashes)
 	.enter()
 	.append("rect")
@@ -1732,32 +1776,71 @@ function drawjeff(svg,dn) {
 	.attr("width", 1)
 	.attr("height", 8)
 
+	if (dn==1 || dn==2) {
+		var sdots = svg
+		.selectAll('circle')
+		.data(dots)
+		.enter()
+		.append("circle")
+		.attr("cx", function(d) { return d[1]; })
+		.attr("cy", function(d) { return d[0]; })
+		.attr("class","repclass")
+		.attr("fill", function(d) { return color_fill[d[2] % color_fill.length]; })
+		.attr("stroke", function(d) { return color_stroke[d[2] % color_stroke.length]; })
+		.attr("r",5)
+		.attr("stroke-width", 2)
+		
+		sdots
+		.style("opacity", 0)
+		.style("stroke-opacity", 0)
+		.attr("r",60)
+		.transition()
+		.style("opacity", 1)
+		.style("stroke-opacity", 1)
+		.attr("r", 6)
+		.duration(500)
+		.delay(function(d, i) { return ((dn==1)?d[3]*1000:(10-d[3])*70)*slow })
+	}
 	
-	var sdots = svg
-	.selectAll('circle')
-	.data(dots)
-	.enter()
-	.append("circle")
-	.attr("cx", function(d) { return d[1]; })
-	.attr("cy", function(d) { return d[0]; })
-	.attr("class","repclass")
-	.attr("fill", function(d) { return color_fill[d[2] % color_fill.length]; })
-	.attr("stroke", function(d) { return color_stroke[d[2] % color_stroke.length]; })
-	.attr("r",5)
-	.attr("stroke-width", 2)
-	
-	sdots
-	.style("opacity", 0)
-	.style("stroke-opacity", 0)
-	.attr("r",60)
-	.transition()
-	.style("opacity", 1)
-	.style("stroke-opacity", 1)
-	.attr("r", 6)
-	.duration(500)
-	.delay(function(d, i) { return ((dn==1)?d[3]*1000:(10-d[3])*70)*slow })
-			  
-			  
+	if (dn==3) {
+		var dots = svg
+		.selectAll('circle.pos')
+		.data(dots)
+		.enter()
+		.append("circle")
+		.attr("cx", function(d) { return d[1]; })
+		.attr("cy", function(d) { return d[0]; })
+		.attr("class","repclass")
+		.attr("fill", function(d) { return color_fill[d[2] % color_fill.length]; })
+		.attr("stroke", function(d) { return color_stroke[d[2] % color_stroke.length]; })
+		.attr("r",5)
+		.attr("stroke-width", 2)
+		.style("opacity", 1)
+		.style("stroke-opacity", 1)
+		.attr("r", 6)
+		
+		var sundots = svg
+		.selectAll('circle.neg')
+		.data(undots)
+		.enter()
+		.append("circle")
+		.attr("cx", function(d) { return d[1]; })
+		.attr("cy", function(d) { return d[0]; })
+		.attr("class","repclass")
+		.attr("fill", function(d) { return color_fill[d[2] % color_fill.length]; })
+		.attr("stroke", function(d) { return color_stroke[d[2] % color_stroke.length]; })
+		.attr("r",5)
+		.attr("stroke-width", 2)
+		.style("opacity", 1)
+		.style("stroke-opacity", 1)
+		.attr("r", 6)
+		.transition()
+		.style("opacity", 0)
+		.style("stroke-opacity", 0)
+		.attr("r",6)
+		.duration(100)
+		.delay(function(d, i) { return d[3]*300*slow })
+	}
 }
 
 function drawliquid(svg,dn) {
@@ -2058,6 +2141,7 @@ function startdraw(f,idtoget,dn,showit) {
 
 startdraw(drawjeff,"#jeff",1,showjeff)
 startdraw(drawjeff,"#bid",2,showjeff)
+startdraw(drawjeff,"#bid3",3,showjeff)
 startdraw(drawliquid,"#liquid",1,showliquid)
 startdraw(drawliquid,"#liquid2",2,showliquid)
 startdraw(drawliquid,"#liquid3",3,showliquid)
