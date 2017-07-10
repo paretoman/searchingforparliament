@@ -227,14 +227,14 @@ a:hover.screenshot {
       <p>
 		Now we have a different way to look at Jefferson's method of apportionment.
 		
-		We can make a graphical representation of vote value.  Let's call it y.  Each vote will be represented with a box of height y and width 1.  We combine many boxes together into a bigger box.  The bigger box's width is the number of voters:
+		We can make a graphical representation of vote value.  Let's call it y.  Each vote will be represented with a box of height y and width 1.  We combine many boxes together into a block, a bigger box.  The block's width is the number of voters:
 		
 		</p>
 		<p style="text-align:center">
 		<span id="splitrectangle"></span>
 		</p>
 		<p>
-		The area is what you get when you multiply the vote value (seats per vote) by the number of voters.  So the area is 1 seat.  Every candidate's box has an area of 1.  We can write this mathematically, with v for voters, as
+		The area is what you get when you multiply the vote value (seats per vote) by the number of voters.  So the area is 1 seat.  Every candidate's block has an area of 1.  We can write this mathematically, with v for voters, as
 		\[
 		v_j * y_j=1 \ \forall \ j \in Reps
 		\]
@@ -250,20 +250,20 @@ a:hover.screenshot {
 		
 		</p>
       <p>
-		The constraint above means each representative has the same amount of representation to give to his voters.  So a thinner box (less voters) will need to be taller (give more value to each vote).  Let's apply this to the apportionment example from above.
+		The constraint above means each representative has the same amount of representation to give to his voters.  So a thinner block (less voters) will need to be taller (give more value to each vote).  Let's apply this to the apportionment example from above.
 		
 		</p>
 		<p style="text-align:center">
 		<span id="liquidjeff"></span> &nbsp; &nbsp; &nbsp; $ \approx $ &nbsp; &nbsp; &nbsp; <span id="liquidjeffagain"></span>
 		</p>
 		<p>
-		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The vote value of green voters is the total height of the green boxes (since they each get 2 reps).  
+		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The vote value of green voters is the total height of the green blocks (since they each get 2 reps).  
 		</p>
 		<p>
-		<b>Is this proportional? Yes. Approximately. </b>  Because we have to have whole numbers of representatives, we can't represent each kind of voter exactly equally.  Blue voters get a higher vote value.  The best we can do is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.  There is no better way to stack the boxes.
+		<b>Is this proportional? Yes. Approximately. </b>  Because we have to have whole numbers of representatives, we can't represent each kind of voter exactly equally.  Blue voters get a higher vote value.  The best we can do is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.  There is no better way to stack the blocks.
 		</p>
       <p>
-		What was our method of getting to this solution?  Well, we stacked the boxes evenly so that no stack would be too tall.  This is the shortest we can stack this number of boxes. In doing so, we kept the value of each vote nearly the same.  We can state this stacking principle in math terms:
+		What was our method of getting to this solution?  Well, we stacked the blocks evenly so that no stack would be too tall.  This is the shortest we can stack this number of blocks. In doing so, we kept the value of each vote nearly the same.  We can state this stacking principle in math terms:
 		\[
 		\text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}
 		\]
@@ -319,43 +319,17 @@ a:hover.screenshot {
 		\]
 		</p>
       <p>
-		Basically, what this tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation.  Here is an animation that shows an initial guess and the flow caused by the minimization.  
+		Basically, what this tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation. 
 		</p>
-		<p style="text-align:center">
-		<span id="liquid1a"></span>
-		</p>
-		<p>
-		What are these boxes?  There are 2 voters, left and right.  They both like the green and blue candidates.  The height of the box is the vote value (seats/voter), the y term.  Now imagine the box is 3-D and there is a colored fluid in it.  A thicker box will look darker.  This thickness is the b term, how much a voter liked a candidate.  Another way to draw this is to spin the containers so that you can see the thickness, and we will show that for just one drawing.
-		</p>
-		<p style="text-align:center">
-		<span id="liquid"></span>
-		</p>
-		<p>
-		What is happening in this flow?  At the start, both green and blue reps represent both voters an equal amount.   A supporting liquid flows between the boxes.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's volume is constant.  As it flows from thinner containers into thicker containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
-		</p>
-		<p>
-		Let's look at 3 candidates:
-		</p>
-		<p style="text-align:center">
-		<span id="liquid3"></span>		
-		</p>
-		<p>
-		The minimization is really a force that is spreading representation across the voters.  Here is another animation that shows a single candidate's support being spread over many voters by the action of minimization:
+		
+		The action of minimization is animated here as a smushing force:
 		</p>
 		<p style="text-align:center">
 		<span id="liquid2"></span>
 		</p>
 		<p>
-		In addition to adjusting the distribution of the "representation liquid", we can also change which candidates are selected.  Broader candidates will have an easier time minimizing the height of their portion of "representation liquid" because they have more and bigger containers to put it in.
-		</p>
-      <p>
-		Also it is worth restating that the amount of representation is not changing as we minimize.  The representation liquid has to go somewhere.  So how is it that some choices of representatives are better than others if there is the same amount of representation going around?  A better choice of representatives might have thicker containers, which means the liquid doesn't have to be as tall.  
-		</p>
-		<p style="text-align:center">
-		<span id="liquid5"></span> &nbsp;  &nbsp;  &nbsp; $ \rightarrow $  &nbsp;  &nbsp;  &nbsp; <span id="liquid6"></span>
-		</p>
-		<p>
-		This is good for everyone.  These are the candidates with the highest ratings.  Also, a larger number of containers would also make the liquid shorter.  These would be candidates with broad appeal.  
+		In addition to adjusting the distribution of the "representation liquid", we can also change which candidates are selected.  Broader candidates will have an easier time smushing into other candidates.
+		 
 		</p>
 		<p style="text-align:center">
 		<span id="liquid8" ></span> &nbsp;  &nbsp;  &nbsp;  $ \rightarrow  $  &nbsp;  &nbsp;  &nbsp; <span id="liquid11"></span>  &nbsp;  &nbsp;  &nbsp; $ \approx $  &nbsp;  &nbsp;  &nbsp; <span id="liquid7"></span>
@@ -373,6 +347,44 @@ a:hover.screenshot {
 		The big point is this: by enforcing Jefferson's method's principle of "no special deals", the representation is spread out in proportion to population.  In the same way, by enforcing the same "no special deals" principle to our pool approach, we can reach a proportional outcome.
 		
       </p>
+		
+		
+		<h3> Scores </h3>
+      <p>
+		Now consider scores.  Voters will want to rate some candidates in between others.  One might be a 10 out of 10 while another is a 6 / 10 and another a 0. 
+		</p>
+		<p style="text-align:center">
+		<span id="liquid1b"></span>
+		</p>
+		<p>
+		What are these boxes?  There are 2 voters, left and right.  They both like the green and blue candidates.  The left voter gave green a 10/10 and blue a 6/10.  Vice versa for the right voter.  Now imagine the box is 3-D and there is a colored fluid in it.  A thicker box will look darker.  This thickness is the b term, how much a voter liked a candidate.  Another way to draw this is to spin the containers so that you can see the thickness, and we will show that for just one drawing.
+		</p>
+		<p style="text-align:center">
+		<span id="liquid1c"></span>
+		</p>
+		<p>
+		That is the ballot.  Now let's start the optimization.   Here is an animation that shows an initial ballot and the flow caused by the minimization.  
+		</p>
+		<p style="text-align:center">
+		<span id="liquid1a"></span>
+		</p>
+		<p>
+		What is happening in this flow?  At the start, both green and blue reps represent both voters an equal amount.   A supporting liquid flows between the boxes.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's volume is constant.  As it flows from thinner containers into thicker containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
+		</p>
+		<p>
+		Let's look at 3 candidates just for fun:
+		</p>
+		<p style="text-align:center">
+		<span id="liquid3"></span>		
+		</p>
+		<p>
+		Again, in addition to adjusting the distribution of the "representation liquid", we can also change which candidates are selected.  In the context of scores, a better choice of representatives might have thicker containers, which means the liquid doesn't have to be as tall.  
+		</p>
+		<p style="text-align:center">
+		<span id="liquid5"></span> &nbsp;  &nbsp;  &nbsp; $ \rightarrow $  &nbsp;  &nbsp;  &nbsp; <span id="liquid6"></span>
+		</p>
+		<p>
+		This is good for everyone.  These are the candidates with the highest ratings.  
 	  <div class="spacer" id="triggerjeffbottom"></div>
 	  	  <h3>Formal Model</h3>
       <p>
@@ -1938,6 +1950,16 @@ function drawliquid(svg,dn) {
 		var y1 = [[0,1],[1,0]]
 		var b = [[.6,1],[1,.6]]
 		var ymax = 1.5
+	} else if (dn=="1b") {
+		var y = [[1/1.6,1/1.6],[1/1.6,1/1.6]]
+		var y1 = y
+		var b = [[.6,1],[1,.6]]
+		var ymax = 1.5
+	} else if (dn=="1c") {
+		var y = [[1/1.6,1/1.6],[1/1.6,1/1.6]]
+		var y1 = y
+		var b = [[.6,1],[1,.6]]
+		var ymax = 1.5
 	} else if (dn==2) {
 		var y = [[.6],[.1],[.1],[.1],[.1]]
 		var y1 = [[.2],[.2],[.2],[.2],[.2]]
@@ -2119,7 +2141,7 @@ function drawliquid(svg,dn) {
 					t
 					.attr("y", ty(ystack))
 				}
-				if (dn==3 || dn=="1a" || dn==2 || dn==5 || dn==6) {
+				if (dn==3 || dn=="1a" || dn=="1b" || dn==2 || dn==5 || dn==6) {
 					rect1
 					.attr("x", tx(i+.5))
 					.attr("width", tx(1)-tx(0))
@@ -2250,7 +2272,7 @@ function startdraw(f,idtoget,dn,showit) {
 startdraw(drawjeff,"#jeff",1,showjeff)
 startdraw(drawjeff,"#bid",2,showjeff)
 startdraw(drawjeff,"#bid3",3,showjeff)
-startdraw(drawliquid,"#liquid",1,showliquid)
+startdraw(drawliquid,"#liquid1c","1c",showliquid)
 startdraw(drawliquid,"#liquid2",2,showliquid)
 startdraw(drawliquid,"#liquid3",3,showliquid)
 startdraw(drawliquid,"#liquidjeff",4,{"show":0})
@@ -2260,6 +2282,7 @@ startdraw(drawliquid,"#liquid7",7,showliquid)
 startdraw(drawliquid,"#liquid8",8,showliquid)
 startdraw(drawliquid,"#liquid11",11,showliquid)
 startdraw(drawliquid,"#liquid1a","1a",showliquid)
+startdraw(drawliquid,"#liquid1b","1b",showliquid)
 startdraw(drawliquid,"#liquid12",12,showliquid)
 startdraw(drawliquid,"#liquid13",13,showliquid)
 startdraw(drawliquid,"#liquid14",14,showliquid)
