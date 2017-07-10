@@ -218,7 +218,11 @@ a:hover.screenshot {
 		
 	  <div class="spacer" id="triggerliquidtop"></div>
       <p>
-		This method can be represented as an election.  In this election, the ballots are pretty simple since the seats are all the same identical kind of thing and a state just gets a number of seats instead of individual representatives.  The ballots would be pretty simple because the voters want any seat, so $b_{ij} = 1$.  When a seat is bought, some of the votes have to pay for that seat.
+		This method can be represented as an election.  In this election, the ballots are pretty simple since every voter approves all the candidates from their state.  
+		\[
+		b_{ij} =1 \ \ \ \ \ \forall \ j \in Reps \ , \  i\in Voters  \ \ \text{in the same state.} \\
+		\]
+		Also, the candidates (or seats) are all identical and a state just gets a number of seats instead of individual representatives.
 		</p>
       <p>
 		Now we have a different way to look at Jefferson's method of apportionment.
@@ -230,32 +234,33 @@ a:hover.screenshot {
 		<span id="splitrectangle"></span>
 		</p>
 		<p>
-		The area is what you get when you multiply the vote value (seats per vote) by the number of voters.  So the area is 1 seat.  Every candidate's box has an area of 1.  We can write this mathematically as
+		The area is what you get when you multiply the vote value (seats per vote) by the number of voters.  So the area is 1 seat.  Every candidate's box has an area of 1.  We can write this mathematically, with v for voters, as
 		\[
-		v_j * y_j=1 \ \forall j \in Reps
+		v_j * y_j=1 \ \forall \ j \in Reps
 		\]
-		and also, we do something interesting:
+		We can also restate this for every individual voter with the constraint that votes are by state.
 		\[
-		\sum_{i \in Voters}y_{ij}=1 \ \forall j \in Reps
-		\]
-		We let this vote value be a variable.  Not every vote value should be the same.  Some voters will vote for two representatives.  We need to allow a voter's value to add up from all the candidates his vote helped elect.  We still want this total vote value to be the same for all voters.  In 2 more paragraphs, we will add an optimizing force that will try to make that happen.  Right now, we allow y to be a variable:
-		\[
-		\begin{array}{rll}
-		& y_{ij} & & \text{Vote value. Voter i bought this fraction of a seat for rep j.} \\
-		0 \leq & y_{ij} & \leq 1 \\
-		& y_{ij} & \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
+		\begin{array}{rl}
+		b_{ij} &=1 \ \ &\forall \ j \in Reps \ , \  i\in Voters  \ \ \text{in the same state.} \\
+		\sum_{i \in Voters} b_{ij} * y_{ij}&=1 \ &\forall \ j \in Reps \\
+		y_{ij} &= 1/v_j \ \ &\forall \ j \in Reps\ \text{who win} \\
 		\end{array}
 		\]
+		
+		
 		</p>
       <p>
 		The constraint above means each representative has the same amount of representation to give to his voters.  So a thinner box (less voters) will need to be taller (give more value to each vote).  Let's apply this to the apportionment example from above.
 		
 		</p>
 		<p style="text-align:center">
-		<span id="liquidjeff"></span>
+		<span id="liquidjeff"></span> &nbsp; &nbsp; &nbsp; $ \approx $ &nbsp; &nbsp; &nbsp; <span id="liquidjeffagain"></span>
 		</p>
 		<p>
-		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The vote value of green voters is the total height of the green boxes (since they each get 2 reps).  Because we have to have whole numbers of representatives, we can't represent each kind of voter equally.  Blue voters get a higher vote value.  The best we can do is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.  There is no better way to stack the boxes.
+		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The vote value of green voters is the total height of the green boxes (since they each get 2 reps).  
+		</p>
+		<p>
+		<b>Is this proportional? Yes. Approximately. </b>  Because we have to have whole numbers of representatives, we can't represent each kind of voter exactly equally.  Blue voters get a higher vote value.  The best we can do is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.  There is no better way to stack the boxes.
 		</p>
       <p>
 		What was our method of getting to this solution?  Well, we stacked the boxes evenly so that no stack would be too tall.  This is the shortest we can stack this number of boxes. In doing so, we kept the value of each vote nearly the same.  We can state this stacking principle in math terms:
@@ -267,7 +272,44 @@ a:hover.screenshot {
 		
 	  <h3> Pooled Votes </h3>
       <p>
-		How can we adopt Jefferson's method with individual voters' ballots?  Using parties to replace states is not a good idea because voters don't exactly fall into parties and not all party candidates are equal.  Also, this gives too much power to political parties.  We have a set of ballots with important information about who a voter would feel represented by.  So let's try to use it.  (Let's add the $b_{ij}$ term.) 
+		How can we adopt Jefferson's method with individual voters' ballots?  Using parties to replace states is not a good idea because voters don't exactly fall into parties and not all party candidates are equal.  Also, this gives too much power to political parties.  We have a set of ballots with important information about who a voter would feel represented by.  So let's try to use it. 
+		</p>
+		<p style="text-align:center">
+		<span id="liquid12"></span>
+		</p>
+		<p>
+		How do we deal with this situation?  The two candidates above are very similar and share some supporters.  The voters who like both have a high vote value while the voters on one side or the other don't have as much vote value.  Actually, the voters who like both could solve this by each deciding to pick one or the other.  And that is an interesting idea.  What would happen?
+		
+		</p>
+		<p style="text-align:center">
+		<span id="liquid13"></span>
+		</p>
+		<p>
+		
+		So the problem is solved.  We just need to split this middle group of voters.  We can also split them a different and equivalent way that makes more geometric sense.  It just looks like the two blocks are being smushed together:
+		
+		</p>
+		<p style="text-align:center">
+		<span id="liquid14"></span>
+		</p>
+		<p>
+		Mathematically, we allow the blocks to smush together by removing some constraints on this vote value.
+		\[
+		y_{ij} \stackrel{?}{=} 1/v_j
+		\]
+		We let this vote value be a variable.  Not every vote value should be the same.  Some voters will vote for two representatives.  We need to allow a voter's value to add up from all the candidates his vote helped elect.  We still want this total vote value to be the same for all voters.  The optimizing force ensures that will happen and that there will be an "even build" of these liquid blocks.
+		</p>
+		<p>
+		Since we are relaxing some constraints on y, we want to make sure it still is constrained in some ways that make sense.  Let's restate everything about our new liquid block model:
+		\[
+		\begin{array}{rll}
+		& y_{ij} & & \text{Vote value. Voter i bought this fraction of a seat for rep j.} \\
+		0 \leq & y_{ij} & \leq 1 \\
+		& y_{ij} & \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
+		\end{array}
+		\]
+		
+		
 		\[
 		\begin{array}{ll}
 		{\displaystyle \sum_{i \in Voters}y_{ij}*b_{ij}=1 \ \forall j \in Reps} & \text{The price of each seat is the same.} \\
@@ -1640,14 +1682,26 @@ dos("#triggerliquidbottom",function() {showliquid.show = 1-showliquid.show; })
 <script>
 function drawjeff(svg,dn) {
 	
-	var w = 480;
-    var h = 300;
-
+	
+	if (dn==4) {
+		var w = 300/2;
+		var h = 480/2;
+	} else {
+		var w = 480;
+		var h = 300;
+	}
 	svg
 	.attr("width", w)
 	.attr("height", h)
 	.attr("id", "visualization")
 	.attr("xmlns", "http://www.w3.org/2000/svg");
+	
+	if (dn==4) {
+		svg = svg.append("g").attr("transform" , "translate(0,240) rotate(-90) scale(.5)")
+		dn = 1
+		var w = 480;
+		var h = 300;
+	}
 
 	//animation options
 	
@@ -1875,14 +1929,14 @@ function drawliquid(svg,dn) {
 		var y = [[1/1.2,1/1.2],[1/1.2,1/1.2]]
 		var y1 = [[0,1],[1,0]]
 		var b = [[.2,1],[1,.2]]
-		var y = [[1/1.8,1/1.8],[1/1.8,1/1.8]]
+		var y = [[1/1.6,1/1.6],[1/1.6,1/1.6]]
 		var y1 = [[0,1],[1,0]]
-		var b = [[.8,1],[1,.8]]
+		var b = [[.6,1],[1,.6]]
 		var ymax = 1.5
 	} else if (dn=="1a") {
-		var y = [[1/1.8,1/1.8],[1/1.8,1/1.8]]
+		var y = [[1/1.6,1/1.6],[1/1.6,1/1.6]]
 		var y1 = [[0,1],[1,0]]
-		var b = [[.8,1],[1,.8]]
+		var b = [[.6,1],[1,.6]]
 		var ymax = 1.5
 	} else if (dn==2) {
 		var y = [[.6],[.1],[.1],[.1],[.1]]
@@ -1898,11 +1952,11 @@ function drawliquid(svg,dn) {
 		
 	} else if (dn==4) {
 		fillit = function(n,w) { return Array.apply(null, Array(n)).map(function(){return w}) }
-		var votes = [12/10,19/10,15/10];
+		var votes = [15/10,19/10,12/10];
 		//var b = fillit(3,[fillit(12,0)]) // reference passing problem
 		var newb = []
 		var y = []
-		var numwin = [4,2,3]
+		var numwin = [3,2,4]
 		for (var i=0;i<3;i++) {
 			var rowb = []
 			var rowy = []
@@ -1917,7 +1971,7 @@ function drawliquid(svg,dn) {
 			y.push(rowy)
 		} 
 		var b=newb
-		var colkey = [0,0,0,0,1,1,1,1,2,2,2,2]
+		var colkey = [2,2,2,2,1,1,1,1,0,0,0,0]
 		var y1 = y
 		ymax=6
 		console.log(y)
@@ -1967,6 +2021,42 @@ function drawliquid(svg,dn) {
 		colkey = [0,2]
 		var w = 300/2;
 		var h = 300/2;
+	} else if (dn==12) { // overlap stacked boxes. no movement
+		var b = [[2,0],[0,2]]
+		var y = [[1,1],[1,1]]
+		var y1 = y
+		var b = [[1,0],[1,1],[1,1],[0,1]]
+		var y = [[.67,.67],[.67,.67],[.67,.67],[.67,.67]]
+		var y1 = y
+		ymax=.67*2.1
+		colkey = [0,3]
+		var w = 300;
+		var h = 300/1.6;
+	} else if (dn==13) { // non-overlapped boxes
+		var b = [[1,0],[0,1]]
+		var y = [[1,1],[1,1]]
+		var y1 = [[1,0],[0,1]]
+		var b = [[1,0],[1,1],[0,1]]
+		var y = [[1,1],[1,1],[1,1]]
+		var y1 =[[1,0],[.5,.5],[0,1]]
+		var b = [[1,0],[1,0],[0,1],[0,1]]
+		var y = [[1,1],[1,1],[1,1],[1,1]]
+		var y1 =[[1,0],[1,0],[0,1],[0,1]]
+		var b = [[1,0],[1,1],[1,1],[0,1]]
+		var y = [[.67,.67],[.67,.67],[.67,.67],[.67,.67]]
+		var y1 =[[1,0],[1,0],[0,1],[0,1]]
+		ymax=.67*2.1
+		colkey = [0,3]
+		var w = 300;
+		var h = 300/1.6;
+	} else if (dn==14) { // overlap stacked boxes. move
+		var b = [[1,0],[1,1],[1,1],[0,1]]
+		var y = [[.67,.67],[.67,.67],[.67,.67],[.67,.67]]
+		var y1 =[[1,0],[.5,.5],[.5,.5],[0,1]]
+		ymax=.67*2.1
+		colkey = [0,3]
+		var w = 300;
+		var h = 300/1.6;
 	}
 
 	svg
@@ -2036,7 +2126,7 @@ function drawliquid(svg,dn) {
 					.attr("opacity", b[i][j])
 					.attr("stroke-opacity", b[i][j])
 					.attr("stroke", color_fill[colkey[j] % color_fill.length])
-				} else if (dn==7 || dn==8 || dn==11) {
+				} else if (dn==7 || dn==8 || dn==11 || dn==12 || dn==13 || dn==14) {
 					var xa = tx(i+1)
 					var wa = tx(b[i][j])-tx(0)
 					rect1
@@ -2170,7 +2260,10 @@ startdraw(drawliquid,"#liquid7",7,showliquid)
 startdraw(drawliquid,"#liquid8",8,showliquid)
 startdraw(drawliquid,"#liquid11",11,showliquid)
 startdraw(drawliquid,"#liquid1a","1a",showliquid)
-startdraw(drawjeff,"#liquidjeff",1,{"show":0})
+startdraw(drawliquid,"#liquid12",12,showliquid)
+startdraw(drawliquid,"#liquid13",13,showliquid)
+startdraw(drawliquid,"#liquid14",14,showliquid)
+startdraw(drawjeff,"#liquidjeffagain",4,{"show":0})
 startdraw(drawjeff,"#rep",1,{"show":0})
 startdraw(drawjeff,"#price",2,{"show":0})
 startdraw(splitrectangle,"#splitrectangle",1,{"show":1})
