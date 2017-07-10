@@ -273,7 +273,7 @@ a:hover.screenshot {
 		<span id="liquid1a"></span>
 		</p>
 		<p>
-		What are these boxes?  There are 2 voters, left and right.  They both like the green and blue candidates.  The height of the box is the y term, for a voter's individual representation.  Now imagine the box is 3-D and there is a colored fluid in it.  A thicker box will look darker.  This thickness is the b term, how much a voter liked a candidate.  Another way to draw this is to spin the containers so that you can see the thickness. It is not as visually appealing.
+		What are these boxes?  There are 2 voters, left and right.  They both like the green and blue candidates.  The height of the box is the y term, for a voter's individual value (seats/voter).  Now imagine the box is 3-D and there is a colored fluid in it.  A thicker box will look darker.  This thickness is the b term, how much a voter liked a candidate.  Another way to draw this is to spin the containers so that you can see the thickness, and we will show that for just one drawing.
 		</p>
 		<p style="text-align:center">
 		<span id="liquid"></span>
@@ -297,7 +297,7 @@ a:hover.screenshot {
 		In addition to adjusting the distribution of the "representation liquid", we can also change which candidates are selected.  Broader candidates will have an easier time minimizing the height of their portion of "representation liquid" because they have more and bigger containers to put it in.
 		</p>
       <p>
-		Also it is worth restating that that the amount of representation is not changing as we minimize.  The representation liquid has to go somewhere.  So how is it that some choices of representatives are better than others if there is the same amount of representation going around?  A better choice of representatives might have thicker containers, which means the liquid doesn't have to be as tall.  
+		Also it is worth restating that the amount of representation is not changing as we minimize.  The representation liquid has to go somewhere.  So how is it that some choices of representatives are better than others if there is the same amount of representation going around?  A better choice of representatives might have thicker containers, which means the liquid doesn't have to be as tall.  
 		</p>
 		<p style="text-align:center">
 		<span id="liquid5"></span> &nbsp;  &nbsp;  &nbsp; $ \rightarrow $  &nbsp;  &nbsp;  &nbsp; <span id="liquid6"></span>
@@ -611,16 +611,38 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 	  </div>
 	  <div id="divytable" style="width: 24%; float: left;">
 	  <p>
-	  Representation:
+	  Voter Assignment (y):
 	  </p>
 	  <canvas id="ytable" width="155" height="350"></canvas>
 	  </div>
 	  
 	  <div id="divtableshow" style="width: 50%; float: left; ">
 	  <p>
-	  Election Results:
+	  Election Results (tally and similarity):
 	  </p>
 	  <canvas id="tableshow" width="350" height="300"></canvas>
+	  </div>
+	  
+	  <div id="divybtable" style="width: 24%; float: left;">
+	  <p>
+	  Representation (y*b):
+	  </p>
+	  <canvas id="ybtable" width="155" height="350"></canvas>
+	  </div>
+	  
+	  
+	  <div id="divsybtable" style="width: 12%; float: left;">
+	  <p>
+	  Sum y*b:
+	  </p>
+	  <canvas id="sybtable" width="100" height="350"></canvas>
+	  </div>
+	  
+	  <div id="divsytable" style="width: 12%; float: left;">
+	  <p>
+	  Sum y:
+	  </p>
+	  <canvas id="sytable" width="100" height="350"></canvas>
 	  </div>
 	  
 	  </div>
@@ -1244,6 +1266,18 @@ function serverResponse(error, data) {
 		  var c5=document.getElementById("ytable");
 		  var ctx5=c5.getContext("2d");
 		  ctx5.clearRect(0, 0, c5.width, c5.height);
+		  
+		  var c6=document.getElementById("ybtable");
+		  var ctx6=c6.getContext("2d");
+		  ctx6.clearRect(0, 0, c6.width, c6.height);
+		  
+		  var c7=document.getElementById("sybtable");
+		  var ctx7=c7.getContext("2d");
+		  ctx7.clearRect(0, 0, c7.width, c7.height);
+		  
+		  var c8=document.getElementById("sytable");
+		  var ctx8=c8.getContext("2d");
+		  ctx8.clearRect(0, 0, c8.width, c8.height);
 				
 		  if (solution.length > 3) {
 		  
@@ -1408,6 +1442,9 @@ function serverResponse(error, data) {
 					oryo = solution[18];
 					solutionfid = solution[19];
 					xo = solution[20];
+					orbyo = solution[21];
+					sorbyo = solution[22];
+					soryo = solution[23];
 					var ld3 = voterCom.length;
 					var imgData3=ctx3.createImageData(ld3+10,ld3+10);
 					
@@ -1504,6 +1541,33 @@ function serverResponse(error, data) {
 					}
 					drawby(ctx4,orb)
 					if (showy) drawby(ctx5,oryo)
+					if (showy) drawby(ctx6,orbyo)
+					
+					drawby2 = function(ctx4,orb) {
+					
+						var ynum = orb.length;
+						var xnum = 0;
+						var x_scale = 1
+						console.log(x_scale)
+						var imgData4=ctx4.createImageData(xnum*x_scale+10,ynum+10);
+						for ( var i = 10; i<ynum+10;i++) {
+							for (var j=0;j<10;j+=1) {
+								ind = (i*(xnum*x_scale+10)+j)*4
+								val = orb[i-10];
+								imgData4.data[ind+0]=255*val;
+								imgData4.data[ind+1]=255*val;
+								imgData4.data[ind+2]=255*val;
+								imgData4.data[ind+3]=255;
+							}
+						}
+						ctx4.putImageData(scaleImageData(imgData4,2),0,0);
+						ctx4.rect(0,20,20,2*ynum);
+						ctx4.stroke();
+					}
+					
+					if (showy) drawby2(ctx7,sorbyo)
+					if (showy) drawby2(ctx8,soryo)
+					
 				}
 			}
         }

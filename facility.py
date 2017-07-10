@@ -887,6 +887,9 @@ def optimize(voters, reps, options, output=False):
         f.close()
         # if doing setup, remember to delete the extra commas and then change the filename to erase the 1.
         
+    def norm1(x):
+        return x* 1/numpy.max(x)
+        
     return [solution1, 
     solution2, 
     g_log + tableslog + options_str,
@@ -906,7 +909,10 @@ def optimize(voters, reps, options, output=False):
     ord_can,showy,
     oryo.tolist(),
     solutionfid.tolist(),
-    xo.tolist()]
+    xo.tolist(),
+    norm1((orb*oryo)).tolist(),
+    norm1(numpy.sum(orb*oryo,1)).tolist(),
+    norm1(numpy.sum(oryo,1)).tolist()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
