@@ -270,19 +270,25 @@ a:hover.screenshot {
 		Basically, what this y term tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation.  Here is an animation that shows an initial guess at the y term and the flow caused by the minimization.  
 		</p>
 		<p style="text-align:center">
+		<span id="liquid1a"></span>
+		</p>
+		<p>
+		What are these boxes?  There are 2 voters, left and right.  They both like the green and blue candidates.  The height of the box is the y term, for a voter's individual representation.  Now imagine the box is 3-D and there is a colored fluid in it.  A thicker box will look darker.  This thickness is the b term, how much a voter liked a candidate.  Another way to draw this is to spin the containers so that you can see the thickness. It is not as visually appealing.
+		</p>
+		<p style="text-align:center">
 		<span id="liquid"></span>
 		</p>
 		<p>
-		What is happening in this flow?  There are 2 voters, left and right.  They both like the green and blue candidates.  At the start, both green and blue reps represent both voters an equal amount.  Representation is the vertical part of the rectangle, the y term.  The b term is how much a voter liked each candidate.  It is the horizontal part of each rectangle.  A supporting liquid flows between the rectangles.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's area is constant.  As it flows from thinner containers into wider containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
+		What is happening in this flow?  At the start, both green and blue reps represent both voters an equal amount.   A supporting liquid flows between the rectangles.  It flows from voters who did not like the candidate as much to voters who like the candidate better.  The liquid's volume is constant.  As it flows from thinner containers into thicker containers, the total height of the liquid across all the stacked containers is reduced.  The flow makes sense because voters are being assigned to candidates they rated more highly.
 		</p>
 		<p>
-		Another way to draw this is to spin the containers so that the thicker containers look more opaque. Let's look at 3 candidates:
+		Let's look at 3 candidates:
 		</p>
 		<p style="text-align:center">
 		<span id="liquid3"></span>		
 		</p>
 		<p>
-		Here is another animation.  It shows a single candidate's support being spread over many voters by the action of minimization:
+		The minimization is really a force that is spreading representation across the voters.  Here is another animation that shows a single candidate's support being spread over many voters by the action of minimization:
 		</p>
 		<p style="text-align:center">
 		<span id="liquid2"></span>
@@ -291,7 +297,7 @@ a:hover.screenshot {
 		In addition to adjusting the distribution of the "representation liquid", we can also change which candidates are selected.  Broader candidates will have an easier time minimizing the height of their portion of "representation liquid" because they have more and bigger containers to put it in.
 		</p>
       <p>
-		Also it is a very important point that the amount of representation is not changing as we minimize.  The representation liquid has to go somewhere.  So how is it that some choices of representatives are better than others if there is the same amount of representation going around?  A better choice of representatives might have wider containers, which means the liquid doesn't have to be as tall.  
+		Also it is worth restating that that the amount of representation is not changing as we minimize.  The representation liquid has to go somewhere.  So how is it that some choices of representatives are better than others if there is the same amount of representation going around?  A better choice of representatives might have thicker containers, which means the liquid doesn't have to be as tall.  
 		</p>
 		<p style="text-align:center">
 		<span id="liquid5"></span> &nbsp;  &nbsp;  &nbsp; $ \rightarrow $  &nbsp;  &nbsp;  &nbsp; <span id="liquid6"></span>
@@ -303,19 +309,22 @@ a:hover.screenshot {
 		<span id="liquid8" ></span> &nbsp;  &nbsp;  &nbsp;  $ \rightarrow  $  &nbsp;  &nbsp;  &nbsp; <span id="liquid11"></span>  &nbsp;  &nbsp;  &nbsp; $ \approx $  &nbsp;  &nbsp;  &nbsp; <span id="liquid7"></span>
 		</p>
 		<p>
-		They don't have to be too broad, though.  A best-combination of candidates could include a set of candidates that are very local, but each have very high ratings among a community of a size at least as big as the number of voters divided by the number of seats.  This is the same basic rule that was found in STV.
+		They don't have to be too broad, though.  The red example above has 2 candidates and they split the vote evenly.  The red-blue combination achieves the same objective score as the yellow-blue combination, which means red doesn't have to be as broad as yellow.  And still red is a better option than green because red is broader than green.  
+		</p>
+		<p>
+		So a best-combination of candidates could include a set of candidates that are very local, but each have very high ratings among a community of a size at least as big as the number of voters divided by the number of seats.  This is the same basic rule that was found in STV.
 		</p>
       <p>
-		Proportionality is important because if a party decides to split, then its voters should still get represented just the same.
+		Another big topic is proportionality.  Proportionality is important because if a party decides to split, then its voters should still get represented just the same.  Actually, we have already seen a party split in an animation above.  There need to still be enough members to support a candidate if there is a party split.  
 		</p>
       <p>
-		By enforcing Jefferson's method's principle of "no special deals", the representation is spread out in proportion to population.  In the same way, by enforcing the same "no special deals" principle to our pool approach, we can reach a proportional outcome.
+		The big point is this: by enforcing Jefferson's method's principle of "no special deals", the representation is spread out in proportion to population.  In the same way, by enforcing the same "no special deals" principle to our pool approach, we can reach a proportional outcome.
 		
       </p>
 	  <div class="spacer" id="triggerjeffbottom"></div>
 	  	  <h3>Formal Model</h3>
       <p>
-        To sum up, the model minimizes the maximum of a sum of linear terms involving continuous variables $y_{ij}$ and a table of measurements $b_{ij}$.  There is a binary variable $x_j$ that indicates wins with a constraint that there are a specified number of winners.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).
+        Stated in formal math terms, the model minimizes the maximum of a sum of linear terms involving continuous variables $y_{ij}$ and a table of measurements $b_{ij}$.  There is a binary variable $x_j$ that indicates wins with a constraint that there are a specified number of winners.  Gurobi takes care of the search algorithm to find the maximum among a really large number of combinations (think factorial!).
       </p>
       <p>
         The problem is defined by the following model in the variables $x_j$ and $y_{ij}$ :
@@ -1705,6 +1714,11 @@ function drawliquid(svg,dn) {
 		var y1 = [[0,1],[1,0]]
 		var b = [[.8,1],[1,.8]]
 		var ymax = 1.5
+	} else if (dn=="1a") {
+		var y = [[1/1.8,1/1.8],[1/1.8,1/1.8]]
+		var y1 = [[0,1],[1,0]]
+		var b = [[.8,1],[1,.8]]
+		var ymax = 1.5
 	} else if (dn==2) {
 		var y = [[.6],[.1],[.1],[.1],[.1]]
 		var y1 = [[.2],[.2],[.2],[.2],[.2]]
@@ -1850,11 +1864,12 @@ function drawliquid(svg,dn) {
 					t
 					.attr("y", ty(ystack))
 				}
-				if (dn==3) {
+				if (dn==3 || dn=="1a" || dn==2 || dn==5 || dn==6) {
 					rect1
 					.attr("x", tx(i+.5))
 					.attr("width", tx(1)-tx(0))
 					.attr("opacity", b[i][j])
+					.attr("stroke-opacity", b[i][j])
 					.attr("stroke", color_fill[colkey[j] % color_fill.length])
 				} else if (dn==7 || dn==8 || dn==11) {
 					var xa = tx(i+1)
@@ -1988,6 +2003,7 @@ startdraw(drawliquid,"#liquid6",6,{"show":0})
 startdraw(drawliquid,"#liquid7",7,showliquid)
 startdraw(drawliquid,"#liquid8",8,showliquid)
 startdraw(drawliquid,"#liquid11",11,showliquid)
+startdraw(drawliquid,"#liquid1a","1a",showliquid)
 startdraw(drawjeff,"#liquidjeff",1,{"show":0})
 startdraw(drawjeff,"#rep",1,{"show":0})
 startdraw(drawjeff,"#price",2,{"show":0})
