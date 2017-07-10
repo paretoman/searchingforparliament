@@ -232,9 +232,13 @@ a:hover.screenshot {
 		<p>
 		The area is what you get when you multiply the vote value (seats per vote) by the number of voters.  So the area is 1 seat.  Every candidate's box has an area of 1.  We can write this mathematically as
 		\[
+		v_j * y_j=1 \ \forall j \in Reps
+		\]
+		and also, we do something interesting:
+		\[
 		\sum_{i \in Voters}y_{ij}=1 \ \forall j \in Reps
 		\]
-		We let this vote value be a variable.  You might think every vote value should be the same.  We will add an optimizing force that will try to make that happen.  Right now, we allow y to be a variable:
+		We let this vote value be a variable.  Not every vote value should be the same.  Some voters will vote for two representatives.  We need to allow a voter's value to add up from all the candidates his vote helped elect.  We still want this total vote value to be the same for all voters.  In 2 more paragraphs, we will add an optimizing force that will try to make that happen.  Right now, we allow y to be a variable:
 		\[
 		\begin{array}{rll}
 		& y_{ij} & & \text{Vote value: voter i is represented by representative j by this amount.} \\
@@ -1667,6 +1671,18 @@ function drawjeff(svg,dn) {
 	.attr("y1",ty(0))
 	.attr("y2",ty(1))
 	
+	xlab = svg.append("text")
+	.attr("y", h-border-6)
+	.attr("dy","10px")
+	
+	if (dn==1) {xlab.text("vote value (seats/vote) --- >").attr("x", tx(.1))
+	} else xlab.text("seat price (votes/seat) --- >").attr("x", tx(1))
+	
+	svg.append("text")
+	.attr("y", h-border-6)
+	.attr("dy","10px")
+	.text("votes")
+	.attr("x", 2)
 	
 	var r = svg.append("line")
 	.attr("y1",ty(-.1))
@@ -1678,12 +1694,14 @@ function drawjeff(svg,dn) {
 		svg.append("rect")
 		.attr("x",2)
 		.attr("width",b[id]*90)
-		.attr("y",ty((id+1-.5)/(votes.length))-10)
-		.attr("height",20)
+		.attr("y",ty((id+1-.5)/(votes.length))-90/b[0]/4)
+		.attr("height",90/b[0]/2)
 		.attr("fill", function(d) { return color_fill[id % color_fill.length]; })
 		.attr("stroke", function(d) { return color_stroke[id % color_stroke.length]; })
 		.attr("stroke-width", 2)
 	}
+	
+	
 	
 	if (dn==1) {
 		r
