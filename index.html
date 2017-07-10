@@ -241,7 +241,7 @@ a:hover.screenshot {
 		We let this vote value be a variable.  Not every vote value should be the same.  Some voters will vote for two representatives.  We need to allow a voter's value to add up from all the candidates his vote helped elect.  We still want this total vote value to be the same for all voters.  In 2 more paragraphs, we will add an optimizing force that will try to make that happen.  Right now, we allow y to be a variable:
 		\[
 		\begin{array}{rll}
-		& y_{ij} & & \text{Vote value: voter i is represented by representative j by this amount.} \\
+		& y_{ij} & & \text{Vote value. Voter i bought this fraction of a seat for rep j.} \\
 		0 \leq & y_{ij} & \leq 1 \\
 		& y_{ij} & \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.}
 		\end{array}
@@ -270,7 +270,7 @@ a:hover.screenshot {
 		How can we adopt Jefferson's method with individual voters' ballots?  Using parties to replace states is not a good idea because voters don't exactly fall into parties and not all party candidates are equal.  Also, this gives too much power to political parties.  We have a set of ballots with important information about who a voter would feel represented by.  So let's try to use it.  (Let's add the $b_{ij}$ term.) 
 		\[
 		\begin{array}{ll}
-		{\displaystyle \sum_{i \in Voters}y_{ij}*b_{ij}=1 \ \forall j \in Reps} & \text{The value of each seat is the same.} \\
+		{\displaystyle \sum_{i \in Voters}y_{ij}*b_{ij}=1 \ \forall j \in Reps} & \text{The price of each seat is the same.} \\
 		\\
 		{\displaystyle \text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} & \text{The representation of each voter is fair.}
 		\end{array}
@@ -343,8 +343,8 @@ a:hover.screenshot {
         \begin{array}{lll}
         \text{Minimize}   & {\displaystyle \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} &  \text{The representation of each voter is fair.} \\
 		\\
-        \text{Subject to} & {\displaystyle \sum_{i \in Voters} y_{ij} * b_{ij} =x_j \ \ \ \forall \  j \in Reps} & \text{The value of each winning seat is the same.} \\ \\
-                          & 0 \leq y_{ij} \leq 1  & \text{Voter i is represented by representative j by this amount.} \\ \\
+        \text{Subject to} & {\displaystyle \sum_{i \in Voters} y_{ij} * b_{ij} =x_j \ \ \ \forall \  j \in Reps} & \text{The price of each winning seat is the same.} \\ \\
+                          & 0 \leq y_{ij} \leq 1  & \text{Vote value. Voter i bought this fraction of a seat for rep j.} \\ \\
 						  & y_{ij} \leq x_j & \text{Candidate j cannot represent anyone if he is not elected.} \\ \\
 						  & x_j \in \{ 0, 1 \} & \text{Candidates either win or lose.} \\ \\
 						  & {\displaystyle \sum_j x_j = N} & \text{Only N candidates win.} \\
@@ -467,7 +467,7 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
       </p>
 
       <p>
-        By clicking the map you can add rep locations.
+        By clicking the map you can add candidate locations.
         These are drawn as:
         <svg height="20" width="20">
       <circle cx="10" cy="10" r="8" stroke="black" stroke-width="1" fill="white" />
@@ -492,7 +492,7 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
       </p>
 
       <p>
-        A few rep locations have already been set up, but
+        A few candidate locations have already been set up, but
         you can add more by clicking the screen.
       </p>
 	  
