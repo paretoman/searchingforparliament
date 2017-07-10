@@ -258,7 +258,7 @@ a:hover.screenshot {
 		It is clear in this graph that the reason there are less green representatives is that there are less green voters.  The vote value of green voters is the total height of the green boxes (since they each get 2 reps).  Because we have to have whole numbers of representatives, we can't represent each kind of voter equally.  Blue voters get a higher vote value.  The best we can do is to make sure that nobody is getting a special deal on representation.  There is nobody who has the votes needed for a seat that doesn't already have a seat.  Every representative deserves his seat.  There is no better way to stack the boxes.
 		</p>
       <p>
-		You can state in math terms that the price of each seat should be nearly the same:
+		What was our method of getting to this solution?  Well, we stacked the boxes evenly so that no stack would be too tall.  This is the shortest we can stack this number of boxes. In doing so, we kept the value of each vote nearly the same.  We can state this stacking principle in math terms:
 		\[
 		\text{Minimize} \max_{i \in Voters} \sum_{j \in Reps} y_{ij}
 		\]
@@ -267,7 +267,7 @@ a:hover.screenshot {
 		
 	  <h3> Pooled Votes </h3>
       <p>
-		How can we adopt Jefferson's method with individual voters' ballots?  Using parties to replace states is not a good idea because voters don't exactly fall into parties and not all party candidates are equal.  Also, this gives too much power to political parties.  We have a set of ballots with important information about who a voter would feel represented by, so let's try to use it.
+		How can we adopt Jefferson's method with individual voters' ballots?  Using parties to replace states is not a good idea because voters don't exactly fall into parties and not all party candidates are equal.  Also, this gives too much power to political parties.  We have a set of ballots with important information about who a voter would feel represented by.  So let's try to use it.  (Let's add the $b_{ij}$ term.) 
 		\[
 		\begin{array}{ll}
 		{\displaystyle \sum_{i \in Voters}y_{ij}*b_{ij}=1 \ \forall j \in Reps} & \text{The value of each seat is the same.} \\
@@ -277,13 +277,13 @@ a:hover.screenshot {
 		\]
 		</p>
       <p>
-		Basically, what this y term tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation.  Here is an animation that shows an initial guess at the y term and the flow caused by the minimization.  
+		Basically, what this tries to do is to find groups of voters who can pool their votes to support a representative.  This pool is liquid.  It can move to get the best representation.  Here is an animation that shows an initial guess and the flow caused by the minimization.  
 		</p>
 		<p style="text-align:center">
 		<span id="liquid1a"></span>
 		</p>
 		<p>
-		What are these boxes?  There are 2 voters, left and right.  They both like the green and blue candidates.  The height of the box is the y term, for a voter's individual value (seats/voter).  Now imagine the box is 3-D and there is a colored fluid in it.  A thicker box will look darker.  This thickness is the b term, how much a voter liked a candidate.  Another way to draw this is to spin the containers so that you can see the thickness, and we will show that for just one drawing.
+		What are these boxes?  There are 2 voters, left and right.  They both like the green and blue candidates.  The height of the box is the vote value (seats/voter), the y term.  Now imagine the box is 3-D and there is a colored fluid in it.  A thicker box will look darker.  This thickness is the b term, how much a voter liked a candidate.  Another way to draw this is to spin the containers so that you can see the thickness, and we will show that for just one drawing.
 		</p>
 		<p style="text-align:center">
 		<span id="liquid"></span>
