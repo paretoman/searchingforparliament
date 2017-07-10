@@ -669,7 +669,8 @@ def optimize(voters, reps, options, output=False):
         
     def getseriated(voters):
         csvdata = voters.tolist()
-        a_command = 'K:\\install\\R\\R-3.1.0\\bin\\Rscript.exe'
+        a_command = "Rscript"
+        #a_command = 'K:\\install\\R\\R-3.1.0\\bin\\Rscript.exe'
         path2script = 'seriate.R'
 
         
