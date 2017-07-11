@@ -709,6 +709,12 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		</p>
 	  </div>
 	  
+	  <div>
+		<p style="text-align:center">
+		<span id="download"></span>
+		</p>
+	  </div>
+	  
 	  </div>
 	  
           <script>
@@ -1604,7 +1610,7 @@ function serverResponse(error, data) {
 								x = a_border+10 + i*x_scale*2
 								y = 0
 								ctx4.fillStyle = i_color;
-								ctx4.fillRect( x+1, y+1, x_scale*2-2,20-2 );
+								ctx4.fillRect( x, y+1, x_scale*2,20-2 );
 							}
 						}
 					}
@@ -1685,12 +1691,49 @@ function serverResponse(error, data) {
 						
 						startdraw(drawliquid,"#liquid15",dn16,dn16)
 					}
+					// vorder
+					alldata = { "b":orb,
+					"y":oryo,
+					"yb":orbyo,
+					"votercolor":v_id,
+					"x":ord_can.map(function(d) {return xo[d]}),
+					"xcolor":ord_can.map(function(d) {return solutionfid[d]}),
+					"y uniform with all ballots":dn15.y1,
+					"y uniform with the winning ballots":dn16.y1,
+					}
+					
+					makedlink(alldata,"download","downloadJSON")
+					if (0) {
+						makedlink(vorder,"liquid15")
+						makedlink(orbo,"liquid15")
+						makedlink(oryo,"liquid15")
+						makedlink(v_id,"liquid15")
+						makedlink(ord_can.map(function(d) {solutionfid[d]}),"liquid15")
+						makedlink(ord_can.map(function(d) {xo[d]}),"liquid15")
+						makedlink(dn15.y1,"liquid15")
+						makedlink(dn15.y,"liquid15")
+						makedlink(dn15.b,"liquid15")
+						makedlink(dn16.y1,"liquid15")
+						makedlink(dn16.y,"liquid15")
+						makedlink(dn16.b,"liquid15")
+					}
 				}
 			}
         }
       }
 }
 
+function makedlink(obj,containername,text) {
+	var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj));
+
+	var a = document.createElement('a');
+	a.href = 'data:' + data;
+	a.download = 'data.json';
+	a.innerHTML = text;
+
+	var container = document.getElementById(containername);
+	container.appendChild(a);
+}
 
 function restart() {
   sitesG.selectAll("circle").remove("circle");
@@ -1899,10 +1942,8 @@ function drawjeff(svg,dn) {
 				.attr("width", tx(last_mark[id])-tx(0))
 				.attr("height", 8)
 				.attr("y", ty((id+1-.5)/(votes.length)) -4)
-				console.log('hi')
 		}
 	}	
-	console.log(dn)
 	var sdashes = svg
 	.selectAll('rect.spacer')
 	.data(dashes)
@@ -2054,7 +2095,6 @@ function drawliquid(svg,dn) {
 		var colkey = [2,2,2,2,1,1,1,1,0,0,0,0]
 		var y1 = y
 		ymax=6
-		console.log(y)
 		var w = 480;
 		var h = 300;
 	} else if (dn==5) {
@@ -2150,7 +2190,6 @@ function drawliquid(svg,dn) {
 		slow = dn.slow
 		var w = 300;
 		var h = 300;
-		console.log("hi15")
 	}
 
 	svg
@@ -2208,7 +2247,6 @@ function drawliquid(svg,dn) {
 			  }
 			}
 			var ystack = a
-			console.log(y)
 			var ys = []
 			for (var i=0; i<y.length;i++) {
 				var ystack2 = 0;
@@ -2219,7 +2257,6 @@ function drawliquid(svg,dn) {
 				}
 				ys.push(ysi)
 			}
-			console.log(ys)
 			var yd = []
 			for (var i=0;i<y.length;i++) {
 				var yd1 = []
@@ -2238,7 +2275,6 @@ function drawliquid(svg,dn) {
 				}
 				yd.push(yd1)
 			}
-			console.log(yd)
 			svg.selectAll("g.a")
 			.data(yd)
 			.enter()
@@ -2388,7 +2424,6 @@ function drawliquid(svg,dn) {
 							.x(function(d) {return d.x; })
 							.y(function(d) {return d.y;})
 							.interpolate("linear")
-			console.log(lined)
 			for (i=0;i<lined.length;i++) {
 				var path1 = pathlist[i]
 				path1
