@@ -892,6 +892,10 @@ def optimize(voters, reps, options, output=False):
         f.close()
         # if doing setup, remember to delete the extra commas and then change the filename to erase the 1.
         
+    # also, let's see if there are voters who were evenly split between two winners.
+    # y > .99
+    # well, this might be more complicated because we have to exchange pairs.  Also, there probably aren't many of these ties.  Unless we are going to do a threshold ballot.
+        
     def norm1(x):
         return x* 1/numpy.max(x)
         
