@@ -1654,7 +1654,7 @@ function serverResponse(error, data) {
 						dn15.ymax = 1.2*sinvcolsumorb
 						dn15.slow = 2
 						dn15.y1 =orbyo
-						dn15.colkey = Array.apply(null,Array(orb[0].length)).map(function(d,i){return (xo[ord_can[i]] == 1)?solutionfid[ord_can[i] % color_fill.length]:-1})
+						dn15.colkey = Array.apply(null,Array(orb[0].length)).map(function(d,i){return (xo[ord_can[i]] == 1)?solutionfid[ord_can[i]] % color_fill.length:-1})
 						dn15.show=0
 						
 						// clear old canvas
@@ -2278,6 +2278,7 @@ function drawliquid(svg,dn) {
 				if (dn.show == 0) {
 					svg.selectAll("rect").transition()
 					svg.selectAll("line").transition()
+					svg.selectAll("path").transition()
 				}
 			}
 			
