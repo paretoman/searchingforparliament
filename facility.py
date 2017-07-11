@@ -23,7 +23,7 @@ from sklearn import manifold
 import csv
 from subprocess import Popen, PIPE, STDOUT
 from sklearn.neighbors import NearestNeighbors
-
+import os.path
 
 # example of problem data
 # voters = [[c1,c2] for c1 in range(10) for c2 in range(10)]
@@ -771,7 +771,10 @@ def optimize(voters, reps, options, output=False):
     
     
     # see what a similarity measure would look like for voters - if there are communities
-    do_setup = 0
+    do_setup = not os.path.isfile("vorder.txt") # see if we already have a starting file ready
+    print("setup?")
+    print(do_setup)
+    
     if options["Calculate Voter Communities"]:
         if options["stateInitialMap"] and not do_setup:
             # don't need to do new calculations
@@ -870,19 +873,20 @@ def optimize(voters, reps, options, output=False):
     oryo = yo
     if options['phragmen']:
         showy = 1
-        oryo = yo[vorder][:,ord_can] / numpy.max(yo)
+        oryo = yo[vorder][:,ord_can]
+        noryo = yo[vorder][:,ord_can] / numpy.max(yo)
     
     # just once for set up.
     if do_setup:
-        f = open('voterCom1.txt','w')
+        f = open('voterCom.txt','w')
         votercommunities.tofile(f,",","%1.2f")
         #f.write( [["%1.3f" % a for a in b ] for b in votercommunities.tolist()] )
         f.close()
-        f = open('vorder1.txt','w')
+        f = open('vorder.txt','w')
         for a in vorder:
             f.write( "%i," % a )
         f.close()
-        f = open('rv1.txt','w')
+        f = open('rv.txt','w')
         for a in rv:
             f.write( "%i," % a )
         f.close()
@@ -907,13 +911,16 @@ def optimize(voters, reps, options, output=False):
     votercolor.tolist(),
     vorder,
     orb.tolist(),
-    ord_can,showy,
-    oryo.tolist(),
+    ord_can,
+    showy,
+    noryo.tolist(),
     solutionfid.tolist(),
     xo.tolist(),
     norm1((orb*oryo)).tolist(),
     norm1(numpy.sum(orb*oryo,1)).tolist(),
-    norm1(numpy.sum(oryo,1)).tolist()]
+    norm1(numpy.sum(oryo,1)).tolist(),
+    oryo.tolist(),
+    (orb*oryo).tolist()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:

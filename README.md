@@ -26,7 +26,7 @@
     python setup.py install
     ```
 
-5. Install R.  Also, there are a few standard python packages to install as well, like sci-kit learn.
+5. Install R.  Also, install the package "seriate".  This can be as easy as "sudo yum install R".  And then "sudo Rscript seriate.r".  Also, there are a few standard python packages to install as well, like sci-kit learn.
 
 6. Start Python's webserver from the command line
 
@@ -47,4 +47,6 @@ c:\Users\You\Miniconda2\python.exe SimpleServer.py
 ```
 
 7. Point your browser at http://localhost:8000
+
+Also, there are some "fast load" files that will be created the first time the website runs the computation.  If you need to recreate these files, just delete one of them, "vorder.txt".  The other two are "rv.txt" and "voterCom.txt"
 
