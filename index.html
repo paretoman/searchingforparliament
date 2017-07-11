@@ -1653,6 +1653,13 @@ function serverResponse(error, data) {
 						dn15.y1 =orbyo
 						dn15.colkey = Array.apply(null,Array(orb[0].length)).map(function(d,i){return (xo[ord_can[i]] == 1)?solutionfid[ord_can[i] % color_fill.length]:-1})
 						dn15.show=0
+						
+						// clear old canvas
+						var myNode = document.getElementById("liquid15");
+						while (myNode.firstChild) {
+							myNode.removeChild(myNode.firstChild);
+						}
+						
 						startdraw(drawliquid,"#liquid15",dn15,dn15)
 					}
 				}
@@ -2154,19 +2161,8 @@ function drawliquid(svg,dn) {
 	.attr("y2",ty(0))
 	
 	function draw1(y,del,dur,setr0) {
-		var ymax = 0;
+		var ym = 0;
 		
-		r
-		.transition()
-		.delay(del)
-		.duration(dur)
-		.attr("y1",ty(ymax))
-		.attr("y2",ty(ymax))
-		if (setr0) {
-			r0
-			.attr("y1",ty(ymax))
-			.attr("y2",ty(ymax))
-		}
 		
 		if (0) { //(dn.t==15) {
 			var a = y.slice()
@@ -2313,7 +2309,19 @@ function drawliquid(svg,dn) {
 					.attr("stroke", cstroke)
 				}
 			}
-			ymax = Math.max(ystack,ymax);
+			ym = Math.max(ystack,ym);
+		}
+		
+		r
+		.transition()
+		.delay(del)
+		.duration(dur)
+		.attr("y1",ty(ym))
+		.attr("y2",ty(ym))
+		if (setr0) {
+			r0
+			.attr("y1",ty(ym))
+			.attr("y2",ty(ym))
 		}
 	}
 	draw1(y,0,0,1)
