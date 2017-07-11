@@ -924,7 +924,8 @@ def optimize(voters, reps, options, output=False):
     norm1(numpy.sum(orb*oryo,1)).tolist(),
     norm1(numpy.sum(oryo,1)).tolist(),
     oryo.tolist(),
-    (orb*oryo).tolist()]
+    (orb*oryo).tolist(),
+    d[vorder][:,ord_can].tolist()]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:

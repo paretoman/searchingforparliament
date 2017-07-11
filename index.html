@@ -1520,6 +1520,7 @@ function serverResponse(error, data) {
 					soryo = solution[23];
 					oryo = solution[24];
 					orbyo = solution[25];
+					dord = solution[26];
 					var ld3 = voterCom.length;
 					var imgData3=ctx3.createImageData(ld3+10,ld3+10);
 					
@@ -1692,7 +1693,9 @@ function serverResponse(error, data) {
 						startdraw(drawliquid,"#liquid15",dn16,dn16)
 					}
 					// vorder
-					alldata = { "b":orb,
+					alldata = {"voters":vorder.map(function(d) {return vertices[d]}),
+					"candidates":ord_can.map(function(d) {return sites[d]}),
+					"b":orb,
 					"y":oryo,
 					"yb":orbyo,
 					"votercolor":v_id,
@@ -1700,6 +1703,7 @@ function serverResponse(error, data) {
 					"xcolor":ord_can.map(function(d) {return solutionfid[d]}),
 					"y uniform with all ballots":dn15.y1,
 					"y uniform with the winning ballots":dn16.y1,
+					"d":dord
 					}
 					
 					makedlink(alldata,"download","downloadJSON")
