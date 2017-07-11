@@ -1351,6 +1351,12 @@ function serverResponse(error, data) {
 		  var c8=document.getElementById("sytable");
 		  var ctx8=c8.getContext("2d");
 		  ctx8.clearRect(0, 0, c8.width, c8.height);
+		  
+		  // clear old canvas
+		  var myNode = document.getElementById("liquid15");
+		  while (myNode.firstChild) {
+			  myNode.removeChild(myNode.firstChild);
+		  }
 				
 		  if (solution.length > 3) {
 		  
@@ -1666,11 +1672,7 @@ function serverResponse(error, data) {
 						dn15.colkey = Array.apply(null,Array(orb[0].length)).map(function(d,i){return (xo[ord_can[i]] == 1)?solutionfid[ord_can[i]] % color_fill.length:-1})
 						dn15.show=0
 						
-						// clear old canvas
-						var myNode = document.getElementById("liquid15");
-						while (myNode.firstChild) {
-							myNode.removeChild(myNode.firstChild);
-						}
+						
 						
 						startdraw(drawliquid,"#liquid15",dn15,dn15)
 						
