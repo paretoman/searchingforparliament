@@ -1640,7 +1640,8 @@ function serverResponse(error, data) {
 						dn15 = {}
 						dn15.t=15
 						dn15.b = orb
-						// sum orbyo over voters
+						
+						// to get y and ymax, sum orbyo over voters
 						colsumorb = orb.reduce(function (r, a) {
 							a.forEach(function (b, i) {
 								r[i] = (r[i] || 0) + b;
@@ -1652,6 +1653,7 @@ function serverResponse(error, data) {
 						dn15.y = Array.apply(null, Array(orb.length)).map(function(){return invcolsumorb.slice()})
 						sinvcolsumorb = invcolsumorb.reduce(function(pv, cv) { return pv + cv; }, 0);
 						dn15.ymax = 1.2*sinvcolsumorb
+						
 						dn15.slow = 2
 						dn15.y1 =orbyo
 						dn15.colkey = Array.apply(null,Array(orb[0].length)).map(function(d,i){return (xo[ord_can[i]] == 1)?solutionfid[ord_can[i]] % color_fill.length:-1})
@@ -1664,6 +1666,24 @@ function serverResponse(error, data) {
 						}
 						
 						startdraw(drawliquid,"#liquid15",dn15,dn15)
+						
+						// make a graph of just the winners using this filter
+						ff = function(d,i) { return (xo[ord_can[i]] == 1) }
+						
+						dn16 = jQuery.extend(true, {}, dn15);
+						dn16.b = []
+						dn16.y = []
+						dn16.y1 = []
+						for (var i=0; i<orb.length; i++) {
+							dn16.b.push(dn15.b[i].filter(ff ) )
+							dn16.y.push(dn15.y[i].filter(ff ) )
+							dn16.y1.push(dn15.y1[i].filter(ff) )
+						}
+						dn16.colkey = dn15.colkey.filter(ff )
+						sinvcolsumorb = invcolsumorb.filter(ff ).reduce(function(pv, cv) { return pv + cv; }, 0);
+						dn16.ymax = 1.2*sinvcolsumorb
+						
+						startdraw(drawliquid,"#liquid15",dn16,dn16)
 					}
 				}
 			}
@@ -2272,6 +2292,8 @@ function drawliquid(svg,dn) {
 			
 			drawpauseplay()
 			
+			svg.selectAll("text").remove()
+					
 			toggleplay = function() {
 				dn.show = 1 - dn.show
 				drawpauseplay()
@@ -2279,6 +2301,12 @@ function drawliquid(svg,dn) {
 					svg.selectAll("rect").transition()
 					svg.selectAll("line").transition()
 					svg.selectAll("path").transition()
+				} else {
+					svg.append("text")
+					.attr("x",40)
+					.attr("y",5)
+					.attr("dy",20)
+					.text("just a moment")
 				}
 			}
 			
