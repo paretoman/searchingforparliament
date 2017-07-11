@@ -2260,7 +2260,10 @@ function drawliquid(svg,dn) {
 			.on("mousedown", function() {
 				dn.show = 1 - dn.show
 				drawpauseplay()
-				if (dn.show == 0) svg.selectAll("rect").transition()
+				if (dn.show == 0) {
+					svg.selectAll("rect").transition()
+					svg.selectAll("line").transition()
+				}
 			});
 		}
 		
