@@ -614,9 +614,9 @@ def optimize(voters, reps, options, output=False):
         for j in solution1:
             if options['phragmen']:
                 b_close = y[(i,j)].X
-                yo[i,j] = b_close
             else:
                 b_close = b[i,j]
+            yo[i,j] = b_close
             if b_close > maxb:
                 maxj = j
                 maxb = b_close
@@ -871,10 +871,10 @@ def optimize(voters, reps, options, output=False):
     
     showy=0
     oryo = yo
+    oryo = yo[vorder][:,ord_can]
+    noryo = yo[vorder][:,ord_can] / numpy.max(yo)
     if options['phragmen']:
         showy = 1
-        oryo = yo[vorder][:,ord_can]
-        noryo = yo[vorder][:,ord_can] / numpy.max(yo)
     
     # just once for set up.
     if do_setup:
