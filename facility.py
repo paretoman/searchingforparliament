@@ -953,12 +953,18 @@ def optimize(voters, reps, options, output=False):
         #f.write( [["%1.3f" % a for a in b ] for b in votercommunities.tolist()] )
         f.close()
         f = open('vorder.txt','w')
+        st = ''
         for a in vorder:
-            f.write( "%i," % a )
+            st += "%i," % a
+        st = st[:-1]
+        f.write(st)
         f.close()
         f = open('rv.txt','w')
-        for a in rv:
-            f.write( "%i," % a )
+        st = ''
+        for a in vorder:
+            st += "%i," % a
+        st = st[:-1]
+        f.write(st)
         f.close()
         # if doing setup, remember to delete the extra commas and then change the filename to erase the 1.
         
