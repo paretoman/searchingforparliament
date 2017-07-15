@@ -549,16 +549,10 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		<div id="options" style="display:none">
 		<form>
 		<fieldset>
-		<legend>Output:</legend>
-		<input id="calcVoterCom" type="checkbox" checked="true"> Calculate Voter Communities <br />
-		</fieldset>
-		<fieldset>
-		<legend>Keeps:</legend>
-		<input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width" style="width:100px"> <br />
-		<output for=cost id=costDisplay>1.0</output> Multiplier <br />
-		<input class="op" type="radio" name="keeps" checked="true">	Seats Plus Zero <br />
-		<input class="op" type="radio" name="keeps">	Seats Plus Half <br />
-		<input class="op" type="radio" name="keeps">	Seats Plus One <br />
+		<legend>Map:</legend>
+		<input type="range" min = .1 max = 1 step = .1 id="zoom_id" value="1" oninput="updateZoom(value)" class="slider-width" style="width:60px">Zoom<br />
+		<input type="range" min = -1 max = 1 step = .1 id="xshift_id" value="0" oninput="updateXshift(value)" class="slider-width" style="width:60px">X<br />
+		<input type="range" min = -1 max = 1 step = .1 id="yshift_id" value="0" oninput="updateYshift(value)" class="slider-width" style="width:60px">Y<br />
 		</fieldset>
 		<fieldset>
 		<legend>Ballot:</legend>
@@ -569,19 +563,10 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		<input class="op" type="radio" name="ballots"> 	Threshold (todo) <br />
 		</fieldset>
 		<fieldset>
-		<legend>Similarity Measure:</legend>
-		<input class="op" type="radio" name="similarity" checked="true"> Jaccard<br />
-		<input class="op" type="radio" name="similarity"> Both Out Of One<br />
-		<input class="op" type="radio" name="similarity"> One From Either<br />
-		<input class="op" type="radio" name="similarity"> Simultaneous<br />
-		<input class="op" type="radio" name="similarity"> integrateKeeps<br />
-		<input class="op" type="radio" name="similarity"> Cosine<br />
-		<input class="op" type="radio" name="similarity"> L1<br />
-		<input class="op" type="radio" name="similarity"> multiplySupport<br />
-		</fieldset>
-		<fieldset>
 		<legend>Computation:</legend>
 		<input class="op" type="radio" name="compute" checked="true"> Phragmen<br />
+		<input class="op" type="radio" name="compute"> Phragmen bid <br />
+		<input class="op" type="radio" name="compute"> RRV max <br />
 		<input class="op" type="radio" name="compute"> Binary Quadratic Problem <br />
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
@@ -623,12 +608,30 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		<input class="op" type="radio" name="compute"> RRV Load Balance Fast way?<br />
 		<input class="op" type="radio" name="compute"> RRV Load Balance Easy way<br />
 		<input class="op" type="radio" name="compute"> RRV bid <br />
+		<input class="op" type="radio" name="compute"> RRV max easy<br />
 	    </fieldset>
 		<fieldset>
-		<legend>Map:</legend>
-		<input type="range" min = .1 max = 1 step = .1 id="zoom_id" value="1" oninput="updateZoom(value)" class="slider-width" style="width:60px">Zoom<br />
-		<input type="range" min = -1 max = 1 step = .1 id="xshift_id" value="0" oninput="updateXshift(value)" class="slider-width" style="width:60px">X<br />
-		<input type="range" min = -1 max = 1 step = .1 id="yshift_id" value="0" oninput="updateYshift(value)" class="slider-width" style="width:60px">Y<br />
+		<legend>Output:</legend>
+		<input id="calcVoterCom" type="checkbox" checked="true"> Calculate Voter Communities <br />
+		</fieldset>
+		<fieldset>
+		<legend>Keeps:</legend>
+		<input type="range" min = 500000 max = 3000000 step = 500000 id="cost" value="1000000" oninput="outputUpdate(value)" class="slider-width" style="width:100px"> <br />
+		<output for=cost id=costDisplay>1.0</output> Multiplier <br />
+		<input class="op" type="radio" name="keeps" checked="true">	Seats Plus Zero <br />
+		<input class="op" type="radio" name="keeps">	Seats Plus Half <br />
+		<input class="op" type="radio" name="keeps">	Seats Plus One <br />
+		</fieldset>
+		<fieldset>
+		<legend>Similarity Measure:</legend>
+		<input class="op" type="radio" name="similarity" checked="true"> Jaccard<br />
+		<input class="op" type="radio" name="similarity"> Both Out Of One<br />
+		<input class="op" type="radio" name="similarity"> One From Either<br />
+		<input class="op" type="radio" name="similarity"> Simultaneous<br />
+		<input class="op" type="radio" name="similarity"> integrateKeeps<br />
+		<input class="op" type="radio" name="similarity"> Cosine<br />
+		<input class="op" type="radio" name="similarity"> L1<br />
+		<input class="op" type="radio" name="similarity"> multiplySupport<br />
 		</fieldset>
 		</form>
 		</div>
@@ -825,38 +828,88 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 	  <h3> Re-weighted Range Voting </h3>
 	  <p>
 	  By the way, we can still think about another way to state this problem that better corresponds to a picture of price:
+	  </p>
+		<p style="text-align:center">
+		<span id="price"></span>
+		</p>
+		<p>
+		Compare that to the picture of representation we had used instead:
+		</p>
+		<p style="text-align:center">
+		<span id="rep"></span>
+		</p>
+		<p>
+		Now look at the math form of fair price:
 		\[
 		\begin{array}{lll}
 		\text{Maximize} & \min_{j \in Reps} \sum_{i \in Voters} y_{ij}*b_{ij} & \text{The price of each seat is fair.} \\
 		\text{Subject to} & \forall \ i \in Voters  \ \  \sum_{j \in Reps} y_{ij}=1 & \text{The representation of each voter is the same.} \\
 		\end{array}
 		\]
-	</p>
-		<p style="text-align:center">
-		<span id="price"></span>
-		</p>
-		<p>
-		Compare this to our formulation above which correspons to a picture of representation:
+
+		Versus the math form of fair representation:
 		\[
         \begin{array}{lll}
         \text{Minimize}   & { \max_{i \in Voters} \sum_{j \in Reps} y_{ij}} &  \text{The representation of each voter is fair.} \\
         \text{Subject to} & {\forall \  j \in Reps} \ \  \sum_{i \in Voters} y_{ij} * b_{ij} =x_j \ \ \  & \text{The value of each winning seat is the same.} 
         \end{array}
         \]
+		
+		These are actually equivalent statements in some cases.  For instance, if voters are partisan, then the statements are the same. Otherwise, I imagine these statements can be different. 
+		</p>
+		<p>
+		"Phragmen Bid" in Beast Mode is the price-based formulation.  As far as I can tell, it gives the same results as Phragmen.  
+		</p>
+		<h3> Motivation for RRV</h3>
+		<p>
+		The smushing rules might not seem fair.  Most voters end up just getting all their vote assigned to one representative when really they like a couple different ones.  So it seems like we could add a rule that says your vote gets divided in proportion to how much you like each winning candidate.
+		
 		</p>
 		<p style="text-align:center">
-		<span id="rep"></span>
+		<span id="liquid14again"></span>
 		</p>
 		<p>
 		
-		These are equivalent statements when voters are partisan.  If voters are not partisan, then these statements can be different. 
+		In math terms,
+		\[
+		\frac{y_{ij}}{b_{ij}}=f_i \quad \text{Vote value is proportional to score. (for all winning candidates)}
+		\]
+		"RRV max" is what I call this method in beast mode.  RRV stands for "re-weighted range voting".  I think this method has the same goal as RRV.  It wants to divide each voter proportional to his scores and pick the candidates with the highest total scores. 
 		</p>
 		<p>
-		This can be modified so that $y_{ij} = f_i * x_j$, which would give us something like reweighted-range voting, but I have to think about this more.
-		
-		Hmm... thinking more about reweighted range voting, there is a basic constraint that y is only one value for a voter across all candidates.  Basically, we're restricting the ability of the liquid to move.  This can be good because it encourages more broad candidates, since voters cannot let their vote be smushed in by a narrow candidate they like.  It seems to be a good restriction.  In math terms, we have $y_{ij} = f_i$.  Reweighted range voting also has a particular value in mind for this f.  It tries to set it as $f_i = \frac{1}{\sum_j b_{ij} * x_j}$.  Division is hard to do in an optimization, so we can state this as a constraint $f_i * \sum_j b_{ij} * x[j] = 1$  Our other constraint is still that the representation of each representative is equal, and restating with f gives $x_j * \sum_i f_i * b_ij = x_j$.  Notice we need to have x on both sides so that the equation really only applies when the candidate is selected.  Our optimization is still the same, too: minimize $\max_i f_i * \sum_j b_ij * x_j$.  Let's see how this works out and call it "RRV Load Balance".  Actually, all we really need to do is set $y_{ij} = f_i * x_j
+		Right now, this method, as implemented, is kinda slow.  Maybe there is a way to speed it up.  Try the regular RRV method, which is an approximation to this optimization.
+		</p>
+		<p>
+		For a little more math, maybe we can understand a little more.  Using this f term in the price of each seat, we get
+		\[
+		\sum_{i \in Voters} y_{ij}*b_{ij} = \sum_{i} 
+		f_i*b_{ij}^2
+		\]
+		What is f?
+		\[
+		\begin{align}
+		y_{ij}=f_i * b_{ij} * x_j \quad \text{and} \quad \sum_j y_{ij} &= 1 \nonumber \\
+		\text{so} \ \sum_j f_i * b_{ij} * x_j &= 1 \nonumber \\
+		f_i &= { \displaystyle \frac{1}{\sum_j b_{ij} * x_j }} \nonumber \\
+		\end{align}
+		\]
+		Well, I guess that gives us an expression for f but I need to think a little more about what that expression means.  And we could write the problem as
+		\[
+		\text{Maximize}   \quad { \min_j \sum_i \frac{b_{ij}^2}{\sum_j x_j*b_{ij}}}
+		\]
+		This is just what you get when you try to eliminate as many variables as you can, though I have to think about it more to get some insight.  What's nice about this is there is no y term.
+		</p>
+		<p>
+		The purpose of writing this was to show how STV and RRV are related.  We related STV to Phragmen to RRV.  The main difference is the idea of whether individual votes should be divided proportionally among the winning candidates.  In STV, you whole vote goes to one candidate while in RRV it gets divided proportional to how much you supported the candidate.
 	  </p>
+	  <h3> More thoughts </h3>
+	  <p>
 		Also, another great topic of consideration is what scores a voter would actually want to give a candidate?  How is a 9 different than a 6 or a 2?  Well, to answer that, I've been thinking that a really good scoring system would basically have 2 major levels and ranks at each one.  So basically, there would be a 10.0, 9.9, 9.8 and then a 0.2 0.1 0.0.  Because voters really either like you or they don't. And they might have a preference for someone else but it won't mean they'll not support whoever wins just as much.  Voters still want to give the same opportunity to every candidate that they like.  They also would rather be represented by a particular person.  If that person doesn't find enough support with other people, then they'd like to be represented by a second choice.  So really there are 2 lists.  The approved list and the bad list.  And there are rankings in each list.  This is actually something I've seen at rankechoicevote.com but I haven't seen it anywhere else.
+		</p>
+		<p>
+		Also having all the ratings right near 10, like 10.0, 9.9 etc would mean that a vote gets transferred basically in full.  This would be like STV.  This is how you would make a ranking system out of Phragmen's method.  
+		</p>
+		<p>
 		</div>
 	  
 	  
@@ -1675,9 +1728,24 @@ function serverResponse(error, data) {
 						sinvcolsumorb = invcolsumorb.reduce(function(pv, cv) { return pv + cv; }, 0);
 						dn15.ymax = 1.2*sinvcolsumorb
 						
+						
 						dn15.slow = 2
 						dn15.y1 =orbyo
 						dn15.colkey = Array.apply(null,Array(orb[0].length)).map(function(d,i){return (xo[ord_can[i]] == 1)?solutionfid[ord_can[i]] % color_fill.length:-1})
+						
+						// also do another calculation of ymax
+						rowsumy1 = dn15.y1.map(function(d) {
+							return d.reduce(function(sum, value) {
+								return sum + value;
+							}, 0);
+						});
+						function getMaxOfArray(numArray) {
+						  return Math.max.apply(null, numArray);
+						}
+						mrowsumy1 = getMaxOfArray(rowsumy1)
+						dn15.ymax = Math.max(dn15.ymax,1.2*mrowsumy1);
+						
+						
 						dn15.show=0
 						
 						
@@ -1699,6 +1767,19 @@ function serverResponse(error, data) {
 						dn16.colkey = dn15.colkey.filter(ff )
 						sinvcolsumorb = invcolsumorb.filter(ff ).reduce(function(pv, cv) { return pv + cv; }, 0);
 						dn16.ymax = 1.2*sinvcolsumorb
+						
+						
+						// also do another calculation of ymax
+						rowsumy1 = dn16.y1.map(function(d) {
+							return d.reduce(function(sum, value) {
+								return sum + value;
+							}, 0);
+						});
+						function getMaxOfArray(numArray) {
+						  return Math.max.apply(null, numArray);
+						}
+						mrowsumy1 = getMaxOfArray(rowsumy1)
+						dn16.ymax = Math.max(dn16.ymax,1.2*mrowsumy1);
 						
 						startdraw(drawliquid,"#liquid15",dn16,dn16)
 					}
@@ -2575,6 +2656,7 @@ startdraw(drawliquid,"#liquid14",14,showliquid)
 startdraw(drawjeff,"#liquidjeffagain",4,{"show":0})
 startdraw(drawjeff,"#rep",1,{"show":0})
 startdraw(drawjeff,"#price",2,{"show":0})
+startdraw(drawliquid,"#liquid14again",14,showliquid)
 startdraw(splitrectangle,"#splitrectangle",1,{"show":1})
 
 

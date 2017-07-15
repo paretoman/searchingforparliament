@@ -174,7 +174,7 @@ def optimize(voters, reps, options, output=False):
     # there are a few different computations, depending on the option
     #
     
-    if options['phragmen'] or options["RRVloadbalance"] or options['RRVbid'] or options["RRVloadbalanceEasy"] or options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
+    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options["RRVloadbalanceEasy"] or options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
     
         m = Model()
         if not output:
@@ -197,6 +197,7 @@ def optimize(voters, reps, options, output=False):
             Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
             m.update()
             m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            # huh, I didn't even need y<x because the optimization already took care of that.
             #m.addConstr(nWinners == quicksum(quicksum( y[(i,j)] for j in range(numReps) ) for i in range(numVoters) ) )
             #m.addConstr(nWinners == quicksum(quicksum( b[i,j] * y[(i,j)] for j in range(numReps) ) for i in range(numVoters) ) )
             for j in range(numReps):
@@ -216,7 +217,7 @@ def optimize(voters, reps, options, output=False):
             m.update()
             m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
             for j in range(numReps):
-                m.addConstr( x[j] == x[j] * quicksum(b[i,j]*f[i] for i in range(numVoters)) + rrvfudgefactor*f[i] ) # equal seats
+                m.addConstr( x[j] == x[j] * (quicksum((b[i,j])*f[i] for i in range(numVoters))  ) ) # equal seats
             if 0: # why did I think I needed this?
                 for i in range(numVoters): # setting f
                     m.addConstr( f[i] * quicksum( b[i,j] * x[j] for j in range(numReps) ) == 1 )
@@ -250,19 +251,84 @@ def optimize(voters, reps, options, output=False):
             m.setObjective(Z,GRB.MINIMIZE)
             
         elif options['RRVbid']:
-            # fast? way
             f = {}
             for i in range(numVoters):
-                f[i] = m.addVar(lb=0, ub=1000, vtype=GRB.CONTINUOUS, name="f%d" % (i))
+                f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % (i))
+                # an option might be to put ub=0.
+                # runs in about 20 seconds
             Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
             m.update()
             m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
             for j in range(numReps):
-                m.addConstr( Z * x[j] <= x[j] * quicksum(b[i,j]*f[i] for i in range(numVoters)) ) # equal seats
+                m.addConstr( Z  <= 10000* (1-x[j]) + quicksum(b[i,j]*f[i] for i in range(numVoters)) ) # equal seats
             for i in range(numVoters): # setting f
                 m.addConstr( f[i] * quicksum( b[i,j] * x[j] for j in range(numReps) ) == 1 )
+                #m.addConstr( f[i] + 1/nWinners * quicksum( b[i,j] * x[j] for j in range(numReps) ) == 1 )
             m.update()
-            m.setObjective(Z,GRB.MINIMIZE)
+            m.setObjective(Z,GRB.MAXIMIZE)
+            
+        elif options['Phragmen bid']:
+            y = {}
+            for i in range(numVoters):
+                for j in range(numReps):
+                    y[(i,j)] = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            for i in range(numVoters):
+                for j in range(numReps):
+                    m.addConstr( y[(i,j)] <= x[j] ) # maybe i don't need this, and the optimization will take care of it.
+            for j in range(numReps):
+                m.addConstr( Z  <= numVoters*10*(1-x[j]) + quicksum(b[i,j]*y[(i,j)] for i in range(numVoters)) ) # equal seats
+            for i in range(numVoters): # setting f
+                m.addConstr( quicksum( y[(i,j)] for j in range(numReps) ) == 1 ) # this gives the same phragmen choices.
+                #m.addConstr( quicksum( b[i,j] * y[(i,j)] for j in range(numReps) ) == 1 ) # really weird choices
+                #m.addConstr( f[i] + 1/nWinners * quicksum( b[i,j] * x[j] for j in range(numReps) ) == 1 )  # interesting TDON method
+            m.update()
+            m.setObjective(Z,GRB.MAXIMIZE)
+            
+        elif options['RRV max easy']:
+            f = {}
+            for i in range(numVoters):
+                f[i] = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="f%d" % (i))
+            y = {}
+            for i in range(numVoters):
+                for j in range(numReps):
+                    y[(i,j)] = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            for i in range(numVoters):
+                for j in range(numReps):
+                    m.addConstr( y[(i,j)] == f[i] * b[i,j] * x[j] ) # maybe i don't need this, and the optimization will take care of it.
+            for j in range(numReps):
+                m.addConstr( Z  <= numVoters*10*(1-x[j]) + quicksum(b[i,j]*y[(i,j)] for i in range(numVoters)) ) # equal seats
+            for i in range(numVoters): # setting f
+                m.addConstr( quicksum( y[(i,j)] for j in range(numReps) ) == 1 ) # this gives the same phragmen choices.
+                #m.addConstr( quicksum( b[i,j] * y[(i,j)] for j in range(numReps) ) == 1 ) # really weird choices
+                #m.addConstr( f[i] + 1/nWinners * quicksum( b[i,j] * x[j] for j in range(numReps) ) == 1 )  # interesting TDON method
+            m.update()
+            m.setObjective(Z,GRB.MAXIMIZE)
+            
+        elif options['RRV max']:
+            f = {}
+            for i in range(numVoters):
+                #ubf = 1000
+                ubf = 1/(numpy.min(b[i,:])*nWinners)
+                f[i] = m.addVar(lb=0, ub=ubf,vtype=GRB.CONTINUOUS, name="f%d" % (i))
+                # really f shouldn't be bound here because it is bound elsewhere but gurobi needs it
+                # we could say f < 1/ min b
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            for j in range(numReps):
+                m.addConstr( Z  <= numVoters*10*(1-x[j]) + quicksum(b[i,j]*b[i,j]*f[i] for i in range(numVoters)) ) # equal seats
+            for i in range(numVoters): # setting f
+                m.addConstr( quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) <= 1 ) # this gives the same phragmen choices.
+                #m.addConstr( quicksum( b[i,j] * y[(i,j)] for j in range(numReps) ) == 1 ) # really weird choices
+                #m.addConstr( f[i] + 1/nWinners * quicksum( b[i,j] * x[j] for j in range(numReps) ) == 1 )  # interesting TDON method
+            m.update()
+            m.setObjective(Z,GRB.MAXIMIZE)
             
             
         elif options['computeClustering']:
@@ -671,14 +737,14 @@ def optimize(voters, reps, options, output=False):
         maxj = 0
         maxb = 0
         for j in solution1:
-            if options['phragmen'] or options["RRVloadbalanceEasy"]:
+            if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options["RRVloadbalanceEasy"]:
                 yo_here = y[(i,j)].X
                 b_close = b[i,j] * y[(i,j)].X
-                if 1: # old way
+                if 0: # old way
                     b_close = y[(i,j)].X
-            elif options["RRVloadbalance"] or options['RRVbid']:
-                yo_here = f[i].X * x[j].X
-                b_close = b[i,j]* f[i].X * x[j].X
+            elif options["RRVloadbalance"] or options['RRVbid'] or options['RRV max']:
+                yo_here = b[i,j]*f[i].X * x[j].X
+                b_close = b[i,j]*b[i,j]* f[i].X * x[j].X
                 #y[(i,j)].X = b_close # might not need this
                 if 0: # old way
                     b_close = f[i].X * x[j].X
@@ -761,7 +827,8 @@ def optimize(voters, reps, options, output=False):
                 break
                 
         print(i_start)
-        print(s_strings)
+        print("R says:")
+        print(s_strings[0:i_start])
         #g_data = [[float(x) for x in row] for row in s_strings]
         g_ord = [int(row[0]) for row in s_strings[i_start+1:]]
 
@@ -943,7 +1010,7 @@ def optimize(voters, reps, options, output=False):
     oryo = yo
     oryo = yo[vorder][:,ord_can]
     noryo = yo[vorder][:,ord_can] / numpy.max(yo)
-    if options['phragmen'] or options["RRVloadbalance"] or options['RRVbid'] or options["RRVloadbalanceEasy"]:
+    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options["RRVloadbalanceEasy"]:
         showy = 1
     
     # just once for set up.
@@ -1006,7 +1073,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","seatsPlusZero","seatsPlusHalf","seatsPlusOne","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","phragmen","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid']
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","phragmen",'Phragmen bid','RRV max',"computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid','RRV max easy',"seatsPlusZero","seatsPlusHalf","seatsPlusOne","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
