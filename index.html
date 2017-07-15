@@ -567,6 +567,7 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		<input class="op" type="radio" name="compute" checked="true"> Phragmen<br />
 		<input class="op" type="radio" name="compute"> Phragmen bid <br />
 		<input class="op" type="radio" name="compute"> RRV max <br />
+		<input class="op" type="radio" name="compute"> RRV rep<br />
 		<input class="op" type="radio" name="compute"> Binary Quadratic Problem <br />
 		<input class="op" type="radio" name="compute"> STV <br />
 		<input class="op" type="radio" name="compute"> Meeks STV <br />
@@ -901,6 +902,15 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		</p>
 		<p>
 		The purpose of writing this was to show how STV and RRV are related.  We related STV to Phragmen to RRV.  The main difference is the idea of whether individual votes should be divided proportionally among the winning candidates.  In STV, you whole vote goes to one candidate while in RRV it gets divided proportional to how much you supported the candidate.
+		</p>
+		<p>
+		Oh yeah, and we can do an RRV method that is similar to phragmen.  Call this "RRV rep" becase it does fair representation instead of fair price.  
+		\[
+        \begin{array}{lll}
+        \text{Minimize}   & { \max_{i \in Voters} \sum_{j \in Reps} f_i * b_{ij} * x_j} &  \text{The representation of each voter is fair.} \\
+        \text{Subject to} & {\forall \  j \in Reps} \ \  \sum_{i \in Voters} f_i * b_{ij}^2 *x_j =x_j \ \ \  & \text{The value of each winning seat is the same.} 
+        \end{array}
+        \]
 	  </p>
 	  <h3> More thoughts </h3>
 	  <p>

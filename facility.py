@@ -174,7 +174,7 @@ def optimize(voters, reps, options, output=False):
     # there are a few different computations, depending on the option
     #
     
-    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options["RRVloadbalanceEasy"] or options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
+    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options['RRV rep'] or options["RRVloadbalanceEasy"] or options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
     
         m = Model()
         if not output:
@@ -207,6 +207,21 @@ def optimize(voters, reps, options, output=False):
             m.update()
             m.setObjective(Z,GRB.MINIMIZE)
         
+        elif options['RRV rep']:
+            f = {}
+            for i in range(numVoters):
+                #ubf = 1000
+                ubf = 1/(numpy.min(b[i,:]**2)*nWinners)
+                f[i] = m.addVar(lb=0, ub=ubf,vtype=GRB.CONTINUOUS, name="f%d" % (i))
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            for j in range(numReps):
+                m.addConstr( x[j] <= quicksum(b[i,j]*b[i,j]*f[i] for i in range(numVoters)) ) 
+            for i in range(numVoters): # setting f
+                m.addConstr( Z >= quicksum( f[i] * b[i,j] * x[j] for j in range(numReps) ) ) 
+            m.update()
+            m.setObjective(Z,GRB.MINIMIZE)
         
         elif options["RRVloadbalance"]:
             # fast? way
@@ -742,7 +757,7 @@ def optimize(voters, reps, options, output=False):
                 b_close = b[i,j] * y[(i,j)].X
                 if 0: # old way
                     b_close = y[(i,j)].X
-            elif options["RRVloadbalance"] or options['RRVbid'] or options['RRV max']:
+            elif options["RRVloadbalance"] or options['RRVbid'] or options['RRV rep'] or options['RRV max']:
                 yo_here = b[i,j]*f[i].X * x[j].X
                 b_close = b[i,j]*b[i,j]* f[i].X * x[j].X
                 #y[(i,j)].X = b_close # might not need this
@@ -1010,7 +1025,7 @@ def optimize(voters, reps, options, output=False):
     oryo = yo
     oryo = yo[vorder][:,ord_can]
     noryo = yo[vorder][:,ord_can] / numpy.max(yo)
-    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options["RRVloadbalanceEasy"]:
+    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options['RRV rep'] or options["RRVloadbalanceEasy"]:
         showy = 1
     
     # just once for set up.
@@ -1044,7 +1059,7 @@ def optimize(voters, reps, options, output=False):
         
     return [solution1, 
     solution2, 
-    g_log + tableslog + options_str,
+    g_log, # + tableslog + options_str,
     ords.tolist(),
     orderedxo.tolist(),
     ordt.tolist(),
@@ -1073,7 +1088,7 @@ def optimize(voters, reps, options, output=False):
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","phragmen",'Phragmen bid','RRV max',"computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid','RRV max easy',"seatsPlusZero","seatsPlusHalf","seatsPlusOne","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","phragmen",'Phragmen bid','RRV max',"RRV rep","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid','RRV max easy',"seatsPlusZero","seatsPlusHalf","seatsPlusOne","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
