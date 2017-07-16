@@ -692,7 +692,7 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 	  
 	  <div id="divybtable" style="width: 24%; float: left;">
 	  <p>
-	  Representation (y*b):
+	  Support (y*b):
 	  </p>
 	  <canvas id="ybtable" width="155" height="350"></canvas>
 	  </div>
@@ -712,8 +712,24 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 	  <canvas id="sytable" width="100" height="350"></canvas>
 	  </div>
 	  
-	  <div>
-		<p style="text-align:center">
+	  
+	  <div style="width: 49%; float: left;">
+		Vote Value (y):
+		<p>
+		<span id="liquid16"></span>
+		</p>
+	  </div>
+	  
+	  <div style="width: 49%; float: left;">
+		Support for Winners (y*b):
+		<p>
+		<span id="liquid17"></span>
+		</p>
+	  </div>
+	  
+	  <div style="width: 49%; float: left;">
+		Vote Value again (y):
+		<p>
 		<span id="liquid15"></span>
 		</p>
 	  </div>
@@ -1439,10 +1455,15 @@ function serverResponse(error, data) {
 		  ctx8.clearRect(0, 0, c8.width, c8.height);
 		  
 		  // clear old canvas
-		  var myNode = document.getElementById("liquid15");
-		  while (myNode.firstChild) {
-			  myNode.removeChild(myNode.firstChild);
+		  clearit = function(name) {
+			  var myNode = document.getElementById(name);
+			  while (myNode.firstChild) {
+				  myNode.removeChild(myNode.firstChild);
+			  }
 		  }
+		  clearit("liquid15")
+		  clearit("liquid16")
+		  clearit("liquid17")
 				
 		  if (solution.length > 3) { // this used to mean we are in beast mode
 		  
@@ -1738,6 +1759,7 @@ function serverResponse(error, data) {
 						dn15.t=15
 						dn15.b = orb
 						
+						// for the first state, to find y, we know sum_i b*y is the same.  The price is equal or fair.
 						// to get y and ymax, sum orbyo over voters
 						colsumorb = orb.reduce(function (r, a) {
 							a.forEach(function (b, i) {
@@ -1752,7 +1774,7 @@ function serverResponse(error, data) {
 						
 						
 						dn15.slow = 2
-						dn15.y1 =orbyo
+						dn15.y1 =oryo
 						dn15.colkey = Array.apply(null,Array(orb[0].length)).map(function(d,i){return (xo[ord_can[i]] == 1)?solutionfid[ord_can[i]] % color_fill.length:-1})
 						
 						// also do another calculation of ymax
@@ -1774,6 +1796,8 @@ function serverResponse(error, data) {
 						
 						startdraw(drawliquid,"#liquid15",dn15,dn15)
 						
+						
+						
 						// make a graph of just the winners using this filter
 						ff = function(d,i) { return (xo[ord_can[i]] == 1) }
 						
@@ -1790,7 +1814,6 @@ function serverResponse(error, data) {
 						sinvcolsumorb = invcolsumorb.filter(ff ).reduce(function(pv, cv) { return pv + cv; }, 0);
 						dn16.ymax = 1.2*sinvcolsumorb
 						
-						
 						// also do another calculation of ymax
 						rowsumy1 = dn16.y1.map(function(d) {
 							return d.reduce(function(sum, value) {
@@ -1803,7 +1826,33 @@ function serverResponse(error, data) {
 						mrowsumy1 = getMaxOfArray(rowsumy1)
 						dn16.ymax = Math.max(dn16.ymax,1.2*mrowsumy1);
 						
-						startdraw(drawliquid,"#liquid15",dn16,dn16)
+						startdraw(drawliquid,"#liquid16",dn16,dn16)
+						
+						
+						
+						dn17 = jQuery.extend(true, {}, dn16);
+						
+						
+						//dn17.y1 = orbyo with filter
+						dn17.y1 = []
+						for (var i=0; i<orb.length; i++) {
+							dn17.y1.push(orbyo[i].filter(ff) )
+						}
+						
+						
+						// also do another calculation of ymax
+						rowsumy1 = dn17.y1.map(function(d) {
+							return d.reduce(function(sum, value) {
+								return sum + value;
+							}, 0);
+						});
+						function getMaxOfArray(numArray) {
+						  return Math.max.apply(null, numArray);
+						}
+						mrowsumy1 = getMaxOfArray(rowsumy1)
+						dn17.ymax = Math.max(dn17.ymax,1.2*mrowsumy1);
+						
+						startdraw(drawliquid,"#liquid17",dn17,dn17)
 					}
 					// vorder
 					alldata = {"voters":vorder.map(function(d) {return vertices[d]}),

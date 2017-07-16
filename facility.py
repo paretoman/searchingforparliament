@@ -263,10 +263,17 @@ def optimize(voters, reps, options, output=False):
             m.setObjective(Z,GRB.MINIMIZE)
         
         elif options['RRV rep']:
+            # there is a problem here with 0 ratings because f can be maxed out at the zero rating.
+            # so we have to add .001 to all the ballots
+            b = b+.01
             f = {}
             for i in range(numVoters):
                 #ubf = 1000
-                ubf = 1/(numpy.min(b[i,:]**2)*nWinners)
+                mb = numpy.min(b[i,:]**2)
+                if mb==0:
+                    ubf=100000
+                else:
+                    ubf = 1/(mb*nWinners)
                 f[i] = m.addVar(lb=0, ub=ubf,vtype=GRB.CONTINUOUS, name="f%d" % (i))
             Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
             m.update()
@@ -381,10 +388,15 @@ def optimize(voters, reps, options, output=False):
             m.setObjective(Z,GRB.MAXIMIZE)
             
         elif options['RRV max']:
+            b=b+.001
             f = {}
             for i in range(numVoters):
                 #ubf = 1000
-                ubf = 1/(numpy.min(b[i,:])*nWinners)
+                mb = numpy.min(b[i,:])
+                if mb==0:
+                    ubf=10000000
+                else:
+                    ubf = 1/(mb*nWinners)
                 f[i] = m.addVar(lb=0, ub=ubf,vtype=GRB.CONTINUOUS, name="f%d" % (i))
                 # really f shouldn't be bound here because it is bound elsewhere but gurobi needs it
                 # we could say f < 1/ min b
@@ -700,10 +712,12 @@ def optimize(voters, reps, options, output=False):
         # optimize and wrap up output and x[j]
         output = StringIO.StringIO()
         m.__output = output
-        m.optimize(mycallback) 
-        g_log += output.getvalue()
-        if (m.status != 2):
-            return ["error",g_log]       
+        try:
+            m.optimize(mycallback) 
+        finally:
+            g_log += output.getvalue()
+            if (m.status != 2):
+                return ["error",g_log]       
         xo = numpy.zeros(numReps)
         for j in range(numReps):
             if (x[j].X > .5):
