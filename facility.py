@@ -36,46 +36,65 @@ def mycallback(model, where):
 
 def optimize(voters, reps, options, output=False):
     
+
+
     nWinners = options['numberOfWinners']
     
     options_str = '\n'.join(["%s - %s" % (options[i],i) for i in options])
     g_log = "" # for logging
     
-    numReps = len(reps)
-    numVoters = len(voters)
-
-    if 0:
-        # make a random sample of voters
-        numVoters0 = numVoters
-        voters0 = voters
-        if numVoters > 140 and options['phragmen']:
-            rv = numpy.array(random.sample(range(numVoters),140))
-            rv.sort() # there is actually a good ordering to the data already. neat.
-            numVoters = 140
-            voters = numpy.array(voters)[rv,:].tolist()
-            print(voters)
-    
-    # Add constants
-    d = numpy.zeros((numVoters,numReps))
-    b = numpy.zeros((numVoters,numReps))
-    s = numpy.zeros((numReps,numReps))
-    t = numpy.zeros(numReps)
-
     def distance(a,b):
         dx = a[0] - b[0]
         dy = a[1] - b[1]
         return math.sqrt(dx*dx + dy*dy)
         
-    for i in range(numVoters):
-        for j in range(numReps):
-            d[i,j] = distance(voters[i], reps[j])
     
-    if options["exponentialBallots"]:
-        b = numpy.exp(- d/10 )
-    elif options["oneOverDistanceBallots"]:
-        b = 1 /( d/10 + 1 )
-    else: #if options["linearBallots"]:
-        b = (numpy.max(d) - d) / 400
+    if options['ballotfileinput']:
+        blf = options['ballotfile']
+        b_f = StringIO.StringIO(blf)
+        b_reader = csv.reader(b_f, delimiter=' ')
+        b_strings =  [row for row in b_reader]
+        b_num = [int(row[0]) for row in b_strings ]
+        b_dense = [[float(x) for x in row[1:]] for row in b_strings ]
+        b = []
+        for b1,b2 in zip(b_num,b_dense):
+            b += [b2]*b1
+        b = numpy.array(b)
+        numReps = b.shape[1]
+        numVoters = b.shape[0]
+        d= b*0
+    else:
+        numReps = len(reps)
+        numVoters = len(voters)
+
+        if 0:
+            # make a random sample of voters
+            numVoters0 = numVoters
+            voters0 = voters
+            if numVoters > 140 and options['phragmen']:
+                rv = numpy.array(random.sample(range(numVoters),140))
+                rv.sort() # there is actually a good ordering to the data already. neat.
+                numVoters = 140
+                voters = numpy.array(voters)[rv,:].tolist()
+                print(voters)
+            
+        # Add constants
+        d = numpy.zeros((numVoters,numReps))
+        b = numpy.zeros((numVoters,numReps))
+        
+            
+        for i in range(numVoters):
+            for j in range(numReps):
+                d[i,j] = distance(voters[i], reps[j])
+        
+        if options["exponentialBallots"]:
+            b = numpy.exp(- d/10 )
+        elif options["oneOverDistanceBallots"]:
+            b = 1 /( d/10 + 1 )
+        else: #if options["linearBallots"]:
+            b = (numpy.max(d) - d) / 400
+        
+        
     
     if options['normalizeBallots']:
         for i in range(numVoters):
@@ -88,6 +107,10 @@ def optimize(voters, reps, options, output=False):
     # We're all set up to do the computations.
     # This next section will get s and t, which are for computing just the BQP problem.  s and t are also needed for a nice election result output table.
     # 
+    
+    s = numpy.zeros((numReps,numReps))
+    t = numpy.zeros(numReps)
+
     
     if options['seatsPlusOne']:
         keep = options['keepsmultiplier'] * sum(numpy.max(b,1)) / (1+nWinners)
@@ -927,99 +950,109 @@ def optimize(voters, reps, options, output=False):
     print("setup?")
     print(do_setup)
     
-    if options["Calculate Voter Communities"]:
-        if options["stateInitialMap"] and not do_setup:
-            # don't need to do new calculations
-            vorder = numpy.genfromtxt('vorder.txt', delimiter=',',dtype='int').tolist()
-            rv = numpy.genfromtxt('rv.txt', delimiter=',',dtype='int').tolist()
-            votercomcolor = votercolor[vorder]
-            votercommunities = numpy.genfromtxt('voterCom.txt', delimiter=',')
-            votercommunities = votercommunities.reshape((len(vorder),len(vorder)))
-        else:
-            # make a random sample of voters
-            if numVoters > 140:
-                if 0: #test
+    if options['ballotfileinput']:
+        # do ordering a different way
+        # for now, just use regular order
+        vorder = range(numVoters)
+        rv = numpy.array(vorder)
+        votercomcolor = numpy.zeros(numVoters)
+        votercommunities = numpy.zeros([numVoters,numVoters]) # we can do this later
+        orb = b
+        ord_can = range(numReps)
+    else:
+        if options["Calculate Voter Communities"]:
+            if options["stateInitialMap"] and not do_setup:
+                # don't need to do new calculations
+                vorder = numpy.genfromtxt('vorder.txt', delimiter=',',dtype='int').tolist()
+                rv = numpy.genfromtxt('rv.txt', delimiter=',',dtype='int').tolist()
+                votercomcolor = votercolor[vorder]
+                votercommunities = numpy.genfromtxt('voterCom.txt', delimiter=',')
+                votercommunities = votercommunities.reshape((len(vorder),len(vorder)))
+            else:
+                # make a random sample of voters
+                if numVoters > 140:
+                    if 0: #test
+                        numVoters2 = numVoters
+                    else:    
+                        numVoters2 = 140
+                    rv = numpy.array(random.sample(range(numVoters),numVoters2))
+                    rv.sort() # there is actually a good ordering to the data already. neat.
+                else:
                     numVoters2 = numVoters
-                else:    
-                    numVoters2 = 140
-                rv = numpy.array(random.sample(range(numVoters),numVoters2))
-                rv.sort() # there is actually a good ordering to the data already. neat.
-            else:
-                numVoters2 = numVoters
-                rv = numpy.array(range(numVoters))
-            vd = numpy.zeros((numVoters2,numVoters2))
-            vb = numpy.zeros((numVoters2,numVoters2))
-            vs = numpy.zeros((numVoters2,numVoters2))
-            for i in range(numVoters2):
+                    rv = numpy.array(range(numVoters))
+                vd = numpy.zeros((numVoters2,numVoters2))
+                vb = numpy.zeros((numVoters2,numVoters2))
+                vs = numpy.zeros((numVoters2,numVoters2))
+                for i in range(numVoters2):
+                    for j in range(numVoters2):
+                        vd[i,j] = distance(voters[rv[i]], voters[rv[j]])
+                if options["exponentialBallots"]:
+                    vb = numpy.exp(- vd/10 )
+                elif options["oneOverDistanceBallots"]:
+                    vb = 1 /( vd/10 + 1 )
+                else: #if options["linearBallots"]:
+                    vb = (numpy.max(vd) - vd) / 400
                 for j in range(numVoters2):
-                    vd[i,j] = distance(voters[rv[i]], voters[rv[j]])
-            if options["exponentialBallots"]:
-                vb = numpy.exp(- vd/10 )
-            elif options["oneOverDistanceBallots"]:
-                vb = 1 /( vd/10 + 1 )
-            else: #if options["linearBallots"]:
-                vb = (numpy.max(vd) - vd) / 400
-            for j in range(numVoters2):
-                for k in range(numVoters2):
-                    vs[j,k] = similarity(vb[:,j],vb[:,k])
-            # find the communities within the adjacency matrix
-            def getcommunityorder(a):
-                G=networkx.from_numpy_matrix(a)
-                # Run louvain community finding algorithm
-                louvain_community_dict = community.best_partition(G)
-                # Convert community assignmet dict into list of communities
-                louvain_comms = defaultdict(list)
-                for node_index, comm_id in louvain_community_dict.iteritems():
-                    louvain_comms[comm_id].append(node_index)
-                louvain_comms = louvain_comms.values()
-                nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
-                return nodes_louvain_ordered
-            def gethierarchyorder(a):
-                bp = pandas.DataFrame(a)
-                if 0:  # this is basically the easy way to do what is below, but we want the orderings
-                    scm = seaborn.clustermap(bp)
-                    scm.savefig("scm.png")
-                row_linkage = hierarchy.linkage(bp)
-                col_linkage = hierarchy.linkage(bp.transpose())
-                row_order = hierarchy.leaves_list(row_linkage)
-                col_order = hierarchy.leaves_list(col_linkage)
-                scm2 = seaborn.clustermap(bp, row_linkage=row_linkage, col_linkage=col_linkage)
-                scm2.savefig("scm3.png")
-                return row_order
-            if 0:
-                nvorder = getcommunityorder(vs)
-            elif 0:
-                nvorder = gethierarchyorder(vs)
-            elif 0:
-                nvorder = getspecorder(numpy.array(voters)[rv])
-            elif 0:
-                nvorder = getspecorder2(vs)
-            elif 0:
-                nvorder = getspecorder3(numpy.array(voters)[rv])
-            elif 0:
-                nvorder = getspecorder4(numpy.array(voters)[rv])
-            else:
-                nvorder = getseriated(numpy.array(voters)[rv])
-            votercommunities = vs[nvorder][:,nvorder]
-            vorder = rv[nvorder].tolist()
-            votercomcolor = votercolor[vorder]
-        
-    else:
-        votercommunities = numpy.zeros(2)
-        votercomcolor = numpy.zeros(2)
-        vorder = options['vorder']
-        
-    if options['findnearestneighborrorder']:
-        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(numpy.array(voters)[vorder])
-        a_distances, a_indices = nbrs.kneighbors(reps)
-        a_indices = [x[0] for x in a_indices]
-        print(a_indices)
-        ord_can = numpy.argsort(a_indices).tolist()
-        print(ord_can)
-        orb = b[vorder][:,ord_can] # b[vorder] same as b[rv][nvorder]
-    else:
-        orb = numpy.zeros(2)
-        ord_can = [0,0]
+                    for k in range(numVoters2):
+                        vs[j,k] = similarity(vb[:,j],vb[:,k])
+                # find the communities within the adjacency matrix
+                def getcommunityorder(a):
+                    G=networkx.from_numpy_matrix(a)
+                    # Run louvain community finding algorithm
+                    louvain_community_dict = community.best_partition(G)
+                    # Convert community assignmet dict into list of communities
+                    louvain_comms = defaultdict(list)
+                    for node_index, comm_id in louvain_community_dict.iteritems():
+                        louvain_comms[comm_id].append(node_index)
+                    louvain_comms = louvain_comms.values()
+                    nodes_louvain_ordered = [node for comm in louvain_comms for node in comm]
+                    return nodes_louvain_ordered
+                def gethierarchyorder(a):
+                    bp = pandas.DataFrame(a)
+                    if 0:  # this is basically the easy way to do what is below, but we want the orderings
+                        scm = seaborn.clustermap(bp)
+                        scm.savefig("scm.png")
+                    row_linkage = hierarchy.linkage(bp)
+                    col_linkage = hierarchy.linkage(bp.transpose())
+                    row_order = hierarchy.leaves_list(row_linkage)
+                    col_order = hierarchy.leaves_list(col_linkage)
+                    scm2 = seaborn.clustermap(bp, row_linkage=row_linkage, col_linkage=col_linkage)
+                    scm2.savefig("scm3.png")
+                    return row_order
+                if 0:
+                    nvorder = getcommunityorder(vs)
+                elif 0:
+                    nvorder = gethierarchyorder(vs)
+                elif 0:
+                    nvorder = getspecorder(numpy.array(voters)[rv])
+                elif 0:
+                    nvorder = getspecorder2(vs)
+                elif 0:
+                    nvorder = getspecorder3(numpy.array(voters)[rv])
+                elif 0:
+                    nvorder = getspecorder4(numpy.array(voters)[rv])
+                else:
+                    nvorder = getseriated(numpy.array(voters)[rv])
+                votercommunities = vs[nvorder][:,nvorder]
+                vorder = rv[nvorder].tolist()
+                votercomcolor = votercolor[vorder]
+            
+        else:
+            votercommunities = numpy.zeros(2)
+            votercomcolor = numpy.zeros(2)
+            vorder = options['vorder']
+            
+        if options['findnearestneighborrorder']:
+            nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(numpy.array(voters)[vorder])
+            a_distances, a_indices = nbrs.kneighbors(reps)
+            a_indices = [x[0] for x in a_indices]
+            print(a_indices)
+            ord_can = numpy.argsort(a_indices).tolist()
+            print(ord_can)
+            orb = b[vorder][:,ord_can] # b[vorder] same as b[rv][nvorder]
+        else:
+            orb = numpy.zeros(2)
+            ord_can = [0,0]
     
     showy=0
     oryo = yo
@@ -1059,7 +1092,7 @@ def optimize(voters, reps, options, output=False):
         
     return [solution1, 
     solution2, 
-    g_log, # + tableslog + options_str,
+    g_log,# + tableslog + options_str,
     ords.tolist(),
     orderedxo.tolist(),
     ordt.tolist(),
@@ -1083,12 +1116,13 @@ def optimize(voters, reps, options, output=False):
     norm1(numpy.sum(oryo,1)).tolist(),
     oryo.tolist(),
     (orb*oryo).tolist(),
-    d[vorder][:,ord_can].tolist()]
+    d[vorder][:,ord_can].tolist(),
+    options['ballotfileinput']]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","phragmen",'Phragmen bid','RRV max',"RRV rep","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid','RRV max easy',"seatsPlusZero","seatsPlusHalf","seatsPlusOne","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","phragmen",'Phragmen bid','RRV max',"RRV rep","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid','RRV max easy',"seatsPlusZero","seatsPlusHalf","seatsPlusOne","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","ballotfileinput","ballotfile"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }

@@ -634,6 +634,8 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		<input class="op" type="radio" name="similarity"> L1<br />
 		<input class="op" type="radio" name="similarity"> multiplySupport<br />
 		</fieldset>
+		<input class="op" id="doballotfile" type="checkbox"> Ballot File Input? <br />
+		<textarea id="ballotfile" rows="4" cols="15">30 1 2 3 4 5 6&#13;&#10;40 3 2 1 4 5 3</textarea>
 		</form>
 		</div>
 	    </aside>
@@ -889,7 +891,8 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		What is f?
 		\[
 		\begin{align}
-		y_{ij}=f_i * b_{ij} * x_j \quad \text{and} \quad \sum_j y_{ij} &= 1 \nonumber \\
+		y_{ij} &=f_i * b_{ij} * x_j  \nonumber \\
+		\sum_j y_{ij} &= 1 \nonumber \\
 		\text{so} \ \sum_j f_i * b_{ij} * x_j &= 1 \nonumber \\
 		f_i &= { \displaystyle \frac{1}{\sum_j b_{ij} * x_j }} \nonumber \\
 		\end{align}
@@ -1205,7 +1208,7 @@ function addPoint() {
 
 function compute() {
 
-  if (sites.length < 1) {
+  if (sites.length < 1 && ! document.getElementById("doballotfile").checked) {
     alert("Add reps!");
     return;
   }
@@ -1240,6 +1243,7 @@ function compute() {
   loadType = document.getElementById("loadType").value;
   calcVoterCom = document.getElementById("calcVoterCom").checked;
   schulzestv = document.getElementById("schulzestv").checked
+  ballotfile = document.getElementById("ballotfile").value;
   charge = [];
   
   if (schulzestv) { // need a faster implementation of schulze stv
@@ -1250,6 +1254,11 @@ function compute() {
   charge.push(cost);
   charge.push(stvtype);
   charge.push(loadType);
+  
+  var doballotfile = document.getElementById("doballotfile").checked
+  if (doballotfile) {
+	stateVoterCom = "new map"
+  }
   
   // option "calculate voter community"
   if (calcVoterCom+0 == 1) {
@@ -1277,6 +1286,7 @@ function compute() {
   for(var i = 0; i < ops.length; i++){
 	charge.push( 0 + ops[i].checked);
   }
+  charge.push(ballotfile);
   d3.json('facility.py')
     .header('Content-Type', 'application/json')
     .post(JSON.stringify({'clients': vertices,
@@ -1317,84 +1327,86 @@ function serverResponse(error, data) {
           var solution1 = solution[0]; // Facilities to open
           var solution2 = solution[1]; // Edges to draw
           var logMsg = solution[2]; // Log message to display
-
+		  var wasfromballotfile = solution[27]
+		  
           d3.select('#logfile').html(logMsg);
 
-          var facilities = [];
+		  if (!wasfromballotfile) {
+			  var facilities = [];
 
-          for (var i = 0; i < solution1.length; i++) {
-            facilities.push(sites[solution1[i]]);
-          }
+			  for (var i = 0; i < solution1.length; i++) {
+				facilities.push(sites[solution1[i]]);
+			  }
 
-          facilitiesG.selectAll("circle").remove("circle");
-          animationG.selectAll("circle").remove("circle");
+			  facilitiesG.selectAll("circle").remove("circle");
+			  animationG.selectAll("circle").remove("circle");
 
-          var faci = facilitiesG.selectAll("circle")
-                     .data(facilities)
-                     .enter()
-                     .append("circle")
-                     .attr("cx", function(d) { return d[0]; })
-                     .attr("cy", function(d) { return d[1]; })
-					 .attr("class","repclass")
-					 .attr("fill", function(d, i) { return color_fill[i % color_fill.length]; })
-					 .attr("stroke", function(d, i) { return color_stroke[i % color_stroke.length]; })
-                     .attr("r",60)
-                     .attr("stroke-width", 2);
+			  var faci = facilitiesG.selectAll("circle")
+						 .data(facilities)
+						 .enter()
+						 .append("circle")
+						 .attr("cx", function(d) { return d[0]; })
+						 .attr("cy", function(d) { return d[1]; })
+						 .attr("class","repclass")
+						 .attr("fill", function(d, i) { return color_fill[i % color_fill.length]; })
+						 .attr("stroke", function(d, i) { return color_stroke[i % color_stroke.length]; })
+						 .attr("r",60)
+						 .attr("stroke-width", 2);
 
-          var anim = animationG.selectAll("circle")
-                     .data(facilities)
-                     .enter()
-                     .append("circle")
-                     .attr("cx", function(d) { return d[0]; })
-                     .attr("cy", function(d) { return d[1]; })
-					 .attr("class","repclass")
-					 .attr("fill", function(d, i) { return color_fill[i % color_fill.length]; })
-					 .attr("stroke", function(d, i) { return color_stroke[i % color_stroke.length]; })
-                     .attr("r",0)
-                     .attr("stroke-width", 0);
+			  var anim = animationG.selectAll("circle")
+						 .data(facilities)
+						 .enter()
+						 .append("circle")
+						 .attr("cx", function(d) { return d[0]; })
+						 .attr("cy", function(d) { return d[1]; })
+						 .attr("class","repclass")
+						 .attr("fill", function(d, i) { return color_fill[i % color_fill.length]; })
+						 .attr("stroke", function(d, i) { return color_stroke[i % color_stroke.length]; })
+						 .attr("r",0)
+						 .attr("stroke-width", 0);
 
-          faci.style("opacity", 0)
-              .style("stroke-opacity", 0)
-              .transition()
-              .style("opacity", 1)
-              .style("stroke-opacity", 1)
-              .attr("r", 6)
-              .duration(500)
-              .delay(function(d, i) { return i*100 });
+			  faci.style("opacity", 0)
+				  .style("stroke-opacity", 0)
+				  .transition()
+				  .style("opacity", 1)
+				  .style("stroke-opacity", 1)
+				  .attr("r", 6)
+				  .duration(500)
+				  .delay(function(d, i) { return i*100 });
 
-          anim.style("opacity", .5)
-              .style("stroke-opacity", .5)
-              .transition()
-              .style("opacity", 0)
-              .style("stroke-opacity", 0)
-              .attr("r", 30)
-              .duration(500)
-              .ease("out")
-              .delay(function(d, i) { return i*100 + 300});
+			  anim.style("opacity", .5)
+				  .style("stroke-opacity", .5)
+				  .transition()
+				  .style("opacity", 0)
+				  .style("stroke-opacity", 0)
+				  .attr("r", 30)
+				  .duration(500)
+				  .ease("out")
+				  .delay(function(d, i) { return i*100 + 300});
 
-          pathG.selectAll("circle").remove("circle");
+			  pathG.selectAll("circle").remove("circle");
 
-          var connections = pathG.selectAll("circle")
-                                 .data(solution2)
-                                 .enter()
-								 .append("circle")
-								 .attr("r", 2)
-								 .attr("cx", function(d) { var loc = vertices[d[0]]; return loc[0]; })
-                                 .attr("cy", function(d) { var loc = vertices[d[0]]; return loc[1]; })
-								 .attr("class","voterclass")
-								 .attr("fill", function(d, i) { return color_fill[solution1.indexOf(d[1]) % color_fill.length]; })
-								 .attr("stroke", function(d, i) { return color_stroke[solution1.indexOf(d[1]) % color_stroke.length]; })
-								 .attr("opacity", 0);
+			  var connections = pathG.selectAll("circle")
+									 .data(solution2)
+									 .enter()
+									 .append("circle")
+									 .attr("r", 2)
+									 .attr("cx", function(d) { var loc = vertices[d[0]]; return loc[0]; })
+									 .attr("cy", function(d) { var loc = vertices[d[0]]; return loc[1]; })
+									 .attr("class","voterclass")
+									 .attr("fill", function(d, i) { return color_fill[solution1.indexOf(d[1]) % color_fill.length]; })
+									 .attr("stroke", function(d, i) { return color_stroke[solution1.indexOf(d[1]) % color_stroke.length]; })
+									 .attr("opacity", 0);
 
-          connections.transition()
-                     .attr("opacity", .6)
-                     .duration(500)
-                     .delay(0);
-		  circleG.transition()
-                     .attr("opacity", 0)
-                     .duration(500)
-                     .delay(0);
-		  
+			  connections.transition()
+						 .attr("opacity", .6)
+						 .duration(500)
+						 .delay(0);
+			  circleG.transition()
+						 .attr("opacity", 0)
+						 .duration(500)
+						 .delay(0);
+		  }
 		  var c=document.getElementById("tableshow");
 		  var ctx=c.getContext("2d");
 		  ctx.clearRect(0, 0, c.width, c.height);
@@ -1429,7 +1441,7 @@ function serverResponse(error, data) {
 			  myNode.removeChild(myNode.firstChild);
 		  }
 				
-		  if (solution.length > 3) {
+		  if (solution.length > 3) { // this used to mean we are in beast mode
 		  
 			  // Show adjacency matrix
 			  
