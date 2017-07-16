@@ -635,7 +635,7 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		<input class="op" type="radio" name="similarity"> multiplySupport<br />
 		</fieldset>
 		<input class="op" id="doballotfile" type="checkbox"> Ballot File Input? <br />
-		<textarea id="ballotfile" rows="4" cols="15">30 1 2 3 4 5 6&#13;&#10;40 3 2 1 4 5 3</textarea>
+		<textarea id="ballotfile" rows="4" cols="15">20 3 1 1 0&#13;&#10;20 1 3 1 0&#13;&#10;20 1 1 3 0&#13;&#10;20 0 0 0 3&#13;&#10;color 1 2 3 4&#13;&#10;times 10 10 10 10</textarea>
 		</form>
 		</div>
 	    </aside>
@@ -814,7 +814,10 @@ print(["%d" % x[j1].X for j1 in range(numReps)])
 		Also, the raw ballots are shown (b).  Next, Phramgen's method calculates the y data, which indicates vote value.  Below these are y*b.  This is the amount of representation each representative is giving.  Each gives an equal amount (the column sum is the same for all the winners).  To the right is voters' total representation and voters' vote value.  At the bottom is an animated chart showing how the blocks of candidate votes are spread across the voters by smushing.  These are the same blocks we've been talking about, and they are more detailed because we are dealing with a real election.
 	</p>
      <p>
-		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> of several voting methods are there.  There are other load balancing methods where the weight of each part of a ballot is optimized to give the most support to the winners.  In other words, the total distance between voters and reps is minimized.  This is similar to the project that this project was forked from.  There is a reweighted range voting (RRV) as an option as well.  In addition to computations, there are also different ballot types, an option for disabling normalization, an option for adding a +1 to the seats, different similarity measures for the binary quadratic problem, etc. .
+		There is also a beast mode where you can see different computations.  STV is included.  <a href="https://www.opavote.com/methods/single-transferable-vote">OpenSTV's implementations</a> of several voting methods are there.  There are other load balancing methods where the weight of each part of a ballot is optimized to give the most support to the winners.  In other words, the total distance between voters and reps is minimized.  This is similar to the project that this project was forked from.  There is a reweighted range voting (RRV) as an option as well.  In addition to computations, there are also different ballot types, an option for disabling normalization, an option for adding a +1 to the seats, different similarity measures for the binary quadratic problem, etc. . 
+	</p>
+     <p> 
+		In beast mode, there is also a text entry area where you can input  values separated by whitespace or commas.  Each row is for voters.   The first number in the row is the number of voters who voted the same way.  A special row called "times" says how many candidates are running as clones.  A special row called "color" allows assignment of color to the candidates. Integers represent colors. 
       </p>
 	  <p style="font-size:8px">
         <a name="geolytix">Location data:</a>
@@ -1669,7 +1672,6 @@ function serverResponse(error, data) {
 						var ynum = orb.length;
 						var xnum = orb[0].length;
 						var x_scale = Math.floor((Math.min(xnum*10+10,150/2)-10)/xnum)
-						console.log(x_scale)
 						var imgData4=ctx4.createImageData(xnum*x_scale+10,ynum+10);
 						for ( var i = 10; i<ynum+10;i++) {
 							g_color = hexToRgb(color_fill[v_id[i-10] % color_fill.length])//ord_can[i-10] % color_fill.length
@@ -1713,7 +1715,6 @@ function serverResponse(error, data) {
 						var ynum = orb.length;
 						var xnum = 0;
 						var x_scale = 1
-						console.log(x_scale)
 						var imgData4=ctx4.createImageData(xnum*x_scale+10,ynum+10);
 						for ( var i = 10; i<ynum+10;i++) {
 							for (var j=0;j<10;j+=1) {
@@ -1744,7 +1745,6 @@ function serverResponse(error, data) {
 							});
 							return r;
 						}, []);
-						console.log(colsumorb)
 						invcolsumorb = colsumorb.map( function(x) { return 1/x } );
 						dn15.y = Array.apply(null, Array(orb.length)).map(function(){return invcolsumorb.slice()})
 						sinvcolsumorb = invcolsumorb.reduce(function(pv, cv) { return pv + cv; }, 0);

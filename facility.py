@@ -52,16 +52,48 @@ def optimize(voters, reps, options, output=False):
     if options['ballotfileinput']:
         blf = options['ballotfile']
         b_f = StringIO.StringIO(blf)
-        b_reader = csv.reader(b_f, delimiter=' ')
-        b_strings =  [row for row in b_reader]
-        b_num = [int(row[0]) for row in b_strings ]
-        b_dense = [[float(x) for x in row[1:]] for row in b_strings ]
-        b = []
-        for b1,b2 in zip(b_num,b_dense):
-            b += [b2]*b1
-        b = numpy.array(b)
-        numReps = b.shape[1]
+        if 1:
+            pb=pandas.read_csv(b_f,header=None,sep=r'[\s|,]+')
+            pb[0] = pb[0].astype(str)
+            b_times = pb[pb[0].isin(['times'])].values
+            if b_times.shape[0]==0:
+                b_times=numpy.ones(pb.shape[1]-1)
+            else:
+                b_times = b_times[:,1:][0]
+            b_num=pb[~pb[0].isin(['times','color'])][[0]].values.transpose()[0]
+            b_dense=pb[~pb[0].isin(['times','color'])].loc[:,1:].values
+            rowin = []
+            colin = []
+            for i,n in enumerate(b_num):
+                rowin += [i]*int(n)
+            for i,n in enumerate(b_times):
+                colin += [i]*int(n)
+            b=b_dense[rowin][:,colin].astype(float)
+
+            b_color = pb[pb[0].isin(['color'])].values
+            usebcolor = 1
+            if b_color.shape[0]==0:
+                usebcolor = 0
+            else:
+                b_color = b_color[:,1:][0][colin]
+        else:
+            if 0:
+                b_p = pandas.read_csv(b_f,header=None,sep=r'[\s|,]+')
+                b_v = b_p.values
+                b_num = [int(row[0]) for row in b_v ]
+                b_dense = [[float(x) for x in row[1:]] for row in b_v ]
+            else:
+                b_reader = csv.reader(b_f, delimiter=' ')
+                b_strings =  [row for row in b_reader]
+                b_num = [int(row[0]) for row in b_strings ]
+                b_dense = [[float(x) for x in row[1:]] for row in b_strings ]
+            b = []
+            for b1,b2 in zip(b_num,b_dense):
+                b += [b2]*b1
+            b = numpy.array(b)
+            b=b.astype(float)
         numVoters = b.shape[0]
+        numReps = b.shape[1]
         d= b*0
     else:
         numReps = len(reps)
@@ -768,7 +800,12 @@ def optimize(voters, reps, options, output=False):
             solution1.append(j)
             solutionfid[j] = i
             i+=1
-    
+            
+    if options['ballotfileinput']:
+        if usebcolor:
+            for j in range(numReps):
+                if (xo[j]):
+                    solutionfid[j] = b_color[j]
     votercolor = numpy.zeros(numVoters)
     yo = numpy.zeros([numVoters,numReps])
     for i in range(numVoters):
@@ -805,6 +842,7 @@ def optimize(voters, reps, options, output=False):
         else:
             solution2.append((i,maxj))
         votercolor[i] = solutionfid[maxj]
+        
         
     if 0:
         # do a similarity cluster map
