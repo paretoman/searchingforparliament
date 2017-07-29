@@ -39,6 +39,8 @@ def optimize(voters, reps, options, output=False):
 
 
     nWinners = options['numberOfWinners']
+    if options['morewinners']:
+        nWinners *= 5
     
     options_str = '\n'.join(["%s - %s" % (options[i],i) for i in options])
     g_log = "" # for logging
@@ -62,10 +64,13 @@ def optimize(voters, reps, options, output=False):
                 b_times = b_times[:,1:][0]
             b_num=pb[~pb[0].isin(['times','color'])][[0]].values.transpose()[0]
             b_dense=pb[~pb[0].isin(['times','color'])].loc[:,1:].values
-            rowin = []
+            if options["usescorefactors"]:
+                rowin = range(len(b_num)) # keep the same rows
+            else:
+                rowin = [] # duplicate some rows
+                for i,n in enumerate(b_num):
+                    rowin += [i]*int(n)
             colin = []
-            for i,n in enumerate(b_num):
-                rowin += [i]*int(n)
             for i,n in enumerate(b_times):
                 colin += [i]*int(n)
             b=b_dense[rowin][:,colin].astype(float)
@@ -130,9 +135,17 @@ def optimize(voters, reps, options, output=False):
     
     if options['normalizeBallots']:
         for i in range(numVoters):
-            normalizer = 1 / max(b[i,:])
+            mb2 = max(b[i,:])
+            if mb2==0:
+                normalizer = 0
+            else:
+                normalizer = 1 / mb2
             for j in range(numReps):
                 b[i,j] *= normalizer
+    
+    if options["usescorefactors"]:
+        for i in range(numVoters):
+            b[i,:] *= float(b_num[i])
     
     
     #
@@ -229,7 +242,7 @@ def optimize(voters, reps, options, output=False):
     # there are a few different computations, depending on the option
     #
     
-    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options['RRV rep'] or options["RRVloadbalanceEasy"] or options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
+    if options['phragmen'] or options['varphragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options['RRV rep'] or options["RRVloadbalanceEasy"] or options['computeClustering'] or options['computeMaxRRV'] or options['computeBQP']: # uses gurobi
     
         m = Model()
         if not output:
@@ -261,6 +274,23 @@ def optimize(voters, reps, options, output=False):
                 m.addConstr( Z >= quicksum( y[(i,j)] for j in range(numReps) ) ) 
             m.update()
             m.setObjective(Z,GRB.MINIMIZE)
+            
+        if options['varphragmen']:
+        
+            y = {}
+            for i in range(numVoters):
+                for j in range(numReps):
+                    y[(i,j)] = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name="t%d,%d" % (i,j))
+            Z = m.addVar(lb=0, vtype=GRB.CONTINUOUS, name="z")
+            m.update()
+            m.addConstr(quicksum(x[j] for j in range(numReps)) == nWinners)
+            # huh, I didn't even need y<x because the optimization already took care of that.
+            #m.addConstr(nWinners == quicksum(quicksum( y[(i,j)] for j in range(numReps) ) for i in range(numVoters) ) )
+            #m.addConstr(nWinners == quicksum(quicksum( b[i,j] * y[(i,j)] for j in range(numReps) ) for i in range(numVoters) ) )
+            for j in range(numReps):
+                m.addConstr( x[j] == quicksum(b[i,j]*y[(i,j)] for i in range(numVoters)) ) 
+            m.update()
+            m.setObjective(quicksum(quicksum( y[(i,j)] for j in range(numReps) )*quicksum( y[(i,j)] for j in range(numReps) ) for i in range(numVoters)),GRB.MINIMIZE)
         
         elif options['RRV rep']:
             # there is a problem here with 0 ratings because f can be maxed out at the zero rating.
@@ -826,7 +856,7 @@ def optimize(voters, reps, options, output=False):
         maxj = 0
         maxb = 0
         for j in solution1:
-            if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options["RRVloadbalanceEasy"]:
+            if options['phragmen'] or options['varphragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options["RRVloadbalanceEasy"]:
                 yo_here = y[(i,j)].X
                 b_close = b[i,j] * y[(i,j)].X
                 if 0: # old way
@@ -1110,7 +1140,7 @@ def optimize(voters, reps, options, output=False):
     oryo = yo
     oryo = yo[vorder][:,ord_can]
     noryo = yo[vorder][:,ord_can] / numpy.max(yo)
-    if options['phragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options['RRV rep'] or options["RRVloadbalanceEasy"]:
+    if options['phragmen'] or options['varphragmen'] or options['Phragmen bid'] or options['RRV max easy'] or options['RRV max'] or options["RRVloadbalance"] or options['RRVbid'] or options['RRV rep'] or options["RRVloadbalanceEasy"]:
         showy = 1
     
     # just once for set up.
@@ -1139,6 +1169,16 @@ def optimize(voters, reps, options, output=False):
     # y > .99
     # well, this might be more complicated because we have to exchange pairs.  Also, there probably aren't many of these ties.  Unless we are going to do a threshold ballot.
         
+    if options['showproportionality']:
+        bm = int(max(solutionfid))
+        ba = numpy.zeros(bm+1)
+        for x in solutionfid:
+            ba[int(x)] += 1
+        hist1 = ba[1:].tolist()
+        #hist1 = [len(list(group)) for key, group in groupby(solutionfid)]
+    else:
+        hist1 = [0,0]
+
     def norm1(x):
         return x* 1/numpy.max(x)
         
@@ -1169,12 +1209,13 @@ def optimize(voters, reps, options, output=False):
     oryo.tolist(),
     (orb*oryo).tolist(),
     d[vorder][:,ord_can].tolist(),
-    options['ballotfileinput']]
+    options['ballotfileinput'],
+    hist1]
 
 def handleoptimize(jsdict):
     if 'clients' in jsdict and 'facilities' in jsdict and 'charge' in jsdict:
         optionsValues = jsdict['charge']
-        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","phragmen",'Phragmen bid','RRV max',"RRV rep","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid','RRV max easy',"seatsPlusZero","seatsPlusHalf","seatsPlusOne","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","ballotfileinput","ballotfile"]
+        optionsNames =  ["numberOfWinners","keepsmultiplier","stvtype","loadType","Calculate Voter Communities","vorder","findnearestneighborrorder","stateInitialMap","normalizeBallots","oneOverDistanceBallots","linearBallots","exponentialBallots","thresholdBallots","phragmen",'Phragmen bid','RRV max',"RRV rep","computeBQP","computeSTV","MeeksSTV","computeRRV","computeRRV-TDON","openstv","computePluralityMultiwinner","computeSchulzeSTV","computeClustering","computeMaxRRV","RRVloadbalance","RRVloadbalanceEasy",'RRVbid','RRV max easy','varphragmen',"seatsPlusZero","seatsPlusHalf","seatsPlusOne","jaccardSimilarity","bothOutOfOne","oneFromBoth","simultaneous","integrateKeeps","cosineSimilarity","l1Similarity","multiplySupport","ballotfileinput","usescorefactors","morewinners",'showproportionality',"ballotfile"]
         options = dict(zip(optionsNames,optionsValues))
         solution = optimize(jsdict['clients'], jsdict['facilities'], options)
         return {'solution': solution }
